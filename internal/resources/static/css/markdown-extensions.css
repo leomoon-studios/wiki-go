@@ -1,0 +1,123 @@
+/**
+ * Markdown Extensions CSS
+ * Styles for custom markdown extensions
+ */
+
+/* Highlighted text */
+mark {
+    background-color: #ffff66;
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
+
+/* Dark theme support for highlighted text */
+:root[data-theme="dark"] mark {
+    background-color: #665500;
+    color: #ffffff;
+}
+
+/* Collapsible sections */
+.markdown-details {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5em;
+    margin: 1em 0;
+}
+
+.markdown-details summary {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0.5em;
+    user-select: none;
+}
+
+.markdown-details summary:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.details-content {
+    padding: 0.5em;
+    border-top: 1px solid #eee;
+    margin-top: 0.5em;
+}
+
+/* Video embeds */
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 1.5em 0;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.rtl, .rtl * {
+    direction: rtl;
+    unicode-bidi: isolate;
+    text-align: right;
+}
+
+.ltr, .ltr * {
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+}
+
+/* Print styles */
+@media print {
+    /* Collapsible sections */
+    .markdown-details {
+        display: block !important;
+        border: 1px solid #ddd !important;
+    }
+
+    .markdown-details summary {
+        display: none !important;
+    }
+
+    .markdown-details .details-content {
+        display: block !important;
+        border-top: none !important;
+        padding-top: 0 !important;
+    }
+
+    details.markdown-details {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    details.markdown-details > * {
+        display: block !important;
+    }
+
+    /* Video embeds */
+    .video-container {
+        display: none !important;
+    }
+
+    .local-video-player {
+        display: none !important;
+    }
+
+    .video-print-placeholder {
+        display: block !important;
+        border: 1px solid #ddd;
+        padding: 1em;
+        margin: 1em 0;
+        background-color: #f9f9f9;
+    }
+}
+
+@media screen {
+    .video-print-placeholder {
+        display: none;
+    }
+}

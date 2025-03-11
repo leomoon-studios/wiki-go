@@ -1,0 +1,125 @@
+/* Wiki Stats Styling */
+.wiki-stats {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.wiki-stats h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #495057;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.wiki-stats ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.wiki-stats li {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wiki-stats li:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.wiki-stats a {
+    color: #0366d6;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.wiki-stats a:hover {
+    text-decoration: underline;
+}
+
+.wiki-stats .edit-date {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+/* Document count styling */
+.wiki-stats.doc-count {
+    text-align: center;
+}
+
+.wiki-stats .count-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.wiki-stats .count-number {
+    font-size: 3em;
+    font-weight: bold;
+    color: #0366d6;
+    margin-bottom: 5px;
+}
+
+.wiki-stats .count-description {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .wiki-stats {
+    background-color: #2d333b;
+    border-color: #444c56;
+}
+
+[data-theme="dark"] .wiki-stats h4 {
+    color: #adbac7;
+}
+
+[data-theme="dark"] .wiki-stats li {
+    border-color: #444c56;
+}
+
+[data-theme="dark"] .wiki-stats a {
+    color: #58a6ff;
+}
+
+[data-theme="dark"] .wiki-stats .edit-date {
+    color: #768390;
+}
+
+[data-theme="dark"] .wiki-stats .count-number {
+    color: #58a6ff;
+}
+
+[data-theme="dark"] .wiki-stats .count-description {
+    color: #768390;
+}
+
+/* Error message styling */
+.wiki-stats-error {
+    background-color: #fff5f5;
+    border: 1px solid #feb2b2;
+    color: #c53030;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+[data-theme="dark"] .wiki-stats-error {
+    background-color: #3c2a2a;
+    border-color: #742a2a;
+    color: #fc8181;
+}

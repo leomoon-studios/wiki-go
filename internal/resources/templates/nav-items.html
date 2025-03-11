@@ -1,0 +1,12 @@
+{{define "nav-items"}}
+    {{range .Children}}
+        <div class="nav-item {{if .IsDir}}directory{{end}} {{if .IsActive}}active{{end}}">
+            <a href="{{.Path}}">{{.Title}}</a>
+            {{if and .IsDir .Children .IsActive}}
+                <div class="nav-children" style="padding-left: 16px;">
+                    {{template "nav-items" .}}
+                </div>
+            {{end}}
+        </div>
+    {{end}}
+{{end}}

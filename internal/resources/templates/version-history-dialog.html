@@ -1,0 +1,27 @@
+{{define "version-history-dialog"}}
+<!-- Version History Dialog -->
+<div class="version-history-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close history dialog" title="{{t "common.cancel"}}">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "history.title"}}</h2>
+        <div class="dialog-content">
+            <div class="version-history-layout">
+                <div class="version-list-container">
+                    <h3>{{t "history.previous_versions"}}</h3>
+                    <div class="version-list">
+                        <div class="loading-spinner">Loading versions...</div>
+                    </div>
+                </div>
+                <div class="version-preview-container">
+                    <h3>{{t "history.preview_title"}}</h3>
+                    <div class="version-preview">
+                        <div class="empty-message">{{t "history.select_version"}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

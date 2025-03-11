@@ -1,0 +1,297 @@
+@media print {
+    /* General print styles */
+    .toolbar,
+    .sidebar,
+    .hamburger,
+    .breadcrumbs,
+    .footer,
+    .copy-button {
+        display: none !important;
+    }
+
+    .content {
+        margin: 0 !important;
+        padding: 12px !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .content > * {
+        margin-bottom: 0.5em !important;
+    }
+
+    .content h1 {
+        margin-bottom: 0.75em !important;
+    }
+
+    .content h2 {
+        margin-top: 1.25em !important;
+        margin-bottom: 0.5em !important;
+        padding-bottom: 0.25em !important;
+    }
+
+    .content h3 {
+        margin-top: 1em !important;
+        margin-bottom: 0.5em !important;
+    }
+
+    .content p {
+        margin: 0.4em 0 1.2em 0 !important;
+    }
+
+    .content ul, .content ol {
+        margin: 0.4em 0 !important;
+        padding-left: 1.25em !important;
+    }
+
+    .content li {
+        margin: 0.2em 0 !important;
+    }
+
+    .content pre {
+        padding: 8px !important;
+        margin: 0.5em 0 !important;
+    }
+
+    .content blockquote {
+        margin: 0.5em 0 !important;
+        padding: 0.4em 0.75em !important;
+    }
+
+    /* Ensure all text is black in print */
+    .content p,
+    .content ul,
+    .content ol,
+    .content li,
+    .content table,
+    .content td,
+    .content th,
+    .content blockquote,
+    .content h1,
+    .content h2,
+    .content h3,
+    .content h4,
+    .content h5,
+    .content h6 {
+        color: black !important;
+    }
+
+    /* Code block print styles - ensure word wrapping */
+    pre, pre[class*="language-"] {
+        background: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
+        max-width: 100% !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        font-size: 11pt !important;
+        line-height: 1.4 !important;
+        padding: 15px !important;
+        margin: 20px 0 !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+
+    /* Fix code blocks inside pre */
+    pre > code {
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+
+    code, code[class*="language-"],
+    pre code, pre[class*="language-"] code {
+        background: #f0f0f0 !important;
+        border: none !important;
+        padding: 2px 4px !important;
+        font-family: "Courier New", Courier, monospace !important;
+        color: black !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+    }
+
+    /* Mermaid diagram print styles - force light theme */
+    .mermaid {
+        background-color: white !important;
+    }
+
+    .mermaid svg {
+        background-color: white !important;
+        filter: none !important;
+    }
+
+    .mermaid svg rect,
+    .mermaid svg polygon,
+    .mermaid svg circle,
+    .mermaid svg ellipse,
+    .mermaid svg path {
+        fill: white !important;
+        stroke: black !important;
+    }
+
+    .mermaid svg .node rect,
+    .mermaid svg .node circle,
+    .mermaid svg .node ellipse,
+    .mermaid svg .node polygon {
+        fill: white !important;
+        stroke: black !important;
+    }
+
+    .mermaid svg .label {
+        color: black !important;
+        fill: black !important;
+    }
+
+    .mermaid svg text {
+        fill: black !important;
+        color: black !important;
+    }
+
+    .mermaid svg .edgeLabel {
+        background-color: white !important;
+        color: black !important;
+        fill: black !important;
+    }
+
+    .mermaid svg .edgePath .path {
+        stroke: black !important;
+    }
+
+    .mermaid svg .cluster rect {
+        fill: white !important;
+        stroke: black !important;
+    }
+
+    /* Inline code style */
+    :not(pre) > code {
+        color: black !important;
+        background-color: #f0f0f0 !important;
+        border: none !important;
+        padding: 2px 4px !important;
+    }
+
+    /* Fix checkbox appearance in print mode */
+    .task-checkbox {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-shadow: inset 0 0 0 2px #000 !important; /* Darker border for better print visibility */
+        background-color: white !important;
+        width: 14px !important;
+        height: 14px !important;
+        border: none !important;
+        position: relative !important;
+        border-radius: 2px !important;
+        margin-top: 3px !important;
+    }
+
+    .task-checkbox:checked {
+        background-color: #000 !important; /* Black for better print contrast */
+        box-shadow: none !important;
+    }
+
+    .task-checkbox:checked::after {
+        content: "" !important;
+        position: absolute !important;
+        top: 1px !important;
+        left: 4px !important;
+        width: 3px !important;
+        height: 7px !important;
+        border: solid white !important;
+        border-width: 0 2px 2px 0 !important;
+        transform: rotate(45deg) !important;
+        display: block !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Preserve task list indentation in print mode */
+    .task-list-item-container[data-indent-level="1"] {
+        margin-left: 1.5rem !important;
+    }
+
+    .task-list-item-container[data-indent-level="2"] {
+        margin-left: 3rem !important;
+    }
+
+    .task-list-item-container[data-indent-level="3"] {
+        margin-left: 4.5rem !important;
+    }
+
+    .task-list-item-container[data-indent-level="4"] {
+        margin-left: 6rem !important;
+    }
+
+    .task-list-item-container[data-indent-level="5"] {
+        margin-left: 7.5rem !important;
+    }
+
+    /* Restore syntax highlighting for print but ensure readability */
+    .token.comment { color: black !important; background-color: #f0f0f0 !important; font-style: italic !important; }
+    .token.string { color: black !important; background-color: #f0f0f0 !important; }
+    .token.number { color: black !important; background-color: #f0f0f0 !important; }
+    .token.keyword { color: black !important; background-color: #f0f0f0 !important; font-weight: bold !important; }
+    .token.function { color: black !important; background-color: #f0f0f0 !important; }
+    .token.boolean { color: black !important; background-color: #f0f0f0 !important; font-weight: bold !important; }
+    .token.operator { color: black !important; }
+    .token.punctuation { color: black !important; }
+
+    /* Other print optimizations */
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+    }
+
+    img, table {
+        page-break-inside: avoid;
+    }
+
+    p {
+        orphans: 3;
+        widows: 3;
+    }
+
+    a {
+        text-decoration: underline !important;
+        color: #000066 !important;
+    }
+
+    /* Ensure code blocks don't overflow page margins */
+    pre {
+        max-width: 100% !important;
+        margin: 15px 0 !important;
+        border-radius: 0 !important;
+    }
+
+    /* Line numbers if present */
+    .line-numbers .line-numbers-rows {
+        border-right: 1px solid #999 !important;
+    }
+
+    .line-numbers-rows > span:before {
+        color: #999 !important;
+    }
+
+    .content mark {
+        background-color: #f0f0f0 !important;
+        color: black !important;
+        border: 1px solid #ccc !important;
+    }
+
+    .content del {
+        text-decoration: line-through !important;
+        color: black !important;
+        opacity: 0.7 !important;
+    }
+
+    .footnotes {
+        border-top: 1px solid #ccc !important;
+        color: black !important;
+    }
+
+    .footnote-ref,
+    .footnote-backref {
+        color: black !important;
+    }
+}

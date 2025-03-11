@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html data-theme="{{ .Theme }}">
+<head>
+    <title>Login - {{ .Config.Wiki.Title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Prevent theme flash -->
+    <script>
+        // Immediately set theme before page renders to prevent flash
+        (function() {
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        /* Adapt login dialog to full page context */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+        }
+
+        /* Make the login dialog behave like a standalone component */
+        .login-dialog {
+            position: relative;
+            display: block;
+            z-index: 1;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* Hide close button on standalone login page */
+        .login-dialog .close-dialog {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-dialog active" dir="auto">
+        <div class="login-container">
+            <button class="close-dialog" aria-label="Close login dialog">
+                <i class="fa fa-times"></i>
+            </button>
+            <h2 class="login-title">{{ .Config.Wiki.Title }}</h2>
+            <div class="error-message" id="loginError" style="display: none;"></div>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <p>This wiki is private and requires authentication to view content.</p>
+                <button type="submit" class="login-button">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('loginError');
+
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    if (response.ok) {
+                        // Redirect to home page after successful login
+                        window.location.href = '/';
+                    } else {
+                        errorMessage.textContent = 'Invalid username or password';
+                        errorMessage.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorMessage.textContent = 'An error occurred. Please try again.';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

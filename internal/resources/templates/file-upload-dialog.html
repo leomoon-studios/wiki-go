@@ -1,0 +1,42 @@
+{{define "file-upload-dialog"}}
+<!-- File upload dialog -->
+<div class="file-upload-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close file upload dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "toolbar.attachments"}}</h2>
+        <div class="error-message"></div>
+
+        <div class="file-upload-tabs">
+            <button class="tab-button active" data-tab="upload-tab">{{t "attachments.upload_tab"}}</button>
+            <button class="tab-button" data-tab="files-tab">{{t "attachments.files_tab"}}</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="upload-tab" class="tab-pane active">
+                <form class="file-upload-form" id="fileUploadForm">
+                    <div class="form-group">
+                        <label for="fileToUpload">{{t "attachments.select_file"}}</label>
+                        <input type="file" id="fileToUpload" name="file">
+                        <small class="form-help">{{t "attachments.allowed_types"}}</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="dialog-button primary" id="uploadFileBtn">{{t "common.upload"}}</button>
+                    </div>
+                </form>
+            </div>
+            <div id="files-tab" class="tab-pane">
+                <div class="files-management">
+                    <div class="files-list-container">
+                        <h3>{{t "attachments.document_files"}}</h3>
+                        <div class="files-list">
+                            <div class="empty-message">{{t "attachments.loading"}}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

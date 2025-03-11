@@ -1,0 +1,16 @@
+{{define "user-confirmation-dialog"}}
+<!-- Confirmation dialog for user management -->
+<div class="user-confirmation-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close confirmation dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title confirm-title">Confirm Action</h2>
+        <p class="dialog-message confirm-content">Are you sure?</p>
+        <div class="form-actions">
+            <button type="button" class="dialog-button confirm-yes primary">{{t "common.yes"}}</button>
+            <button type="button" class="dialog-button confirm-no">{{t "common.no"}}</button>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,157 @@
+name: Release Wiki-Go
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+      - "!v*-rc*"
+      - "!v*-dev"
+      - "!v*-beta*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed for creating releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod  # Use version from go.mod
+          check-latest: true
+
+      - name: Get the version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          # Also extract version components for Docker tags
+          if [[ $VERSION == v* ]]; then
+            VERSION=${VERSION:1}  # Remove the 'v' prefix
+          fi
+          echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "MAJOR=${MAJOR}" >> $GITHUB_OUTPUT
+          echo "MINOR=${MINOR}" >> $GITHUB_OUTPUT
+          echo "PATCH=${PATCH}" >> $GITHUB_OUTPUT
+
+      - name: Create Build Directory
+        run: mkdir -p build
+
+      - name: Build for Linux (amd64)
+        run: GOOS=linux GOARCH=amd64 go build -o build/wiki-go-linux-amd64 .
+
+      - name: Build for Linux (386)
+        run: GOOS=linux GOARCH=386 go build -o build/wiki-go-linux-386 .
+
+      - name: Build for Linux (arm64)
+        run: GOOS=linux GOARCH=arm64 go build -o build/wiki-go-linux-arm64 .
+
+      - name: Build for Linux ARMv5
+        run: GOOS=linux GOARCH=arm GOARM=5 go build -o build/wiki-go-linux-armv5 .
+
+      - name: Build for Linux ARMv6
+        run: GOOS=linux GOARCH=arm GOARM=6 go build -o build/wiki-go-linux-armv6 .
+
+      - name: Build for Linux ARMv7
+        run: GOOS=linux GOARCH=arm GOARM=7 go build -o build/wiki-go-linux-armv7 .
+
+      - name: Build for Linux (s390x)
+        run: GOOS=linux GOARCH=s390x go build -o build/wiki-go-linux-s390x .
+
+      - name: Build for Windows (amd64)
+        run: GOOS=windows GOARCH=amd64 go build -o build/wiki-go-windows-amd64.exe .
+
+      - name: Build for Windows (arm64)
+        run: GOOS=windows GOARCH=arm64 go build -o build/wiki-go-windows-arm64.exe .
+
+      - name: Build for macOS (amd64)
+        run: GOOS=darwin GOARCH=amd64 go build -o build/wiki-go-mac-amd64 .
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            build/wiki-go-linux-amd64
+            build/wiki-go-linux-386
+            build/wiki-go-linux-arm64
+            build/wiki-go-linux-armv5
+            build/wiki-go-linux-armv6
+            build/wiki-go-linux-armv7
+            build/wiki-go-linux-s390x
+            build/wiki-go-windows-amd64.exe
+            build/wiki-go-windows-arm64.exe
+            build/wiki-go-mac-amd64
+
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.docker == 'true' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Get tag version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          # Also extract version components for Docker tags
+          if [[ $VERSION == v* ]]; then
+            VERSION=${VERSION:1}  # Remove the 'v' prefix
+          fi
+          echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "MAJOR=${MAJOR}" >> $GITHUB_OUTPUT
+          echo "MINOR=${MINOR}" >> $GITHUB_OUTPUT
+          echo "PATCH=${PATCH}" >> $GITHUB_OUTPUT
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/wiki-go
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.get_version.outputs.VERSION_NUM }}
+            type=raw,value=${{ steps.get_version.outputs.MAJOR }}
+            type=raw,value=${{ steps.get_version.outputs.MAJOR }}.${{ steps.get_version.outputs.MINOR }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

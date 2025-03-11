@@ -1,0 +1,205 @@
+@media (max-width: 768px) {
+    .editor-container {
+        margin: 0 -8px;
+        width: calc(100% + 16px);
+    }
+
+    .editor-toolbar {
+        padding: 0 8px;
+        margin: 8px 0;
+    }
+
+    .EasyMDEContainer {
+        border-radius: 0;
+    }
+
+    .EasyMDEContainer .CodeMirror {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .EasyMDEContainer .CodeMirror-code {
+    margin-left: 8px;
+    }
+}
+
+/* Editor styles */
+.editor-container {
+    display: none;
+    position: relative;
+    background: var(--bg-color);
+    z-index: 100;
+    padding: 0;
+    margin-bottom: 12px;
+}
+
+.editor-container.active {
+    display: block;
+}
+
+.editor-toolbar {
+    margin: 16px 0 8px 0;
+    padding: 0 16px;
+}
+
+.editor-button {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.editor-button:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.editor-button.primary {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.editor-button.primary:hover {
+    opacity: 0.9;
+}
+
+/* EasyMDE theme overrides */
+.EasyMDEContainer {
+    background: var(--bg-color);
+}
+
+.EasyMDEContainer .CodeMirror {
+    color: var(--text-color);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    height: calc(100vh - 350px) !important;
+    max-height: calc(100vh - 350px);
+}
+
+.EasyMDEContainer .CodeMirror-scroll {
+    min-height: 100%;
+}
+
+.editor-toolbar {
+    border: none !important;
+    padding: 0 0 8px 0 !important;
+    background: none !important;
+}
+
+.editor-toolbar button {
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    margin: 0 4px !important;
+}
+
+.editor-toolbar button:hover {
+    background: var(--hover-bg) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.editor-toolbar.fullscreen {
+    background: var(--bg-color) !important;
+}
+
+.editor-preview-side {
+    background: var(--bg-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.editor-statusbar {
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Dark theme overrides for EasyMDE */
+:root[data-theme="dark"] .EasyMDEContainer .CodeMirror {
+    color: #ccc;
+    border-color: #ccc;
+    background-color: #444;
+}
+
+:root[data-theme="dark"] .EasyMDEContainer .editor-toolbar > .active,
+:root[data-theme="dark"] .editor-toolbar > button:hover,
+:root[data-theme="dark"] .editor-preview pre,
+:root[data-theme="dark"] .cm-s-easymde .cm-comment {
+    color: #ccc;
+    background-color: #23241F;
+}
+
+:root[data-theme="dark"] .editor-toolbar.fullscreen {
+    background: #333;
+}
+
+:root[data-theme="dark"] .EasyMDEContainer .CodeMirror-fullscreen {
+    background: #444;
+    color: #ccc;
+}
+
+:root[data-theme="dark"] .editor-preview {
+    background: #333;
+    color: #ccc;
+}
+
+/* Fix for double-colored code blocks in EasyMDE preview */
+.editor-preview pre code,
+.editor-preview-side pre code {
+    background: transparent !important;
+    color: inherit !important;
+    border: none !important;
+    padding: 0 !important;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace !important;
+}
+
+/* Ensure proper styling for code blocks in preview */
+.editor-preview pre,
+.editor-preview-side pre {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 0.5em;
+    margin: 0.5em 0;
+    overflow: auto;
+}
+
+/* Dark theme for code blocks in preview */
+:root[data-theme="dark"] .editor-preview pre,
+:root[data-theme="dark"] .editor-preview-side pre {
+    background-color: #23241F;
+    border-color: #333;
+    color: #ccc;
+}
+
+:root[data-theme="dark"] .editor-toolbar.fullscreen {
+    background: #333;
+}
+
+:root[data-theme="dark"] .CodeMirror-selectedtext {
+    background-color: #d9d9d9 !important;
+    color: #444 !important;
+}
+
+:root[data-theme="dark"] ::selection {
+    background-color: #d9d9d9 !important;
+    color: #444 !important;
+}
+
+:root[data-theme="dark"] ::-moz-selection {
+    background-color: #d9d9d9 !important;
+    color: #444 !important;
+}
+
+/* Fix cursor visibility */
+.EasyMDEContainer .CodeMirror-cursor {
+    border-left: 3px solid var(--text-color) !important;
+    margin-left: 0 !important;
+}

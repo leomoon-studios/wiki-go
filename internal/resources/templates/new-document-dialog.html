@@ -1,0 +1,33 @@
+{{define "new-document-dialog"}}
+<!-- New document dialog -->
+<div class="new-document-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close new document dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "new_doc.title"}}</h2>
+        <div class="error-message"></div>
+        <form class="new-document-form" id="newDocumentForm">
+            <div class="form-group">
+                <label for="docTitle">{{t "new_doc.document_title"}}</label>
+                <input type="text" id="docTitle" name="docTitle" required>
+                <small class="form-help">{{t "new_doc.title_help"}}</small>
+            </div>
+            <div class="form-group">
+                <label for="docPath">{{t "new_doc.path"}}</label>
+                <input type="text" id="docPath" name="docPath" placeholder="category/subcategory">
+                <small class="form-help">{{t "new_doc.path_help"}}</small>
+            </div>
+            <div class="form-group">
+                <label for="docSlug">{{t "new_doc.slug"}}</label>
+                <input type="text" id="docSlug" name="docSlug" required>
+                <small class="form-help">{{t "new_doc.slug_help"}}</small>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="dialog-button primary">{{t "new_doc.create_button"}}</button>
+                <button type="button" class="dialog-button cancel-new-doc">{{t "new_doc.cancel_button"}}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

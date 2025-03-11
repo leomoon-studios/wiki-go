@@ -1,0 +1,32 @@
+{{define "sidebar"}}
+<button class="hamburger" aria-label="Toggle menu">
+    <span class="hamburger-icon"></span>
+</button>
+<div class="sidebar">
+    <a href="/" class="sidebar-title">
+        {{$logoPath := hasLogo .Config.Wiki.RootDir}}
+        {{if $logoPath}}
+        <div class="logo-container">
+            <img src="{{$logoPath}}" alt="" class="sidebar-logo">
+        </div>
+        {{end}}
+        <div class="title-text">{{.Config.Wiki.Title}}</div>
+    </a>
+    <div class="search-container">
+        <input type="text" class="search-box" placeholder='Search...' aria-label="Search documentation">
+    </div>
+    <div class="nav-items">
+        {{template "nav-items" .Navigation}}
+    </div>
+    <div class="sidebar-footer">
+        <div class="owner">{{.Config.Wiki.Owner}}</div>
+        <div class="notice">{{.Config.Wiki.Notice}}</div>
+        <div class="theme-switcher">
+            <button class="theme-toggle" aria-label="Toggle theme">
+                <i class="fa fa-sun-o light-icon"></i>
+                <i class="fa fa-moon-o dark-icon" style="display: none;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{{end}}

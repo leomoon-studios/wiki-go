@@ -1,0 +1,31 @@
+{{define "move-document-dialog"}}
+<!-- Move document dialog -->
+<div class="common-dialog move-document-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close move document dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "move.title"}}</h2>
+        <div class="error-message"></div>
+        <form class="dialog-form" id="moveDocumentForm">
+            <div class="form-group">
+                <label for="moveSourcePath">{{t "move.current_path"}}</label>
+                <input type="text" id="moveSourcePath" name="moveSourcePath" readonly>
+                <small class="form-help">{{t "move.current_path_description"}}</small>
+            </div>
+            <div class="form-group">
+                <label for="moveTargetPath">{{t "move.new_path"}}</label>
+                <input type="text" id="moveTargetPath" name="moveTargetPath">
+                <small class="form-help">{{t "move.new_path_help"}}</small>
+            </div>
+            <div class="note-box">
+                <i class="fa fa-info-circle"></i> {{t "move.note"}}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="dialog-button primary">{{t "move.button"}}</button>
+                <button type="button" class="dialog-button cancel-dialog">{{t "common.cancel"}}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

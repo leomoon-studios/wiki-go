@@ -1,0 +1,13 @@
+services:
+  wiki-go:
+    image: leomoonstudios/wiki-go
+    container_name: wiki-go
+    user: 1000:1000
+    ports:
+      - "3030:8080"
+    volumes:
+      - ./data:/wiki/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped

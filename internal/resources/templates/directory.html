@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.CurrentDir.Title}} - Wiki-Go</title>
+    <style>
+        .directory-list {
+            margin-top: 20px;
+        }
+        .directory-list h1 {
+            margin-bottom: 30px;
+        }
+        .directory-item {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .directory-item:hover {
+            background-color: #f5f5f5;
+        }
+        .directory-item a {
+            color: #333;
+            text-decoration: none;
+            display: block;
+        }
+        .directory-item a:hover {
+            color: #0066cc;
+        }
+        .directory-item.is-dir {
+            font-weight: bold;
+        }
+        .directory-item.is-dir:before {
+            content: "📁";
+            margin-right: 10px;
+        }
+        .directory-item.is-file:before {
+            content: "📄";
+            margin-right: 10px;
+        }
+        .empty-message {
+            color: #666;
+            font-style: italic;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="directory-list">
+        <h1>{{.CurrentDir.Title}}</h1>
+        {{if .CurrentDir.Children}}
+            {{range .CurrentDir.Children}}
+                <div class="directory-item {{if .IsDir}}is-dir{{else}}is-file{{end}}">
+                    <a href="{{.Path}}">{{.Title}}</a>
+                </div>
+            {{end}}
+        {{else}}
+            <p class="empty-message">This directory is empty.</p>
+        {{end}}
+    </div>
+</body>
+</html>

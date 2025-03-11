@@ -1,0 +1,9 @@
+{{define "content"}}
+    {{$bannerPath := hasBanner .Config.Wiki.RootDir}}
+    {{if $bannerPath}}
+    <div class="global-banner">
+        <img src="{{$bannerPath}}" alt="Banner" class="responsive-banner">
+    </div>
+    {{end}}
+    {{.Content}}
+{{end}}

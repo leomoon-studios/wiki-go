@@ -1,0 +1,12 @@
+{{define "breadcrumbs"}}
+    {{if .Breadcrumbs}}
+        {{range $index, $part := .Breadcrumbs}}
+            {{if $index}}<span class="separator">›</span>{{end}}
+            {{if not $part.IsLast}}
+                <a href="{{$part.Path}}">{{$part.Title}}</a>
+            {{else}}
+                <span>{{$part.Title}}</span>
+            {{end}}
+        {{end}}
+    {{end}}
+{{end}}

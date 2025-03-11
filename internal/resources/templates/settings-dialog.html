@@ -1,0 +1,102 @@
+{{define "settings-dialog"}}
+<!-- Settings dialog -->
+<div class="settings-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close settings dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "settings.title"}}</h2>
+        <div class="error-message"></div>
+
+        <div class="settings-tabs">
+            <button class="tab-button active" data-tab="wiki-tab">{{t "settings.wiki"}}</button>
+            <button class="tab-button" data-tab="users-tab">{{t "settings.users"}}</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="wiki-tab" class="tab-pane active">
+                <form class="settings-form" id="wikiSettingsForm">
+                    <div class="form-group">
+                        <label for="wikiTitle">{{t "settings.wiki_title"}}</label>
+                        <input type="text" id="wikiTitle" name="wikiTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiOwner">{{t "settings.owner"}}</label>
+                        <input type="text" id="wikiOwner" name="wikiOwner" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiNotice">{{t "settings.copyright_notice"}}</label>
+                        <input type="text" id="wikiNotice" name="wikiNotice" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiTimezone">{{t "settings.timezone"}}</label>
+                        <input type="text" id="wikiTimezone" name="wikiTimezone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiLanguage">{{t "settings.language"}}</label>
+                        <div class="language-selector-wrapper">
+                            <select id="wikiLanguage" name="wikiLanguage" class="language-selector">
+                                {{range $lang := .AvailableLanguages}}
+                                    <option value="{{$lang}}" {{if eq $lang $.Config.Wiki.Language}}selected{{end}}>
+                                        {{t "language.self_name" $lang}}
+                                    </option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <small class="form-help">{{t "settings.language_description"}}</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiMaxVersions">{{t "settings.document_versions"}}</label>
+                        <input type="number" id="wikiMaxVersions" name="wikiMaxVersions" min="0" required>
+                        <small class="form-help">{{t "settings.document_versions_description"}}</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiMaxUploadSize">{{t "settings.max_upload_size"}}</label>
+                        <input type="number" id="wikiMaxUploadSize" name="wikiMaxUploadSize" min="1" required>
+                        <small class="form-help">{{t "settings.max_upload_size_description"}}</small>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="wikiPrivate" name="wikiPrivate">
+                        <label for="wikiPrivate">{{t "settings.private_wiki"}}</label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="dialog-button primary">{{t "common.save"}}</button>
+                        <button type="button" class="dialog-button cancel-settings">{{t "common.cancel"}}</button>
+                    </div>
+                </form>
+            </div>
+            <div id="users-tab" class="tab-pane">
+                <div class="users-management">
+                    <div class="users-list-container">
+                        <h3>{{t "users.title"}}</h3>
+                        <div class="users-list"></div>
+                    </div>
+                    <div class="user-form-container">
+                        <h3 id="user-form-title">{{t "users.add_user_title"}}</h3>
+                        <form id="userForm">
+                            <input type="hidden" id="userFormMode" value="create">
+                            <div class="form-group">
+                                <label for="userFormUsername">{{t "users.username"}}</label>
+                                <input type="text" id="userFormUsername" name="username" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userFormPassword">{{t "users.password"}}</label>
+                                <input type="password" id="userFormPassword" name="password">
+                                <small class="form-help" id="password-help">{{t "users.password_help"}}</small>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="userIsAdmin" name="userIsAdmin">
+                                <label for="userIsAdmin">{{t "users.administrator"}}</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="dialog-button primary" id="saveUserBtn">{{t "users.add_button"}}</button>
+                                <button type="button" class="dialog-button" id="cancelUserBtn">{{t "users.clear_button"}}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

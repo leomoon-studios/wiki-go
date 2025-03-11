@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="{{.Config.Wiki.Language}}" data-allow-insecure="{{.Config.Server.AllowInsecureCookies}}">
+<head>
+    <title>{{if .CurrentDir.Title}}{{if ne .CurrentDir.Path "/"}}{{.CurrentDir.Title}} - {{end}}{{.Config.Wiki.Title}}{{else}}{{.Config.Wiki.Title}}{{end}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Favicons -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/static/favicon.png" type="image/png">
+    <!-- Prevent theme flash - load this script first -->
+    <script src="/static/js/theme-init.js"></script>
+    <!-- File extensions configuration -->
+    <script src="/static/js/file-extensions.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/markdown-extensions.css">
+    <link rel="stylesheet" href="/static/css/stats.css">
+    <link id="prism-theme" rel="stylesheet" href="/static/libs/prism-1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="/static/libs/prism-1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+    <link rel="stylesheet" href="/static/libs/easymde-2.19.0/css/easymde.min.css">
+    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/libs/fontawesome-4.7.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/static/css/print.css" media="print">
+    <script src="/static/js/markdown-extensions.js"></script>
+    <script src="/static/libs/easymde-2.19.0/js/easymde.min.js"></script>
+</head>
+<body>
+    <!-- Password warning banner (will be shown if default password is in use) -->
+    <div id="password-warning-banner" class="password-warning-banner" style="display: none;">
+        <i class="fa fa-lg fa-exclamation-triangle" aria-hidden="true"></i> Change the default admin password.
+    </div>
+
+    <!-- Include login dialog template -->
+    {{template "login-dialog" .}}
+
+    <!-- Include new document dialog template -->
+    {{template "new-document-dialog" .}}
+
+    <!-- Include move document dialog template -->
+    {{template "move-document-dialog" .}}
+
+    <!-- Include confirmation dialog for document deletion -->
+    {{template "confirmation-dialog" .}}
+
+    <!-- Include message dialog template -->
+    {{template "message-dialog" .}}
+
+    <!-- Include confirmation dialog for user management -->
+    {{template "user-confirmation-dialog" .}}
+
+    <!-- Include file upload dialog template -->
+    {{template "file-upload-dialog" .}}
+
+    <!-- Include version history dialog template -->
+    {{template "version-history-dialog" .}}
+
+    <!-- Include settings dialog template -->
+    {{template "settings-dialog" .}}
+
+    <!-- Include sidebar template -->
+    {{template "sidebar" .}}
+
+    <div class="content">
+        <div class="breadcrumbs">
+            <div class="breadcrumbs-container">
+                <div class="breadcrumbs-path">
+                    {{template "breadcrumbs" .}}
+                </div>
+                {{if .Content}}
+                <div class="page-toolbar" dir="auto">
+                    <div class="view-toolbar">
+                        <!-- Admin-only buttons -->
+                        <button class="toolbar-button admin-only-button new-document" title="{{t "common.new"}}">
+                            <i class="fa fa-file-text-o"></i>
+                            <span class="button-text">{{t "common.new"}}</span>
+                        </button>
+                        <button class="toolbar-button admin-only-button edit-page" title="{{t "common.edit"}}">
+                            <i class="fa fa-pencil"></i>
+                            <span class="button-text">{{t "common.edit"}}</span>
+                        </button>
+                        <button class="toolbar-button admin-only-button settings-button" title="{{t "common.settings"}}">
+                            <i class="fa fa-cog"></i>
+                            <span class="button-text">{{t "common.settings"}}</span>
+                        </button>
+
+                        <!-- Always visible buttons -->
+                        <button class="toolbar-button" onclick="window.print()" title="{{t "tooltip.print"}}">
+                            <i class="fa fa-print"></i>
+                            <span class="button-text">{{t "common.print"}}</span>
+                        </button>
+
+                        <!-- Authentication buttons -->
+                        <button class="toolbar-button auth-button primary" style="display: none;" title="{{t "common.login"}}">
+                            <i class="fa fa-user"></i>
+                            <span class="button-text">{{t "common.login"}}</span>
+                        </button>
+                        <button class="toolbar-button auth-button logout-button" style="display: none;" title="{{t "common.logout"}}">
+                            <i class="fa fa-sign-out"></i>
+                            <span class="button-text">{{t "common.logout"}}</span>
+                        </button>
+                    </div>
+                    <div class="edit-toolbar" style="display: none;">
+                        <button class="toolbar-button primary save-changes" title="{{t "common.save"}}">
+                            <i class="fa fa-floppy-o"></i>
+                            <span class="button-text">{{t "common.save"}}</span>
+                        </button>
+                        <button class="toolbar-button cancel-edit" title="{{t "common.cancel"}}">
+                            <i class="fa fa-times"></i>
+                            <span class="button-text">{{t "common.cancel"}}</span>
+                        </button>
+                        <button class="toolbar-button view-history" title="{{t "toolbar.history"}}">
+                            <i class="fa fa-history"></i>
+                            <span class="button-text">{{t "toolbar.history"}}</span>
+                        </button>
+                        <button class="toolbar-button upload-file" title="{{t "toolbar.attachments"}}">
+                            <i class="fa fa-paperclip"></i>
+                            <span class="button-text">{{t "toolbar.attachments"}}</span>
+                        </button>
+                        {{if ne .CurrentDir.Path "/"}}
+                        <button class="toolbar-button admin-only-button move-document" title="{{t "common.move"}}">
+                            <i class="fa fa-arrows"></i>
+                            <span class="button-text">{{t "common.move"}}/{{t "common.rename"}}</span>
+                        </button>
+                        <button class="toolbar-button delete-document" title="{{t "common.delete"}}">
+                            <i class="fa fa-trash"></i>
+                            <span class="button-text">{{t "common.delete"}}</span>
+                        </button>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{if .Content}}
+            <div class="markdown-content">
+                {{template "content" .}}
+            </div>
+            <div class="editor-container">
+                <textarea id="markdown-editor"></textarea>
+            </div>
+
+            <!-- Add file attachments section -->
+            <div class="file-attachments-section">
+                <h3>{{t "attachments.title"}}</h3>
+                <div class="file-attachments-list">
+                    <div class="loading-message">{{t "attachments.loading"}}</div>
+                </div>
+            </div>
+        {{end}}
+        {{if .DirContent}}
+            <div class="directory-list">
+                {{if not .Content}}
+                    <h1>{{.CurrentDir.Title}}</h1>
+                {{end}}
+                {{.DirContent}}
+            </div>
+        {{else if not .Content}}
+            <div class="empty-message">{{t "directory.empty"}}</div>
+        {{end}}
+        <footer class="footer">
+            <div class="footer-last-modified">
+                {{t "footer.last_edited"}}: {{formatTime .LastModified .Config.Wiki.Timezone "2006-01-02 15:04:05"}}
+            </div>
+            <div>
+                {{t "footer.powered_by"}} <a href="https://github.com/leomoon-studios/wiki-go" class="footer-powered" target="_blank">Wiki-Go</a>
+            </div>
+        </footer>
+    </div>
+
+    <div class="search-results" dir="auto">
+        <div class="search-results-header">
+            <div class="search-results-title">{{t "search.results_title"}}</div>
+            <button class="search-close" aria-label="Close search results">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="search-results-content"></div>
+    </div>
+
+    <script src="/static/libs/mathjax-3.2.2/tex-mml-chtml.js"></script>
+    <script src="/static/libs/prism-1.29.0/prism.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-go.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-bash.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-yaml.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-json.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-python.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-autoit.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-batch.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-csharp.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-css.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-dart.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-docker.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-ini.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-javascript.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-markdown.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-mongodb.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-nginx.min.js"></script>
+    <!-- <script src="/static/prism-1.29.0/components/prism-php.min.js"></script> -->
+    <script src="/static/libs/prism-1.29.0/components/prism-powershell.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-sql.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-systemd.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-toml.min.js"></script>
+    <script src="/static/libs/prism-1.29.0/components/prism-typescript.min.js"></script>
+    <script src="/static/js/editor.js"></script>
+    <script src="/static/js/search.js"></script>
+    <script src="/static/js/move-document.js"></script>
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/base.js"></script>
+
+    <!-- Mermaid diagram support -->
+    <script src="/static/libs/mermaid-9.4.3/mermaid.min.js"></script>
+    <script src="/static/js/mermaid-init.js"></script>
+</body>
+</html>
