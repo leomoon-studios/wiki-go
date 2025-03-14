@@ -11,9 +11,17 @@ import (
 // This is set by the document handler before rendering
 var CurrentDocumentPath string
 
+// Track which shortcodes have been processed to avoid duplicates
+var processedStatsShortcodes = make(map[string]bool)
+
 // RenderNodeHook is a custom renderer for extended markdown features
 // It processes special elements like diagrams, video embeds, and collapsible sections
 func RenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
+	// Reset the processed stats shortcodes map at the document level
+	if _, ok := node.(*ast.Document); ok && entering {
+		processedStatsShortcodes = make(map[string]bool)
+	}
+
 	// Check if this is a code block
 	if cb, ok := node.(*ast.CodeBlock); ok && entering {
 		// Try to process as a diagram
@@ -28,11 +36,6 @@ func RenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, 
 
 		// Try to process as a collapsible section
 		if ProcessCollapsibleCodeBlock(w, cb) {
-			return ast.GoToNext, true
-		}
-
-		// Try to process as a stats shortcode
-		if ProcessStatsBlock(w, cb) {
 			return ast.GoToNext, true
 		}
 
@@ -81,8 +84,24 @@ func RenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, 
 		return ast.GoToNext, false
 	}
 
-	// Process text nodes for highlighting (==text==)
+	// Process text nodes for highlighting (==text==) and stats shortcodes
 	if text, ok := node.(*ast.Text); ok && entering {
+		content := string(text.Literal)
+
+		// Process stats shortcodes, but only if they haven't been processed before
+		if strings.Contains(content, ":::stats") {
+			processed, newContent := ProcessStatsTextWithTracking(w, content, processedStatsShortcodes)
+			if processed {
+				// If everything was processed (no text left), skip this node
+				if newContent == "" {
+					return ast.GoToNext, true
+				}
+
+				// Otherwise, update the node with remaining content
+				text.Literal = []byte(newContent)
+			}
+		}
+
 		// Apply highlighting if needed
 		if ProcessTextNodeForHighlighting(w, text) {
 			return ast.GoToNext, true
@@ -102,14 +121,6 @@ func RenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, 
 				// For exiting a paragraph in a list item, don't output the </p> tag
 				return ast.GoToNext, true
 			}
-		}
-	}
-
-	// Check if this is a paragraph that might contain our shortcode
-	if para, ok := node.(*ast.Paragraph); ok && entering {
-		// Try to process as a stats shortcode
-		if ProcessStatsParagraph(w, para) {
-			return ast.GoToNext, true
 		}
 	}
 

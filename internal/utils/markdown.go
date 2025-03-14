@@ -19,6 +19,8 @@ func preprocessMarkdown(input string) string {
 	// Apply typographic replacements
 	input = mdext.ApplyTypographicReplacements(input)
 
+	// Stats are now handled directly in the renderer
+
 	lines := strings.Split(input, "\n")
 	result := make([]string, 0, len(lines))
 

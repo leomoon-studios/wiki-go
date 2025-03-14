@@ -312,7 +312,7 @@ Wiki-Go supports special shortcodes for dynamic content:
 
 **Statistics Shortcode**:
 ` + "```markdown" + `
-:::stats count=all:::
+:::stats count=*:::
 :::stats recent=5:::
 ` + "```" + `
 

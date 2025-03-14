@@ -1,60 +1,44 @@
-/* Wiki Stats Styling */
+/* Stats Shortcode Styling */
+
+/* Common styles for all stats elements */
 .wiki-stats {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    padding: 15px;
-    margin: 15px 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    background-color: #f5f5f5;
+    color: #333333;
+}
+
+/* Dark theme overrides */
+:root[data-theme="dark"] .wiki-stats {
+    background-color: #2a2e33;
+    color: #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* When multiple stats components are placed consecutively */
+.wiki-stats + .wiki-stats {
+    margin-top: 8px;
 }
 
 .wiki-stats h4 {
     margin-top: 0;
-    margin-bottom: 12px;
-    color: #495057;
-    font-size: 1.1em;
-    font-weight: 600;
-}
-
-.wiki-stats ul {
-    margin: 0;
-    padding: 0;
-    list-style-type: none;
-}
-
-.wiki-stats li {
     margin-bottom: 8px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e9ecef;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-bottom: 4px;
+    color: #333;
+    border-bottom: 1px solid #ddd;
 }
 
-.wiki-stats li:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+/* Dark mode headers */
+:root[data-theme="dark"] .wiki-stats h4 {
+    color: #ffffff;
+    border-bottom: 1px solid #3e464f;
 }
 
-.wiki-stats a {
-    color: #0366d6;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.wiki-stats a:hover {
-    text-decoration: underline;
-}
-
-.wiki-stats .edit-date {
-    font-size: 0.85em;
-    color: #6c757d;
-    margin-left: 8px;
-    white-space: nowrap;
-}
-
-/* Document count styling */
+/* Document Count stats */
 .wiki-stats.doc-count {
     text-align: center;
 }
@@ -67,59 +51,134 @@
 }
 
 .wiki-stats .count-number {
-    font-size: 3em;
-    font-weight: bold;
-    color: #0366d6;
-    margin-bottom: 5px;
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+    color: #2196f3;
+}
+
+/* Dark mode count number */
+:root[data-theme="dark"] .wiki-stats .count-number {
+    color: #64b5f6;
 }
 
 .wiki-stats .count-description {
-    font-size: 0.9em;
-    color: #6c757d;
+    font-size: 0.85rem;
+    color: #666;
 }
 
-/* Dark mode support */
-[data-theme="dark"] .wiki-stats {
-    background-color: #2d333b;
-    border-color: #444c56;
+/* Dark mode description */
+:root[data-theme="dark"] .wiki-stats .count-description {
+    color: #b0bec5;
 }
 
-[data-theme="dark"] .wiki-stats h4 {
-    color: #adbac7;
+/* Recent Edits stats */
+.wiki-stats.recent-edits ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
 }
 
-[data-theme="dark"] .wiki-stats li {
-    border-color: #444c56;
+.wiki-stats.recent-edits li {
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
-[data-theme="dark"] .wiki-stats a {
-    color: #58a6ff;
+/* Dark mode list items */
+:root[data-theme="dark"] .wiki-stats.recent-edits li {
+    border-bottom: 1px solid #3e464f;
 }
 
-[data-theme="dark"] .wiki-stats .edit-date {
-    color: #768390;
+.wiki-stats.recent-edits li:last-child {
+    border-bottom: none;
 }
 
-[data-theme="dark"] .wiki-stats .count-number {
-    color: #58a6ff;
+.wiki-stats.recent-edits .doc-info {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0; /* Allows text truncation to work */
 }
 
-[data-theme="dark"] .wiki-stats .count-description {
-    color: #768390;
+.wiki-stats.recent-edits a {
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #2196f3;
 }
 
-/* Error message styling */
+/* Dark mode links */
+:root[data-theme="dark"] .wiki-stats.recent-edits a {
+    color: #64b5f6;
+}
+
+.wiki-stats.recent-edits a:hover {
+    text-decoration: underline;
+}
+
+.wiki-stats.recent-edits .doc-path {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #757575;
+}
+
+/* Dark mode path */
+:root[data-theme="dark"] .wiki-stats.recent-edits .doc-path {
+    color: #9e9e9e;
+}
+
+.wiki-stats.recent-edits .edit-date {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    color: #757575;
+}
+
+/* Dark mode date */
+:root[data-theme="dark"] .wiki-stats.recent-edits .edit-date {
+    color: #b0bec5;
+}
+
+/* Error message for invalid stats */
 .wiki-stats-error {
-    background-color: #fff5f5;
-    border: 1px solid #feb2b2;
-    color: #c53030;
-    padding: 10px 15px;
-    border-radius: 4px;
-    margin: 15px 0;
+    border-left: 4px solid #f44336;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-style: italic;
+    background-color: #ffebee;
+    color: #d32f2f;
 }
 
-[data-theme="dark"] .wiki-stats-error {
-    background-color: #3c2a2a;
-    border-color: #742a2a;
-    color: #fc8181;
+/* Dark mode error */
+:root[data-theme="dark"] .wiki-stats-error {
+    background-color: #2a2e33;
+    color: #f44336;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .wiki-stats {
+        padding: 10px;
+    }
+
+    .wiki-stats .count-number {
+        font-size: 2.5rem;
+    }
+
+    .wiki-stats.recent-edits .doc-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
 }

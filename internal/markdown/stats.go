@@ -15,78 +15,179 @@ import (
 	"github.com/gomarkdown/markdown/ast"
 )
 
-// Regular expression to match the stats shortcode with parameters
-// Format: :::stats param1=value1 param2=value2:::
-var statsRegex = regexp.MustCompile(`^\s*:::stats\s+(.*?):::\s*$`)
-var paramRegex = regexp.MustCompile(`(\w+)=(\w+)`)
+// Stats package contains functionality for generating document statistics
+// This file has been cleared for a fresh implementation
 
-// ProcessStatsBlock processes a code block that contains a stats shortcode
-// Returns true if the block was processed as a stats section, false otherwise
-func ProcessStatsBlock(w io.Writer, codeBlock *ast.CodeBlock) bool {
-	// Check if it's a text block (not a code block with language)
+// Regular expression to match the stats shortcodes
+var statsShortcodeRegex = regexp.MustCompile(`:::stats\s+(.*?):::`)
+var statsParamRegex = regexp.MustCompile(`(\w+)=([*\w-]+)`)
+
+// ProcessStatsCodeBlock processes a code block that might contain stats shortcodes
+// Returns true if processed, false otherwise
+func ProcessStatsCodeBlock(w io.Writer, codeBlock *ast.CodeBlock) bool {
+	// Only process code blocks without language specification
 	if len(codeBlock.Info) > 0 {
 		return false
 	}
 
-	// Convert the content to string and check if it matches our pattern
+	// Get the code block content
 	content := string(codeBlock.Literal)
 
-	// Check if the content matches our pattern
-	matches := statsRegex.FindStringSubmatch(content)
-	if matches == nil {
+	// Check if this contains a stats shortcode
+	if !statsShortcodeRegex.MatchString(content) {
 		return false
 	}
 
-	// Extract parameters
-	params := parseParameters(matches[1])
+	// Process the content
+	matches := statsShortcodeRegex.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		if len(match) >= 2 {
+			// Extract parameters
+			params := parseStatsParams(match[1])
 
-	// Process the stats based on parameters
-	renderStats(w, params)
+			// Process based on the parameters
+			if countParam, ok := params["count"]; ok {
+				renderDocumentCount(w, countParam)
+			} else if recentParam, ok := params["recent"]; ok {
+				count, err := strconv.Atoi(recentParam)
+				if err != nil || count <= 0 {
+					count = 5 // Default to 5 if invalid
+				}
+				renderRecentEdits(w, count)
+			} else {
+				// No valid parameters
+				w.Write([]byte("<div class=\"wiki-stats-error\">Invalid stats shortcode parameters. Use count=* or recent=N.</div>"))
+			}
+		}
+	}
 
 	return true
 }
 
-// ProcessStatsParagraph processes a paragraph that contains a stats shortcode
-// Returns true if the paragraph was processed as a stats section, false otherwise
-func ProcessStatsParagraph(w io.Writer, para *ast.Paragraph) bool {
-	// We need to check if this paragraph contains only our shortcode
-	if len(para.Children) != 1 {
-		return false
+// ProcessStatsText processes stats shortcodes in text nodes
+// Returns true if processed, false otherwise, and the remaining text
+func ProcessStatsText(w io.Writer, text string) (bool, string) {
+	// Check if the text contains a stats shortcode
+	if !statsShortcodeRegex.MatchString(text) {
+		return false, text
 	}
 
-	// Check if the only child is a text node
-	textNode, ok := para.Children[0].(*ast.Text)
-	if !ok {
-		return false
+	// We'll track if we processed any shortcodes
+	processed := false
+
+	// We'll build the result text without the shortcodes
+	var resultBuilder strings.Builder
+	lastEnd := 0
+
+	// Find all matches
+	matches := statsShortcodeRegex.FindAllStringSubmatchIndex(text, -1)
+
+	for _, match := range matches {
+		// Add the text before this match to the result
+		resultBuilder.WriteString(text[lastEnd:match[0]])
+
+		// Get the parameter text
+		paramText := text[match[2]:match[3]]
+
+		// Parse parameters
+		params := parseStatsParams(paramText)
+
+		// Process based on the parameters
+		if countParam, ok := params["count"]; ok {
+			renderDocumentCount(w, countParam)
+		} else if recentParam, ok := params["recent"]; ok {
+			count, err := strconv.Atoi(recentParam)
+			if err != nil || count <= 0 {
+				count = 5 // Default to 5 if invalid
+			}
+			renderRecentEdits(w, count)
+		} else {
+			// No valid parameters
+			w.Write([]byte("<div class=\"wiki-stats-error\">Invalid stats shortcode parameters. Use count=* or recent=N.</div>"))
+		}
+
+		// Update the last end position and mark as processed
+		lastEnd = match[1]
+		processed = true
 	}
 
-	// Convert the content to string and check if it matches our pattern
-	content := string(textNode.Literal)
-
-	// Check if the content matches our pattern
-	matches := statsRegex.FindStringSubmatch(content)
-	if matches == nil {
-		return false
+	// Add any remaining text
+	if lastEnd < len(text) {
+		resultBuilder.WriteString(text[lastEnd:])
 	}
 
-	// Extract parameters
-	params := parseParameters(matches[1])
-
-	// Process the stats based on parameters
-	renderStats(w, params)
-
-	// Important: Set the text node's literal to empty to remove the shortcode from output
-	textNode.Literal = nil
-
-	return true
+	return processed, resultBuilder.String()
 }
 
-// parseParameters extracts parameter key-value pairs from the shortcode
-func parseParameters(paramString string) map[string]string {
+// ProcessStatsTextWithTracking processes a text node for stats shortcodes
+// It returns true if any shortcodes were processed, along with the remaining text
+// The tracking map ensures each shortcode is only processed once per document
+func ProcessStatsTextWithTracking(w io.Writer, text string, processed map[string]bool) (bool, string) {
+	if !strings.Contains(text, ":::stats") {
+		return false, text
+	}
+
+	// Used to keep track of whether we found any shortcuts
+	wasProcessed := false
+
+	// Build the result without processed shortcodes
+	var result strings.Builder
+
+	// Regex to find stats shortcodes
+	re := regexp.MustCompile(`:::stats\s+(count|recent)=([^:]+):::`)
+	matches := re.FindAllStringSubmatchIndex(text, -1)
+
+	lastIndex := 0
+	for _, match := range matches {
+		// Extract the full shortcode from the text using the match indices
+		shortcode := text[match[0]:match[1]]
+
+		// Skip if this shortcode has already been processed
+		if processed[shortcode] {
+			// Add text up to and including the shortcode
+			result.WriteString(text[lastIndex:match[1]])
+			lastIndex = match[1]
+			continue
+		}
+
+		// Mark this shortcode as processed
+		processed[shortcode] = true
+		wasProcessed = true
+
+		// Add text before the shortcode
+		result.WriteString(text[lastIndex:match[0]])
+
+		// Process the shortcode
+		shortcodeType := text[match[2]:match[3]]
+		shortcodeValue := text[match[4]:match[5]]
+
+		// Process the shortcode based on its type
+		if shortcodeType == "count" {
+			renderDocumentCount(w, shortcodeValue)
+		} else if shortcodeType == "recent" {
+			count, _ := strconv.Atoi(shortcodeValue)
+			if count <= 0 {
+				count = 5 // Default limit
+			}
+			renderRecentEdits(w, count)
+		}
+
+		// Update the last index
+		lastIndex = match[1]
+	}
+
+	// Add remaining text
+	result.WriteString(text[lastIndex:])
+
+	return wasProcessed, result.String()
+}
+
+// parseStatsParams extracts parameters from a stats shortcode
+func parseStatsParams(paramString string) map[string]string {
 	params := make(map[string]string)
 
 	// Find all parameter matches
-	matches := paramRegex.FindAllStringSubmatch(paramString, -1)
+	matches := statsParamRegex.FindAllStringSubmatch(paramString, -1)
 	for _, match := range matches {
 		if len(match) == 3 {
 			params[match[1]] = match[2]
@@ -96,106 +197,106 @@ func parseParameters(paramString string) map[string]string {
 	return params
 }
 
-// renderStats renders the appropriate stats based on parameters
-func renderStats(w io.Writer, params map[string]string) {
-	// Check for "recent" parameter to show recently edited documents
-	if recentStr, ok := params["recent"]; ok {
-		count, err := strconv.Atoi(recentStr)
-		if err != nil || count <= 0 {
-			// Default to 5 if invalid
-			count = 5
-		}
-		renderRecentEditsStats(w, count)
-		return
-	}
-
-	// Check for "count" parameter to show document count
-	if countParam, ok := params["count"]; ok {
-		renderDocumentCount(w, countParam)
-		return
-	}
-
-	// If no recognized parameters, show a default message
-	w.Write([]byte("<div class=\"wiki-stats-error\">No valid stats parameters specified. Try 'recent=5' or 'count=all'.</div>"))
-}
-
-// renderRecentEdits renders the recent edits HTML
-func renderRecentEditsStats(w io.Writer, count int) {
-	// Get recently edited documents
-	recentDocs, err := getRecentlyEditedDocsForStats("data/documents", count)
-	if err != nil {
-		// If there's an error, show an error message
-		w.Write([]byte("<div class=\"wiki-stats-error\">Error retrieving recent documents: " + err.Error() + "</div>"))
-		return
-	}
-
-	// Generate HTML for the recent edits
-	w.Write([]byte("<div class=\"wiki-stats recent-edits\">\n"))
-	w.Write([]byte("<h4>Recently Edited Documents</h4>\n"))
-
-	if len(recentDocs) == 0 {
-		w.Write([]byte("<p>No recently edited documents found.</p>\n"))
-	} else {
-		w.Write([]byte("<ul>\n"))
-
-		for _, doc := range recentDocs {
-			// Create link to the document's folder, not the .md file itself
-			folderPath := "/" + doc.FolderPath
-
-			w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a> <span class=\"edit-date\">%s</span></li>\n",
-				folderPath,
-				doc.Title,
-				doc.LastModified.Format("2006-01-02 15:04"))))
-		}
-
-		w.Write([]byte("</ul>\n"))
-	}
-
-	w.Write([]byte("</div>\n"))
+// Document represents a document in the wiki
+type Document struct {
+	Title   string    // Document title
+	Path    string    // Document path
+	ModTime time.Time // Last modified time
 }
 
 // renderDocumentCount renders the document count HTML
-func renderDocumentCount(w io.Writer, countType string) {
+func renderDocumentCount(w io.Writer, countParam string) {
+	var buf strings.Builder
+	renderDocumentCountToString(&buf, countParam)
+	w.Write([]byte(buf.String()))
+}
+
+// renderDocumentCountToString renders the document count to a string builder
+func renderDocumentCountToString(w *strings.Builder, countParam string) {
 	var count int
-	var err error
 	var title string
 	var description string
 
-	// Determine what to count based on the parameter
-	switch countType {
-	case "all":
-		count, err = countAllDocuments("data/documents")
+	// Only count documents in the documents directory
+	docsDir := "data/documents"
+
+	// Count all documents (using * or all as wildcard)
+	if countParam == "*" || countParam == "all" {
+		count = countDocuments(docsDir)
 		title = "Total Documents"
 		description = "Total number of documents in the wiki"
-	default:
-		// Try to interpret as a specific folder path
-		count, err = countDocumentsInFolder("data/documents/" + countType)
-		title = "Documents in " + formatDirNameForStats(countType)
-		description = "Number of documents in the " + formatDirNameForStats(countType) + " section"
+	} else {
+		// Count documents in a specific folder
+		folderPath := filepath.Join(docsDir, countParam)
+		count = countDocuments(folderPath)
+		title = "Documents in " + formatDirName(countParam)
+		description = "Number of documents in the " + formatDirName(countParam) + " section"
 	}
 
-	if err != nil {
-		w.Write([]byte("<div class=\"wiki-stats-error\">Error counting documents: " + err.Error() + "</div>"))
-		return
-	}
-
-	// Generate HTML for the document count
-	w.Write([]byte("<div class=\"wiki-stats doc-count\">\n"))
-	w.Write([]byte("<h4>" + title + "</h4>\n"))
-	w.Write([]byte("<div class=\"count-container\">\n"))
-	w.Write([]byte("<div class=\"count-number\">" + strconv.Itoa(count) + "</div>\n"))
-	w.Write([]byte("<div class=\"count-description\">" + description + "</div>\n"))
-	w.Write([]byte("</div>\n"))
-	w.Write([]byte("</div>\n"))
+	// Generate HTML for the document count - make it more compact
+	w.WriteString("<div class=\"wiki-stats doc-count\">\n")
+	w.WriteString("<h4>" + title + "</h4>\n")
+	w.WriteString("<div class=\"count-container\">\n")
+	w.WriteString("<div class=\"count-number\">" + strconv.Itoa(count) + "</div>\n")
+	w.WriteString("<div class=\"count-description\">" + description + "</div>\n")
+	w.WriteString("</div>\n")
+	w.WriteString("</div>\n")
 }
 
-// countAllDocuments counts all document.md files in the wiki
-func countAllDocuments(rootDir string) (int, error) {
+// renderRecentEdits renders the recent edits HTML
+func renderRecentEdits(w io.Writer, count int) {
+	var buf strings.Builder
+	renderRecentEditsToString(&buf, count)
+	w.Write([]byte(buf.String()))
+}
+
+// renderRecentEditsToString renders the recent edits to a string builder
+func renderRecentEditsToString(w *strings.Builder, count int) {
+	// Get recent documents
+	docs := getRecentDocuments("data/documents", count)
+
+	// Generate HTML for the recent edits
+	w.WriteString("<div class=\"wiki-stats recent-edits\">\n")
+	w.WriteString("<h4>Recently Edited Documents</h4>\n")
+
+	if len(docs) == 0 {
+		w.WriteString("<p>No recently edited documents found.</p>\n")
+	} else {
+		w.WriteString("<ul>\n")
+
+		for _, doc := range docs {
+			// Create link to the document's folder
+			folderPath := "/" + doc.Path
+
+			// New structure with elements on one line
+			w.WriteString("<li>\n")
+			w.WriteString("  <div class=\"doc-info\">\n")
+			w.WriteString(fmt.Sprintf("    <a href=\"%s\">%s</a>\n", folderPath, doc.Title))
+			w.WriteString(fmt.Sprintf("    <span class=\"doc-path\">%s</span>\n", folderPath))
+			w.WriteString("  </div>\n")
+			w.WriteString(fmt.Sprintf("  <span class=\"edit-date\">%s</span>\n", doc.ModTime.Format("2006-01-02 15:04")))
+			w.WriteString("</li>\n")
+		}
+
+		w.WriteString("</ul>\n")
+	}
+
+	w.WriteString("</div>\n")
+}
+
+// countDocuments counts the number of document.md files in a directory
+func countDocuments(dirPath string) int {
 	count := 0
 
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	// Check if the directory exists
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return 0
+	}
+
+	// Walk through the directory
+	filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return nil // Skip errors
 		}
 
 		// Count only document.md files
@@ -206,100 +307,70 @@ func countAllDocuments(rootDir string) (int, error) {
 		return nil
 	})
 
-	return count, err
+	return count
 }
 
-// countDocumentsInFolder counts document.md files in a specific folder
-func countDocumentsInFolder(folderPath string) (int, error) {
-	count := 0
+// getRecentDocuments returns the most recently modified documents
+func getRecentDocuments(dirPath string, count int) []Document {
+	var docs []Document
 
-	// Check if the folder exists
-	_, err := os.Stat(folderPath)
-	if os.IsNotExist(err) {
-		return 0, fmt.Errorf("folder does not exist: %s", folderPath)
+	// Check if the directory exists
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return docs
 	}
 
-	err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+	// Walk through the directory
+	filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return nil // Skip errors
 		}
 
-		// Count only document.md files
+		// Process only document.md files
 		if !info.IsDir() && filepath.Base(path) == "document.md" {
-			count++
-		}
+			// Get the document directory
+			docDir := filepath.Dir(path)
 
-		return nil
-	})
-
-	return count, err
-}
-
-// DocumentInfo represents information about a document
-type DocumentInfoStats struct {
-	Title        string
-	FolderPath   string
-	LastModified time.Time
-}
-
-// getRecentlyEditedDocuments retrieves the last n edited documents
-func getRecentlyEditedDocsForStats(rootDir string, count int) ([]DocumentInfoStats, error) {
-	var documents []DocumentInfoStats
-
-	// Walk through the documents directory
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Only process document.md files
-		if !info.IsDir() && filepath.Base(path) == "document.md" {
-			// Get the folder path (relative to rootDir)
-			relPath, err := filepath.Rel(rootDir, filepath.Dir(path))
+			// Get the relative path from the documents directory
+			relPath, err := filepath.Rel(dirPath, docDir)
 			if err != nil {
-				return err
+				relPath = filepath.Base(docDir)
 			}
 
 			// Replace backslashes with forward slashes for URLs
 			relPath = strings.ReplaceAll(relPath, "\\", "/")
 
-			// Extract document title from the file
-			title := extractDocumentTitleForStats(path)
+			// Extract the document title
+			title := extractDocumentTitle(path)
 			if title == "" {
-				// Use folder name as fallback
-				title = formatDirNameForStats(filepath.Base(filepath.Dir(path)))
+				title = formatDirName(filepath.Base(docDir))
 			}
 
-			// Add to documents list
-			documents = append(documents, DocumentInfoStats{
-				Title:        title,
-				FolderPath:   relPath,
-				LastModified: info.ModTime(),
+			// Add to the documents list
+			docs = append(docs, Document{
+				Title:   title,
+				Path:    relPath,
+				ModTime: info.ModTime(),
 			})
 		}
 
 		return nil
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	// Sort by last modified time (newest first)
-	sort.Slice(documents, func(i, j int) bool {
-		return documents[i].LastModified.After(documents[j].LastModified)
+	// Sort by modification time (newest first)
+	sort.Slice(docs, func(i, j int) bool {
+		return docs[i].ModTime.After(docs[j].ModTime)
 	})
 
-	// Limit to requested count
-	if len(documents) > count {
-		documents = documents[:count]
+	// Limit to the requested count
+	if len(docs) > count {
+		docs = docs[:count]
 	}
 
-	return documents, nil
+	return docs
 }
 
 // extractDocumentTitle extracts the first H1 title from a markdown file
-func extractDocumentTitleForStats(filePath string) string {
+func extractDocumentTitle(filePath string) string {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return ""
@@ -319,7 +390,7 @@ func extractDocumentTitleForStats(filePath string) string {
 }
 
 // formatDirName formats a directory name by replacing dashes with spaces and title casing
-func formatDirNameForStats(name string) string {
+func formatDirName(name string) string {
 	// Replace dashes with spaces
 	name = strings.ReplaceAll(name, "-", " ")
 
