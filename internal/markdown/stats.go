@@ -17,7 +17,7 @@ import (
 
 // Regular expression to match the stats shortcode with parameters
 // Format: :::stats param1=value1 param2=value2:::
-var statsRegex = regexp.MustCompile(`^\s*:::stats\s+(.*?):::\s*$`)
+var statsRegex = regexp.MustCompile(`:::stats\s+(.*?):::`)
 var paramRegex = regexp.MustCompile(`(\w+)=(\w+)`)
 
 // ProcessStatsBlock processes a code block that contains a stats shortcode
@@ -28,57 +28,94 @@ func ProcessStatsBlock(w io.Writer, codeBlock *ast.CodeBlock) bool {
 		return false
 	}
 
-	// Convert the content to string and check if it matches our pattern
+	// Convert the content to string
 	content := string(codeBlock.Literal)
 
-	// Check if the content matches our pattern
-	matches := statsRegex.FindStringSubmatch(content)
-	if matches == nil {
-		return false
+	// Process all stats shortcodes in the content
+	processed, newContent := processStatsShortcodes(w, content)
+
+	// If we processed any shortcodes and there's remaining content, update the code block
+	if processed && newContent != "" {
+		codeBlock.Literal = []byte(newContent)
+		return false // Let the default renderer handle the remaining content
 	}
 
-	// Extract parameters
-	params := parseParameters(matches[1])
-
-	// Process the stats based on parameters
-	renderStats(w, params)
-
-	return true
+	return processed
 }
 
 // ProcessStatsParagraph processes a paragraph that contains a stats shortcode
 // Returns true if the paragraph was processed as a stats section, false otherwise
 func ProcessStatsParagraph(w io.Writer, para *ast.Paragraph) bool {
-	// We need to check if this paragraph contains only our shortcode
-	if len(para.Children) != 1 {
-		return false
+	// We'll track if we processed any shortcodes
+	anyProcessed := false
+
+	// Process each text node in the paragraph
+	for _, child := range para.Children {
+		// We only care about text nodes
+		textNode, ok := child.(*ast.Text)
+		if !ok {
+			continue
+		}
+
+		// Get the content
+		content := string(textNode.Literal)
+
+		// Process all stats shortcodes in the content
+		processed, newContent := processStatsShortcodes(w, content)
+
+		// If we processed any shortcodes, update the text node
+		if processed {
+			anyProcessed = true
+			if newContent == "" {
+				textNode.Literal = nil
+			} else {
+				textNode.Literal = []byte(newContent)
+			}
+		}
 	}
 
-	// Check if the only child is a text node
-	textNode, ok := para.Children[0].(*ast.Text)
-	if !ok {
-		return false
-	}
+	return anyProcessed
+}
 
-	// Convert the content to string and check if it matches our pattern
-	content := string(textNode.Literal)
-
-	// Check if the content matches our pattern
-	matches := statsRegex.FindStringSubmatch(content)
+// processStatsShortcodes processes all stats shortcodes in the given content
+// Returns true if any shortcodes were processed, and the content with shortcodes removed
+func processStatsShortcodes(w io.Writer, content string) (bool, string) {
+	// Find all matches
+	matches := statsRegex.FindAllStringSubmatchIndex(content, -1)
 	if matches == nil {
-		return false
+		return false, content
 	}
 
-	// Extract parameters
-	params := parseParameters(matches[1])
+	// We'll build the new content without the shortcodes
+	var newContent strings.Builder
+	lastEnd := 0
+	processed := false
 
-	// Process the stats based on parameters
-	renderStats(w, params)
+	// Process each match
+	for _, match := range matches {
+		// Add the text before this match
+		newContent.WriteString(content[lastEnd:match[0]])
 
-	// Important: Set the text node's literal to empty to remove the shortcode from output
-	textNode.Literal = nil
+		// Extract the parameter part
+		paramText := content[match[2]:match[3]]
 
-	return true
+		// Parse parameters
+		params := parseParameters(paramText)
+
+		// Process the stats
+		renderStats(w, params)
+
+		// Update the last end position
+		lastEnd = match[1]
+		processed = true
+	}
+
+	// Add any remaining text
+	if lastEnd < len(content) {
+		newContent.WriteString(content[lastEnd:])
+	}
+
+	return processed, newContent.String()
 }
 
 // parseParameters extracts parameter key-value pairs from the shortcode
@@ -119,26 +156,53 @@ func renderStats(w io.Writer, params map[string]string) {
 	w.Write([]byte("<div class=\"wiki-stats-error\">No valid stats parameters specified. Try 'recent=5' or 'count=all'.</div>"))
 }
 
+// RenderStats renders the appropriate stats based on parameters (exported version)
+func RenderStats(w io.Writer, params map[string]string) {
+	renderStats(w, params)
+}
+
 // renderRecentEdits renders the recent edits HTML
 func renderRecentEditsStats(w io.Writer, count int) {
-	// Get recently edited documents
-	recentDocs, err := getRecentlyEditedDocsForStats("data/documents", count)
+	// Get recently edited documents from both directories
+	docsRecent, err1 := getRecentlyEditedDocsForStats("data/documents", count)
+	pagesRecent, err2 := getRecentlyEditedDocsForStats("data/pages", count)
+
+	var err error
+	if err1 != nil {
+		err = err1
+	} else if err2 != nil {
+		err = err2
+	}
+
 	if err != nil {
 		// If there's an error, show an error message
 		w.Write([]byte("<div class=\"wiki-stats-error\">Error retrieving recent documents: " + err.Error() + "</div>"))
 		return
 	}
 
+	// Combine the two lists
+	allRecent := append(docsRecent, pagesRecent...)
+
+	// Sort by last modified time (newest first)
+	sort.Slice(allRecent, func(i, j int) bool {
+		return allRecent[i].LastModified.After(allRecent[j].LastModified)
+	})
+
+	// Limit to requested count
+	if len(allRecent) > count {
+		allRecent = allRecent[:count]
+	}
+
 	// Generate HTML for the recent edits
 	w.Write([]byte("<div class=\"wiki-stats recent-edits\">\n"))
 	w.Write([]byte("<h4>Recently Edited Documents</h4>\n"))
 
-	if len(recentDocs) == 0 {
+	if len(allRecent) == 0 {
 		w.Write([]byte("<p>No recently edited documents found.</p>\n"))
 	} else {
 		w.Write([]byte("<ul>\n"))
 
-		for _, doc := range recentDocs {
+		for _, doc := range allRecent {
 			// Create link to the document's folder, not the .md file itself
 			folderPath := "/" + doc.FolderPath
 
@@ -164,7 +228,18 @@ func renderDocumentCount(w io.Writer, countType string) {
 	// Determine what to count based on the parameter
 	switch countType {
 	case "all":
-		count, err = countAllDocuments("data/documents")
+		// Count documents in both data/documents and data/pages directories
+		docsCount, err1 := countAllDocuments("data/documents")
+		pagesCount, err2 := countAllDocuments("data/pages")
+
+		if err1 != nil {
+			err = err1
+		} else if err2 != nil {
+			err = err2
+		} else {
+			count = docsCount + pagesCount
+		}
+
 		title = "Total Documents"
 		description = "Total number of documents in the wiki"
 	default:

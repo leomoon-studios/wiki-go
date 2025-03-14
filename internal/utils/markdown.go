@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,6 +20,9 @@ import (
 func preprocessMarkdown(input string) string {
 	// Apply typographic replacements
 	input = mdext.ApplyTypographicReplacements(input)
+
+	// Process stats shortcodes
+	input = processStatsShortcodes(input)
 
 	lines := strings.Split(input, "\n")
 	result := make([]string, 0, len(lines))
@@ -271,6 +276,41 @@ func preprocessMarkdown(input string) string {
 
 	// Join the lines back into a single string
 	return strings.Join(result, "\n")
+}
+
+// processStatsShortcodes pre-processes stats shortcodes in the markdown
+// It replaces them directly with the rendered HTML
+func processStatsShortcodes(input string) string {
+	// Define a regex to match stats shortcodes
+	statsRegex := regexp.MustCompile(`:::stats\s+(.*?):::`)
+
+	// Replace each shortcode with its rendered HTML
+	processed := statsRegex.ReplaceAllStringFunc(input, func(match string) string {
+		// Extract the parameters
+		paramText := statsRegex.FindStringSubmatch(match)[1]
+
+		// Parse the parameters
+		paramParts := strings.Fields(paramText)
+		statsParams := make(map[string]string)
+
+		for _, part := range paramParts {
+			if strings.Contains(part, "=") {
+				kv := strings.SplitN(part, "=", 2)
+				statsParams[kv[0]] = kv[1]
+			}
+		}
+
+		// Create a buffer to hold the stats HTML
+		var buf bytes.Buffer
+
+		// Render the stats
+		mdext.RenderStats(&buf, statsParams)
+
+		// Return the rendered HTML wrapped in a div to protect it from markdown processing
+		return fmt.Sprintf("<div class=\"stats-shortcode-wrapper\">%s</div>", buf.String())
+	})
+
+	return processed
 }
 
 // RenderMarkdownFile reads a markdown file and returns its HTML representation
