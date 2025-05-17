@@ -76,7 +76,7 @@ If you're running Wiki-Go without SSL/HTTPS and experiencing login issues, you n
 - **Statistics**: Track document metrics and site usage
 
 ### Advanced Features
-- **Custom Shortcodes**: Extend markdown with special shortcodes like `:::stats recenter=5:::` for additional functionality
+- **Custom Shortcodes**: Extend markdown with special shortcodes like `:::stats recent=5:::` for additional functionality
 - **Media Embedding**: Embed images, videos, and other media in your documents
 - **Print Friendly**: Optimized printing support for documentation
 - **API Access**: RESTful API for programmatic access to wiki content
