@@ -372,9 +372,14 @@ body.has-password-warning .breadcrumbs {
 
     .breadcrumbs-container {
         width: 100%;
-        overflow-x: auto;
+        max-width: none;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0;
+        height: 47px;
+        overflow-x: auto;
         scrollbar-width: none !important; /* Firefox */
         -ms-overflow-style: none !important; /* IE and Edge */
     }
