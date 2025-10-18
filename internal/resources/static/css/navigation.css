@@ -1,5 +1,11 @@
 /* Navigation components: hamburger, sidebar, breadcrumbs */
 
+/* GLOBALLY DISABLE BROWSER BACK GESTURE */
+html, body {
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* ---------- Hamburger menu ---------- */
 .hamburger {
     display: none;
