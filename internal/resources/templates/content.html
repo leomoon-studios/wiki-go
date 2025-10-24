@@ -5,5 +5,10 @@
         <img src="{{$bannerPath}}" alt="Banner" class="responsive-banner">
     </div>
     {{end}}
-    {{.Content}}
+    {{if or (eq (len (printf "%s" .Content)) 0) (eq (printf "%s" .Content) " ")}}
+        <h1>{{.CurrentDir.Title}}</h1>
+        <p><em>This document is empty. Click Edit to add content.</em></p>
+    {{else}}
+        {{.Content}}
+    {{end}}
 {{end}}

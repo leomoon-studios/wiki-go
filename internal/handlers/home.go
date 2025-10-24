@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"wiki-go/internal/config"
@@ -532,10 +533,18 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		userRole = session.Role
 	}
 
+	// Render the markdown content
+	renderedContent := template.HTML(utils.RenderMarkdown(string(content)))
+	
+	// If content is empty but home document exists, ensure we have something truthy for template conditions
+	if strings.TrimSpace(string(renderedContent)) == "" {
+		renderedContent = template.HTML(" ") // Single space to make it truthy but effectively empty
+	}
+
 	// Render the page
 	data := &types.PageData{
 		Navigation:         nav,
-		Content:            template.HTML(utils.RenderMarkdown(string(content))),
+		Content:            renderedContent,
 		Breadcrumbs:        []types.BreadcrumbItem{{Title: "Home", Path: "/", IsLast: true}},
 		Config:             cfg,
 		LastModified:       lastModified,
