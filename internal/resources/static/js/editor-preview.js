@@ -27,6 +27,9 @@ async function togglePreview() {
         // Switch back to edit mode
         previewElement.classList.remove('editor-preview-active');
 
+        // CRITICAL: Clear the preview HTML to free memory and prevent slowdowns
+        previewElement.innerHTML = '';
+
         // Show editor again
         if (editorElement) {
             editorElement.style.display = 'block';

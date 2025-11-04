@@ -508,12 +508,34 @@ function handleKeyDown(e) {
             case 'enterEditMode':
                 e.preventDefault();
                 if (editPageButton && !mainContent.classList.contains('editing')) {
-                    editPageButton.click();
-                    window.requestAnimationFrame(() => {
-                        if (editor && mainContent.classList.contains('editing')) {
-                            editor.refresh();
-                            editor.focus();
+                    // Check auth before navigating
+                    fetch('/api/check-auth').then(authResponse => {
+                        if (authResponse.status === 401) {
+                            // Show login dialog
+                            window.Auth.showLoginDialog(() => {
+                                window.Auth.checkUserRole('editor').then(canEdit => {
+                                    if (canEdit) {
+                                        const url = new URL(window.location);
+                                        url.searchParams.set('mode', 'edit');
+                                        window.location.href = url.toString();
+                                    } else {
+                                        window.Auth.showPermissionError('editor');
+                                    }
+                                });
+                            });
+                            return;
                         }
+                        
+                        // Check role and navigate
+                        window.Auth.checkUserRole('editor').then(canEdit => {
+                            if (canEdit) {
+                                const url = new URL(window.location);
+                                url.searchParams.set('mode', 'edit');
+                                window.location.href = url.toString();
+                            } else {
+                                window.Auth.showPermissionError('editor');
+                            }
+                        });
                     });
                 }
                 return;
@@ -627,65 +649,32 @@ function handleEscapeKey(e) {
         document.querySelector('.page-actions-menu').classList.remove('active');
         e.preventDefault();
     } else if (isEditing) {
-        // Find and click the cancel button to properly exit edit mode
-        // This ensures all proper event handlers are triggered
-        const cancelButton = document.querySelector('.cancel-edit');
-        if (cancelButton) {
-            e.preventDefault();
-            // Check if there are unsaved changes
-            if (window.WikiEditor && window.WikiEditor.hasUnsavedChanges && window.WikiEditor.hasUnsavedChanges()) {
-                // Use the custom unsaved changes dialog
-                if (window.WikiEditor.showUnsavedChangesDialog) {
-                    window.WikiEditor.showUnsavedChangesDialog(
-                        // Save callback
-                        function() {
-                            const saveButton = document.querySelector('.save-changes');
-                            if (saveButton) {
-                                saveButton.click();
-                            }
-                        },
-                        // Discard callback
-                        function() {
-                            if (window.WikiEditor && typeof window.WikiEditor.exitEditMode === 'function') {
-                                window.WikiEditor.exitEditMode(mainContent, editorContainer, viewToolbar, editToolbar);
-                            } else {
-                                // Fallback to click if function isn't available
-                                cancelButton.click();
-                            }
+        e.preventDefault();
+        // Check if there are unsaved changes
+        if (window.WikiEditor && window.WikiEditor.hasUnsavedChanges && window.WikiEditor.hasUnsavedChanges()) {
+            // Use the custom unsaved changes dialog
+            if (window.WikiEditor.showUnsavedChangesDialog) {
+                window.WikiEditor.showUnsavedChangesDialog(
+                    // Save callback - save then navigate to view mode
+                    function() {
+                        const saveButton = document.querySelector('.save-changes');
+                        if (saveButton) {
+                            saveButton.click();
                         }
-                    );
-                } else {
-                    // Fallback to old behavior if custom dialog isn't available
-                    window.showConfirmDialog(
-                        window.i18n ? window.i18n.t('editor.unsaved_changes') : 'Unsaved Changes',
-                        window.i18n ? window.i18n.t('editor.unsaved_changes_save') : 'You have unsaved changes. Do you want to save them before exiting?',
-                        (confirmed) => {
-                            if (confirmed) {
-                                // User wants to save changes
-                                const saveButton = document.querySelector('.save-changes');
-                                if (saveButton) {
-                                    saveButton.click();
-                                }
-                            } else {
-                                // User doesn't want to save, exit edit mode
-                                if (window.WikiEditor && typeof window.WikiEditor.exitEditMode === 'function') {
-                                    window.WikiEditor.exitEditMode(mainContent, editorContainer, viewToolbar, editToolbar);
-                                } else {
-                                    // Fallback to click if function isn't available
-                                    cancelButton.click();
-                                }
-                            }
-                        }
-                    );
-                }
-            } else {
-                // No unsaved changes, exit edit mode
-                cancelButton.click();
+                    },
+                    // Discard callback - navigate to view mode without saving
+                    function() {
+                        const url = new URL(window.location);
+                        url.searchParams.delete('mode');
+                        window.location.href = url.pathname + url.search;
+                    }
+                );
             }
         } else {
-            // Fallback to manual exit if cancel button isn't found
-            e.preventDefault();
-            exitEditMode();
+            // No unsaved changes, navigate to view mode
+            const url = new URL(window.location);
+            url.searchParams.delete('mode');
+            window.location.href = url.pathname + url.search;
         }
     }
 }

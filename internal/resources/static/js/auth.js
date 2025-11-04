@@ -330,18 +330,15 @@
             localStorage.removeItem('pendingAction');
 
             if (pendingAction === 'editPage') {
-                // Check if the user has editor or admin role then load the editor
+                // Check if the user has editor or admin role then navigate to edit mode
                 checkUserRole('editor').then(canEdit => {
-                    if (canEdit && document.querySelector('.edit-page')) {
-                        // Load editor immediately without delay
-                        if (typeof WikiEditor !== 'undefined' && WikiEditor.loadEditor) {
-                            const mainContent = document.querySelector('.content');
-                            const editorContainer = document.querySelector('.editor-container');
-                            const viewToolbar = document.querySelector('.view-toolbar');
-                            const editToolbar = document.querySelector('.edit-toolbar');
-
-                            WikiEditor.loadEditor(mainContent, editorContainer, viewToolbar, editToolbar);
-                        }
+                    if (canEdit) {
+                        // Navigate to edit mode
+                        const url = new URL(window.location);
+                        url.searchParams.set('mode', 'edit');
+                        window.location.href = url.toString();
+                    } else {
+                        showPermissionError('editor');
                     }
                 });
             } else if (pendingAction === 'loginCallback') {

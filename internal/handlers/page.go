@@ -26,6 +26,26 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
 
+	// Detect edit mode from query parameter
+	mode := r.URL.Query().Get("mode")
+	isEditMode := mode == "edit"
+
+	// Edit mode requires authentication and editor/admin role
+	if isEditMode {
+		session := auth.GetSession(r)
+		if session == nil {
+			// User not authenticated - redirect to view mode
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+			return
+		}
+		// Check if user has editor or admin role
+		if !auth.RequireRole(r, "editor") {
+			// User lacks required role - redirect to view mode
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+			return
+		}
+	}
+
 	// Get the requested path
 	path := r.URL.Path
 	if path == "/" {
@@ -79,6 +99,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	var content template.HTML
 	var lastModified time.Time
 	var dirContent template.HTML
+	var rawContent string // Raw markdown content for edit mode
 
 	// Look for document.md in the directory
 	docPath := filepath.Join(fsPath, "document.md")
@@ -89,6 +110,11 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		// If in edit mode, store raw content with frontmatter preserved
+		if isEditMode {
+			rawContent = string(mdContent)
 		}
 
 		// Parse frontmatter to get document layout
@@ -214,6 +240,8 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		UserRole:           userRole,
 		DocPath:            decodedPath,
 		DocumentLayout:     navItem.DocumentLayout,
+		IsEditMode:         isEditMode,
+		RawContent:         rawContent, // Pass raw markdown content for edit mode
 	}
 
 	renderTemplate(w, data)

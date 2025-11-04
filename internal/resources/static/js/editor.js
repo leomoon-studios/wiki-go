@@ -256,54 +256,11 @@ function initializeEditControls() {
     const editToolbar = document.querySelector('.edit-toolbar');
     const markdownContent = document.querySelector('.markdown-content');
 
-    // Auto-enter edit mode if content is empty
-    if (markdownContent && editPageButton) {
-        const contentText = markdownContent.textContent.trim();
-        const h1Only = markdownContent.children.length === 1 &&
-                      markdownContent.children[0].tagName === 'H1';
-
-        if (h1Only) {
-            editPageButton.click();
-        }
-    }
-
-    // Update edit button functionality
-    if (editPageButton) {
-        editPageButton.addEventListener('click', async function() {
-            try {
-                // Check if user is authenticated
-                const authResponse = await fetch('/api/check-auth');
-                if (authResponse.status === 401) {
-                    // Show login dialog
-                    window.Auth.showLoginDialog(() => {
-                        // After login, check if user has editor or admin role
-                        window.Auth.checkUserRole('editor').then(canEdit => {
-                            if (canEdit) {
-                                loadEditor(mainContent, editorContainer, viewToolbar, editToolbar);
-                                // Update toolbar buttons after login
-                                window.Auth.updateToolbarButtons();
-                            } else {
-                                window.Auth.showPermissionError('editor');
-                            }
-                        });
-                    });
-                    return;
-                }
-
-                // User is authenticated, check if user has editor or admin role
-                const canEdit = await window.Auth.checkUserRole('editor');
-                if (canEdit) {
-                    loadEditor(mainContent, editorContainer, viewToolbar, editToolbar);
-                } else {
-                    window.Auth.showPermissionError('editor');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to check authentication status');
-            }
-        });
-    }
-
+    // Check if we're in edit mode (?mode=edit in URL)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEditMode = urlParams.get('mode') === 'edit';
+    
+    // Set up save and cancel buttons FIRST (needed in edit mode)
     // Save button functionality
     if (saveButton) {
         saveButton.addEventListener('click', async function() {
@@ -328,7 +285,10 @@ function initializeEditControls() {
                     window.EditorCore.setOriginalContent(content);
                 }
 
-                window.location.reload();
+                // Navigate back to view mode (remove ?mode=edit)
+                const url = new URL(window.location);
+                url.searchParams.delete('mode');
+                window.location.href = url.pathname + url.search;
 
             } catch (error) {
                 console.error('Error:', error);
@@ -344,22 +304,79 @@ function initializeEditControls() {
             if (hasUnsavedChanges()) {
                 // Show custom unsaved changes dialog
                 showUnsavedChangesDialog(
-                    // Save callback
+                    // Save callback - save then navigate to view mode
                     function() {
                         const saveButton = document.querySelector('.save-changes');
                         if (saveButton) {
                             saveButton.click();
                         }
                     },
-                    // Discard callback
+                    // Discard callback - navigate to view mode without saving
                     function() {
-                        exitEditMode(mainContent, editorContainer, viewToolbar, editToolbar);
+                        const url = new URL(window.location);
+                        url.searchParams.delete('mode');
+                        window.location.href = url.pathname + url.search;
                     }
                 );
             } else {
-                // No unsaved changes, exit edit mode
-                exitEditMode(mainContent, editorContainer, viewToolbar, editToolbar);
+                // No unsaved changes, navigate to view mode
+                const url = new URL(window.location);
+                url.searchParams.delete('mode');
+                window.location.href = url.pathname + url.search;
             }
+        });
+    }
+    
+    // If in edit mode, auto-load the editor
+    if (isEditMode && mainContent && editorContainer && viewToolbar && editToolbar) {
+        loadEditor(mainContent, editorContainer, viewToolbar, editToolbar);
+        return; // Exit early, don't set up edit button handler
+    }
+
+    // Auto-enter edit mode if content is empty
+    if (markdownContent && editPageButton) {
+        const contentText = markdownContent.textContent.trim();
+        const h1Only = markdownContent.children.length === 1 &&
+                      markdownContent.children[0].tagName === 'H1';
+
+        if (h1Only) {
+            editPageButton.click();
+        }
+    }
+
+    // Update edit button functionality - navigate to ?mode=edit
+    if (editPageButton) {
+        editPageButton.addEventListener('click', async function() {
+            // Check authentication first
+            const authResponse = await fetch('/api/check-auth');
+            if (authResponse.status === 401) {
+                // Show login dialog
+                window.Auth.showLoginDialog(() => {
+                    // After successful login, check role and navigate to edit mode
+                    window.Auth.checkUserRole('editor').then(canEdit => {
+                        if (canEdit) {
+                            const url = new URL(window.location);
+                            url.searchParams.set('mode', 'edit');
+                            window.location.href = url.toString();
+                        } else {
+                            window.Auth.showPermissionError('editor');
+                        }
+                    });
+                });
+                return;
+            }
+            
+            // Check if user has editor/admin role
+            const canEdit = await window.Auth.checkUserRole('editor');
+            if (!canEdit) {
+                window.Auth.showPermissionError('editor');
+                return;
+            }
+            
+            // Navigate to edit mode
+            const url = new URL(window.location);
+            url.searchParams.set('mode', 'edit');
+            window.location.href = url.toString();
         });
     }
 }

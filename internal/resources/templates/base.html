@@ -42,20 +42,25 @@
     {{end}}
     <!-- External libraries -->
     <link id="prism-theme" rel="stylesheet" href="/static/libs/prism-1.30.0/prism-tomorrow.min.css">
+    {{if .IsEditMode}}
+    <!-- CodeMirror CSS - Only loaded in edit mode for performance (~50KB) -->
     <link rel="stylesheet" href="/static/libs/codemirror-5.65.18/codemirror.min.css">
     <link rel="stylesheet" href="/static/libs/codemirror-5.65.18/theme/darcula.min.css">
     <link rel="stylesheet" href="/static/css/editor.css?={{getVersion}}">
+    {{end}}
     <link rel="stylesheet" href="/static/libs/fontawesome-4.7.0/css/fontawesome.min.css">
     <link rel="stylesheet" href="/static/css/print.css?={{getVersion}}" media="print">
     <!-- Custom overrides -->
     <link rel="stylesheet" href="/static/custom.css?={{getVersion}}">
     <script src="/static/js/markdown-extensions.js?={{getVersion}}"></script>
-    <!-- CodeMirror Scripts -->
+    {{if .IsEditMode}}
+    <!-- CodeMirror Scripts - Only loaded in edit mode for performance (~400KB) -->
     <script src="/static/libs/codemirror-5.65.18/codemirror.min.js"></script>
     <script src="/static/libs/codemirror-5.65.18/mode/markdown.min.js"></script>
     <script src="/static/libs/codemirror-5.65.18/addon/edit/continuelist.min.js"></script>
     <script src="/static/libs/codemirror-5.65.18/addon/display/placeholder.min.js"></script>
     <script src="/static/libs/codemirror-5.65.18/addon/selection/active-line.min.js"></script>
+    {{end}}
 </head>
 <body>
     <!-- Password warning banner (will be shown if default password is in use) -->
@@ -173,12 +178,17 @@
             </div>
         </div>
         {{if .Content}}
-            <div class="markdown-content">
-                {{template "content" .}}
-            </div>
+            {{if .IsEditMode}}
+            <!-- Edit mode: Show textarea with raw markdown content -->
             <div class="editor-container">
                 <!-- The textarea will be created dynamically by our editor code -->
             </div>
+            {{else}}
+            <!-- View mode: Show rendered content -->
+            <div class="markdown-content">
+                {{template "content" .}}
+            </div>
+            {{end}}
 
             <!-- Add file attachments section -->
             {{if not .Config.Wiki.HideAttachments}}
@@ -236,12 +246,21 @@
     <script src="/static/js/copy-button.js?={{getVersion}}"></script>
     <script src="/static/js/settings-manager.js?={{getVersion}}"></script>
     <script src="/static/js/keyboard-shortcuts.js?={{getVersion}}"></script>
+    <script src="/static/js/edit-button.js?={{getVersion}}"></script>
     <script src="/static/js/app-init.js?={{getVersion}}"></script>
-    <!-- Markdown table editor dependencies -->
+    {{if .IsEditMode}}
+    <!-- ============================================ -->
+    <!-- EDIT MODE ONLY - Performance Optimization    -->
+    <!-- These scripts (~2MB total) are ONLY loaded   -->
+    <!-- when in edit mode (?mode=edit) to prevent    -->
+    <!-- 25+ second freeze on page load in view mode  -->
+    <!-- ============================================ -->
+    
+    <!-- Markdown table editor dependencies (~600KB) -->
     <script src="/static/js/mte-meaw.js?={{getVersion}}"></script>
     <script src="/static/js/mte-kernel-2.1.1.js?={{getVersion}}"></script>
 
-    <!-- Editor modules - loaded in dependency order -->
+    <!-- Editor modules - loaded in dependency order (~1MB) -->
     <script src="/static/js/editor-themes.js?={{getVersion}}"></script>
     <script src="/static/js/editor-core.js?={{getVersion}}"></script>
     <script src="/static/js/editor-preview.js?={{getVersion}}"></script>
@@ -250,6 +269,7 @@
     <script src="/static/js/editor.js?={{getVersion}}"></script>
 
     <script src="/static/js/markdown-table-editor.js?={{getVersion}}"></script>
+    {{end}}
     <script src="/static/js/search.js?={{getVersion}}"></script>
     <script src="/static/js/move-document.js?={{getVersion}}"></script>
     <script src="/static/js/import-manager.js?={{getVersion}}"></script>

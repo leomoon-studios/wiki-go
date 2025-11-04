@@ -491,6 +491,26 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		return
 	}
 
+	// Detect edit mode from query parameter
+	mode := r.URL.Query().Get("mode")
+	isEditMode := mode == "edit"
+
+	// Edit mode requires authentication and editor/admin role
+	if isEditMode {
+		session := auth.GetSession(r)
+		if session == nil {
+			// User not authenticated - redirect to view mode
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		// Check if user has editor or admin role
+		if !auth.RequireRole(r, "editor") {
+			// User lacks required role - redirect to view mode
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+	}
+
 	// Get navigation items
 	nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	if err != nil {
@@ -512,6 +532,12 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		log.Printf("Error reading homepage: %v", err)
 		// Fallback to a simple default if there's an error
 		content = []byte("# Welcome to LeoMoon Wiki-Go\n\nThis is your homepage.")
+	}
+
+	var rawContent string
+	// If in edit mode, store raw content with frontmatter preserved
+	if isEditMode {
+		rawContent = string(content)
 	}
 
 	// Get file information for last modified date
@@ -552,6 +578,9 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		AvailableLanguages: i18n.GetAvailableLanguages(),
 		IsAuthenticated:    isAuthenticated,
 		UserRole:           userRole,
+		DocPath:            "pages/home", // Special path for homepage
+		IsEditMode:         isEditMode,
+		RawContent:         rawContent,
 	}
 
 	renderTemplate(w, data)
