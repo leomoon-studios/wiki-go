@@ -360,7 +360,7 @@
 
 .tab-button.active {
     color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
+    border-top: 2px solid var(--primary-color);
 }
 
 .tab-content {
@@ -490,4 +490,34 @@
 .add-link-dialog .fetch-details-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .settings-tabs,
+    .file-upload-tabs {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        /* Hide scrollbar but keep functionality */
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+    
+    .settings-tabs::-webkit-scrollbar,
+    .file-upload-tabs::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .settings-tabs::-webkit-scrollbar-thumb,
+    .file-upload-tabs::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 2px;
+    }
+    
+    .tab-button {
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
 }
