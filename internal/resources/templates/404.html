@@ -1,13 +1,13 @@
 {{define "notfound"}}
-<h1>404 - Page Not Found</h1>
-<p>The page you're looking for doesn't exist or has been moved.</p>
+<h1>{{t "notfound.title"}}</h1>
+<p>{{t "notfound.message"}}</p>
 
 {{if and .IsAuthenticated (or (eq .UserRole "admin") (eq .UserRole "editor"))}}
 <div class="create-missing-page">
-    <p>Would you like to create this page?</p>
-    <button class="toolbar-button primary" id="create-missing-page">
+    <p>{{t "notfound.create_prompt"}}</p>
+    <button class="dialog-button primary" id="create-missing-page">
         <!-- <i class="fa fa-plus"></i> -->
-        <span class="button-text">Create This Page</span>
+        <span class="button-text">{{t "notfound.create_button"}}</span>
     </button>
 </div>
 
