@@ -243,5 +243,11 @@
   "notfound.title": "404 - ページが見つかりません",
   "notfound.message": "お探しのページは存在しないか、移動されました。",
   "notfound.create_prompt": "このページを作成しますか？",
-  "notfound.create_button": "このページを作成"
+  "notfound.create_button": "このページを作成",
+
+  "delete_document.title": "文書を削除",
+  "delete_document.message": "この文書を削除してもよろしいですか？この操作は元に戻せません。",
+  "delete_document.warning": "警告: これがフォルダの場合、サブフォルダと文書を含むすべての内容が削除されます。",
+  "delete_document.confirm_button": "はい、削除します",
+  "delete_document.cancel_button": "いいえ、キャンセル"
 }

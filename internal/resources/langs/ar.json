@@ -243,5 +243,11 @@
   "notfound.title": "404 - الصفحة غير موجودة",
   "notfound.message": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
   "notfound.create_prompt": "هل ترغب في إنشاء هذه الصفحة؟",
-  "notfound.create_button": "إنشاء هذه الصفحة"
+  "notfound.create_button": "إنشاء هذه الصفحة",
+
+  "delete_document.title": "حذف المستند",
+  "delete_document.message": "هل أنت متأكد أنك تريد حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء.",
+  "delete_document.warning": "تحذير: إذا كان هذا مجلدًا، فسيتم حذف جميع المحتويات بما في ذلك المجلدات الفرعية والمستندات.",
+  "delete_document.confirm_button": "نعم، احذف",
+  "delete_document.cancel_button": "لا، إلغاء"
 }

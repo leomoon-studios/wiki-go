@@ -243,5 +243,11 @@
   "notfound.title": "404 - Sayfa Bulunamadı",
   "notfound.message": "Aradığınız sayfa mevcut değil veya taşınmış.",
   "notfound.create_prompt": "Bu sayfayı oluşturmak ister misiniz?",
-  "notfound.create_button": "Bu Sayfayı Oluştur"
+  "notfound.create_button": "Bu Sayfayı Oluştur",
+
+  "delete_document.title": "Belgeyi Sil",
+  "delete_document.message": "Bu belgeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+  "delete_document.warning": "Uyarı: Bu bir klasörse, alt klasörler ve belgeler dahil tüm içerik silinecektir.",
+  "delete_document.confirm_button": "Evet, Sil",
+  "delete_document.cancel_button": "Hayır, İptal"
 }

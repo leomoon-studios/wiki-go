@@ -243,5 +243,11 @@
   "notfound.title": "404 - Siden ble ikke funnet",
   "notfound.message": "Siden du leter etter finnes ikke eller har blitt flyttet.",
   "notfound.create_prompt": "Vil du opprette denne siden?",
-  "notfound.create_button": "Opprett denne siden"
+  "notfound.create_button": "Opprett denne siden",
+
+  "delete_document.title": "Slett dokument",
+  "delete_document.message": "Er du sikker på at du vil slette dette dokumentet? Denne handlingen kan ikke angres.",
+  "delete_document.warning": "Advarsel: Hvis dette er en mappe, vil alt innhold inkludert undermapper og dokumenter bli slettet.",
+  "delete_document.confirm_button": "Ja, Slett",
+  "delete_document.cancel_button": "Nei, Avbryt"
 }

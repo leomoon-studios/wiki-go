@@ -243,5 +243,11 @@
   "notfound.title": "404 - पृष्ठ नहीं मिला",
   "notfound.message": "आप जिस पृष्ठ को खोज रहे हैं वह मौजूद नहीं है या स्थानांतरित कर दिया गया है।",
   "notfound.create_prompt": "क्या आप यह पृष्ठ बनाना चाहेंगे?",
-  "notfound.create_button": "यह पृष्ठ बनाएं"
+  "notfound.create_button": "यह पृष्ठ बनाएं",
+
+  "delete_document.title": "दस्तावेज़ हटाएं",
+  "delete_document.message": "क्या आप वाकई इस दस्तावेज़ को हटाना चाहते हैं? यह क्रिया वापस नहीं ली जा सकती।",
+  "delete_document.warning": "चेतावनी: यदि यह एक फ़ोल्डर है, तो उपफ़ोल्डर और दस्तावेज़ सहित सभी सामग्री हटा दी जाएगी।",
+  "delete_document.confirm_button": "हां, हटाएं",
+  "delete_document.cancel_button": "नहीं, रद्द करें"
 }

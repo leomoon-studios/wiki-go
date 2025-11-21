@@ -243,5 +243,11 @@
   "notfound.title": "404 - Seite nicht gefunden",
   "notfound.message": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
   "notfound.create_prompt": "Möchten Sie diese Seite erstellen?",
-  "notfound.create_button": "Diese Seite erstellen"
+  "notfound.create_button": "Diese Seite erstellen",
+
+  "delete_document.title": "Dokument löschen",
+  "delete_document.message": "Sind Sie sicher, dass Sie dieses Dokument löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "delete_document.warning": "Warnung: Wenn dies ein Ordner ist, wird der gesamte Inhalt einschließlich Unterordner und Dokumente gelöscht.",
+  "delete_document.confirm_button": "Ja, löschen",
+  "delete_document.cancel_button": "Nein, abbrechen"
 }

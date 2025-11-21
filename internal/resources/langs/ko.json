@@ -243,5 +243,11 @@
   "notfound.title": "404 - 페이지를 찾을 수 없습니다",
   "notfound.message": "찾으시는 페이지가 존재하지 않거나 이동되었습니다.",
   "notfound.create_prompt": "이 페이지를 만드시겠습니까?",
-  "notfound.create_button": "이 페이지 만들기"
+  "notfound.create_button": "이 페이지 만들기",
+
+  "delete_document.title": "문서 삭제",
+  "delete_document.message": "이 문서를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+  "delete_document.warning": "경고: 폴더인 경우 하위 폴더와 문서를 포함한 모든 내용이 삭제됩니다.",
+  "delete_document.confirm_button": "예, 삭제",
+  "delete_document.cancel_button": "아니오, 취소"
 }

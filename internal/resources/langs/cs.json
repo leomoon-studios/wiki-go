@@ -243,5 +243,11 @@
   "notfound.title": "404 - Stránka nenalezena",
   "notfound.message": "Stránka, kterou hledáte, neexistuje nebo byla přesunuta.",
   "notfound.create_prompt": "Chcete tuto stránku vytvořit?",
-  "notfound.create_button": "Vytvořit tuto stránku"
+  "notfound.create_button": "Vytvořit tuto stránku",
+
+  "delete_document.title": "Smazat dokument",
+  "delete_document.message": "Opravdu chcete smazat tento dokument? Tuto akci nelze vrátit zpět.",
+  "delete_document.warning": "Varování: Pokud se jedná o složku, bude smazán veškerý obsah včetně podsložek a dokumentů.",
+  "delete_document.confirm_button": "Ano, smazat",
+  "delete_document.cancel_button": "Ne, zrušit"
 }

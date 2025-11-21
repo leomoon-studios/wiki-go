@@ -243,5 +243,11 @@
   "notfound.title": "404 - 页面未找到",
   "notfound.message": "您要查找的页面不存在或已移动。",
   "notfound.create_prompt": "您想创建此页面吗？",
-  "notfound.create_button": "创建此页面"
+  "notfound.create_button": "创建此页面",
+
+  "delete_document.title": "删除文档",
+  "delete_document.message": "您确定要删除此文档吗？此操作无法撤销。",
+  "delete_document.warning": "警告：如果这是一个文件夹，包括子文件夹和文档在内的所有内容将被删除。",
+  "delete_document.confirm_button": "是，删除",
+  "delete_document.cancel_button": "否，取消"
 }

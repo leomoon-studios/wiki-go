@@ -243,5 +243,11 @@
   "notfound.title": "404 - Sivua ei löytynyt",
   "notfound.message": "Etsimääsi sivua ei ole olemassa tai se on siirretty.",
   "notfound.create_prompt": "Haluatko luoda tämän sivun?",
-  "notfound.create_button": "Luo tämä sivu"
+  "notfound.create_button": "Luo tämä sivu",
+
+  "delete_document.title": "Poista asiakirja",
+  "delete_document.message": "Haluatko varmasti poistaa tämän asiakirjan? Tätä toimintoa ei voi perua.",
+  "delete_document.warning": "Varoitus: Jos tämä on kansio, kaikki sisältö mukaan lukien alikansiot ja asiakirjat poistetaan.",
+  "delete_document.confirm_button": "Kyllä, poista",
+  "delete_document.cancel_button": "Ei, peruuta"
 }

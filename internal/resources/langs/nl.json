@@ -243,5 +243,11 @@
   "notfound.title": "404 - Pagina niet gevonden",
   "notfound.message": "De pagina die je zoekt bestaat niet of is verplaatst.",
   "notfound.create_prompt": "Wil je deze pagina aanmaken?",
-  "notfound.create_button": "Deze pagina aanmaken"
+  "notfound.create_button": "Deze pagina aanmaken",
+
+  "delete_document.title": "Document verwijderen",
+  "delete_document.message": "Weet je zeker dat je dit document wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+  "delete_document.warning": "Waarschuwing: Als dit een map is, worden alle inhoud inclusief submappen en documenten verwijderd.",
+  "delete_document.confirm_button": "Ja, Verwijderen",
+  "delete_document.cancel_button": "Nee, Annuleren"
 }

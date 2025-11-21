@@ -243,5 +243,11 @@
   "notfound.title": "404 - صفحه یافت نشد",
   "notfound.message": "صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
   "notfound.create_prompt": "آیا می‌خواهید این صفحه را ایجاد کنید؟",
-  "notfound.create_button": "ایجاد این صفحه"
+  "notfound.create_button": "ایجاد این صفحه",
+
+  "delete_document.title": "حذف سند",
+  "delete_document.message": "آیا مطمئن هستید که می‌خواهید این سند را حذف کنید؟ این عمل قابل بازگشت نیست.",
+  "delete_document.warning": "هشدار: اگر این یک پوشه باشد، تمام محتویات از جمله زیرپوشه‌ها و اسناد حذف خواهند شد.",
+  "delete_document.confirm_button": "بله، حذف شود",
+  "delete_document.cancel_button": "خیر، لغو"
 }

@@ -243,5 +243,11 @@
   "notfound.title": "404 - הדף לא נמצא",
   "notfound.message": "הדף שאתה מחפש לא קיים או הועבר.",
   "notfound.create_prompt": "האם תרצה ליצור את הדף הזה?",
-  "notfound.create_button": "צור דף זה"
+  "notfound.create_button": "צור דף זה",
+
+  "delete_document.title": "מחק מסמך",
+  "delete_document.message": "האם אתה בטוח שברצונך למחוק מסמך זה? פעולה זו אינה ניתנת לביטול.",
+  "delete_document.warning": "אזהרה: אם זוהי תיקייה, כל התוכן כולל תיקיות משנה ומסמכים יימחק.",
+  "delete_document.confirm_button": "כן, מחק",
+  "delete_document.cancel_button": "לא, בטל"
 }

@@ -243,5 +243,11 @@
   "notfound.title": "404 - 頁面未找到",
   "notfound.message": "您要查找的頁面不存在或已移動。",
   "notfound.create_prompt": "您想建立此頁面嗎？",
-  "notfound.create_button": "建立此頁面"
+  "notfound.create_button": "建立此頁面",
+
+  "delete_document.title": "刪除文件",
+  "delete_document.message": "您確定要刪除此文件嗎？此操作無法撤銷。",
+  "delete_document.warning": "警告：如果這是一個資料夾，包括子資料夾和文件在內的所有內容將被刪除。",
+  "delete_document.confirm_button": "是，刪除",
+  "delete_document.cancel_button": "否，取消"
 }

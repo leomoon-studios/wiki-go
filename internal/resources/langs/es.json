@@ -243,5 +243,11 @@
   "notfound.title": "404 - Página no encontrada",
   "notfound.message": "La página que buscas no existe o ha sido movida.",
   "notfound.create_prompt": "¿Te gustaría crear esta página?",
-  "notfound.create_button": "Crear esta página"
+  "notfound.create_button": "Crear esta página",
+
+  "delete_document.title": "Eliminar documento",
+  "delete_document.message": "¿Estás seguro de que quieres eliminar este documento? Esta acción no se puede deshacer.",
+  "delete_document.warning": "Advertencia: Si esta es una carpeta, se eliminará todo el contenido, incluidas las subcarpetas y documentos.",
+  "delete_document.confirm_button": "Sí, eliminar",
+  "delete_document.cancel_button": "No, cancelar"
 }

@@ -243,5 +243,11 @@
   "notfound.title": "404 - Sidan hittades inte",
   "notfound.message": "Sidan du letar efter finns inte eller har flyttats.",
   "notfound.create_prompt": "Vill du skapa denna sida?",
-  "notfound.create_button": "Skapa denna sida"
+  "notfound.create_button": "Skapa denna sida",
+
+  "delete_document.title": "Ta bort dokument",
+  "delete_document.message": "Är du säker på att du vill ta bort detta dokument? Denna åtgärd kan inte ångras.",
+  "delete_document.warning": "Varning: Om detta är en mapp kommer allt innehåll inklusive undermappar och dokument att tas bort.",
+  "delete_document.confirm_button": "Ja, Ta bort",
+  "delete_document.cancel_button": "Nej, Avbryt"
 }

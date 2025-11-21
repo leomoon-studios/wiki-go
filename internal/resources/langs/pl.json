@@ -243,5 +243,11 @@
   "notfound.title": "404 - Nie znaleziono strony",
   "notfound.message": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
   "notfound.create_prompt": "Czy chcesz utworzyć tę stronę?",
-  "notfound.create_button": "Utwórz tę stronę"
+  "notfound.create_button": "Utwórz tę stronę",
+
+  "delete_document.title": "Usuń dokument",
+  "delete_document.message": "Czy na pewno chcesz usunąć ten dokument? Tej operacji nie można cofnąć.",
+  "delete_document.warning": "Ostrzeżenie: Jeśli to jest folder, cała zawartość, w tym podfoldery i dokumenty, zostanie usunięta.",
+  "delete_document.confirm_button": "Tak, Usuń",
+  "delete_document.cancel_button": "Nie, Anuluj"
 }

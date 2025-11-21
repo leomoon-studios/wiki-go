@@ -243,5 +243,11 @@
   "notfound.title": "404 - Page non trouvée",
   "notfound.message": "La page que vous recherchez n'existe pas ou a été déplacée.",
   "notfound.create_prompt": "Souhaitez-vous créer cette page ?",
-  "notfound.create_button": "Créer cette page"
+  "notfound.create_button": "Créer cette page",
+
+  "delete_document.title": "Supprimer le document",
+  "delete_document.message": "Êtes-vous sûr de vouloir supprimer ce document ? Cette action ne peut pas être annulée.",
+  "delete_document.warning": "Attention : S'il s'agit d'un dossier, tout le contenu, y compris les sous-dossiers et les documents, sera supprimé.",
+  "delete_document.confirm_button": "Oui, supprimer",
+  "delete_document.cancel_button": "Non, annuler"
 }
