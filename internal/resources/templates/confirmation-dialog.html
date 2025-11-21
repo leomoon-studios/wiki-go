@@ -2,12 +2,12 @@
 <!-- Confirmation dialog for document deletion -->
 <div class="confirmation-dialog">
     <div class="dialog-container" dir="auto">
-        <h2 class="dialog-title">Delete Document</h2>
-        <p class="dialog-message">Are you sure you want to delete this document? This action cannot be undone.</p>
-        <p class="dialog-warning">Warning: If this is a folder, all contents including subfolders and documents will be deleted.</p>
+        <h2 class="dialog-title">{{t "delete_document.title"}}</h2>
+        <p class="dialog-message">{{t "delete_document.message"}}</p>
+        <p class="dialog-warning">{{t "delete_document.warning"}}</p>
         <div class="form-actions">
-            <button type="button" class="dialog-button delete-confirm">Yes, Delete</button>
-            <button type="button" class="dialog-button cancel-delete">No, Cancel</button>
+            <button type="button" class="dialog-button delete-confirm">{{t "delete_document.confirm_button"}}</button>
+            <button type="button" class="dialog-button cancel-delete">{{t "delete_document.cancel_button"}}</button>
         </div>
     </div>
 </div>
