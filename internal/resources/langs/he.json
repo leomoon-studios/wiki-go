@@ -238,5 +238,10 @@
   "links.invalid_url": "אנא הזן כתובת תקינה",
   "links.no_results_title": "לא נמצאו קישורים",
   "links.no_results_message": "נסה לשנות את קריטריוני החיפוש או המסננים",
-  "links.add_new_link": "הוסף קישור חדש"
+  "links.add_new_link": "הוסף קישור חדש",
+
+  "notfound.title": "404 - הדף לא נמצא",
+  "notfound.message": "הדף שאתה מחפש לא קיים או הועבר.",
+  "notfound.create_prompt": "האם תרצה ליצור את הדף הזה?",
+  "notfound.create_button": "צור דף זה"
 }

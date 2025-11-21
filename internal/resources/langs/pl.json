@@ -238,5 +238,10 @@
   "links.invalid_url": "Proszę wprowadzić prawidłowy URL",
   "links.no_results_title": "Nie znaleziono linków",
   "links.no_results_message": "Spróbuj dostosować wyszukiwane hasła lub filtry",
-  "links.add_new_link": "Dodaj nowy link"
+  "links.add_new_link": "Dodaj nowy link",
+
+  "notfound.title": "404 - Nie znaleziono strony",
+  "notfound.message": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+  "notfound.create_prompt": "Czy chcesz utworzyć tę stronę?",
+  "notfound.create_button": "Utwórz tę stronę"
 }

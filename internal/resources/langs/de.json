@@ -238,5 +238,10 @@
   "links.invalid_url": "Bitte geben Sie eine gültige URL ein",
   "links.no_results_title": "Keine Links gefunden",
   "links.no_results_message": "Versuchen Sie, die Suchkriterien oder Filter zu ändern",
-  "links.add_new_link": "Neuen Link hinzufügen"
+  "links.add_new_link": "Neuen Link hinzufügen",
+
+  "notfound.title": "404 - Seite nicht gefunden",
+  "notfound.message": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+  "notfound.create_prompt": "Möchten Sie diese Seite erstellen?",
+  "notfound.create_button": "Diese Seite erstellen"
 }

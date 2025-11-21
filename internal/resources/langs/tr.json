@@ -238,5 +238,10 @@
   "links.invalid_url": "Lütfen geçerli bir URL girin",
   "links.no_results_title": "Bağlantı bulunamadı",
   "links.no_results_message": "Arama terimlerinizi veya filtrelerinizi ayarlamayı deneyin",
-  "links.add_new_link": "Yeni bağlantı ekle"
+  "links.add_new_link": "Yeni bağlantı ekle",
+
+  "notfound.title": "404 - Sayfa Bulunamadı",
+  "notfound.message": "Aradığınız sayfa mevcut değil veya taşınmış.",
+  "notfound.create_prompt": "Bu sayfayı oluşturmak ister misiniz?",
+  "notfound.create_button": "Bu Sayfayı Oluştur"
 }

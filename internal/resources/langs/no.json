@@ -238,5 +238,10 @@
   "links.invalid_url": "Vennligst skriv inn en gyldig URL",
   "links.no_results_title": "Ingen lenker funnet",
   "links.no_results_message": "Prøv å justere søkeord eller filtre",
-  "links.add_new_link": "Legg til ny lenke"
+  "links.add_new_link": "Legg til ny lenke",
+
+  "notfound.title": "404 - Siden ble ikke funnet",
+  "notfound.message": "Siden du leter etter finnes ikke eller har blitt flyttet.",
+  "notfound.create_prompt": "Vil du opprette denne siden?",
+  "notfound.create_button": "Opprett denne siden"
 }

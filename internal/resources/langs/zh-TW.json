@@ -238,5 +238,10 @@
   "links.invalid_url": "請輸入有效的網址",
   "links.no_results_title": "未找到連結",
   "links.no_results_message": "嘗試調整您的搜尋條件或篩選器",
-  "links.add_new_link": "新增連結"
+  "links.add_new_link": "新增連結",
+
+  "notfound.title": "404 - 頁面未找到",
+  "notfound.message": "您要查找的頁面不存在或已移動。",
+  "notfound.create_prompt": "您想建立此頁面嗎？",
+  "notfound.create_button": "建立此頁面"
 }

@@ -238,5 +238,10 @@
   "links.invalid_url": "يرجى إدخال رابط صحيح",
   "links.no_results_title": "لم يتم العثور على روابط",
   "links.no_results_message": "حاول تعديل مصطلحات البحث أو المرشحات",
-  "links.add_new_link": "إضافة رابط جديد"
+  "links.add_new_link": "إضافة رابط جديد",
+
+  "notfound.title": "404 - الصفحة غير موجودة",
+  "notfound.message": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+  "notfound.create_prompt": "هل ترغب في إنشاء هذه الصفحة؟",
+  "notfound.create_button": "إنشاء هذه الصفحة"
 }

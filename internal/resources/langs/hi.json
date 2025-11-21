@@ -238,5 +238,10 @@
   "links.invalid_url": "कृपया एक वैध URL दर्ज करें",
   "links.no_results_title": "कोई लिंक नहीं मिली",
   "links.no_results_message": "खोज मापदंड या फिल्टर बदलने का प्रयास करें",
-  "links.add_new_link": "नई लिंक जोड़ें"
+  "links.add_new_link": "नई लिंक जोड़ें",
+
+  "notfound.title": "404 - पृष्ठ नहीं मिला",
+  "notfound.message": "आप जिस पृष्ठ को खोज रहे हैं वह मौजूद नहीं है या स्थानांतरित कर दिया गया है।",
+  "notfound.create_prompt": "क्या आप यह पृष्ठ बनाना चाहेंगे?",
+  "notfound.create_button": "यह पृष्ठ बनाएं"
 }

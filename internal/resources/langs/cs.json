@@ -238,5 +238,10 @@
   "links.invalid_url": "Zadejte prosím platnou URL",
   "links.no_results_title": "Nenalezeny žádné odkazy",
   "links.no_results_message": "Zkuste upravit vyhledávací výrazy nebo filtry",
-  "links.add_new_link": "Přidat nový odkaz"
+  "links.add_new_link": "Přidat nový odkaz",
+
+  "notfound.title": "404 - Stránka nenalezena",
+  "notfound.message": "Stránka, kterou hledáte, neexistuje nebo byla přesunuta.",
+  "notfound.create_prompt": "Chcete tuto stránku vytvořit?",
+  "notfound.create_button": "Vytvořit tuto stránku"
 }

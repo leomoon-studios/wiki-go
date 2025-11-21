@@ -238,5 +238,10 @@
   "links.invalid_url": "Vänligen ange en giltig URL",
   "links.no_results_title": "Inga länkar hittades",
   "links.no_results_message": "Försök justera dina söktermer eller filter",
-  "links.add_new_link": "Lägg till ny länk"
+  "links.add_new_link": "Lägg till ny länk",
+
+  "notfound.title": "404 - Sidan hittades inte",
+  "notfound.message": "Sidan du letar efter finns inte eller har flyttats.",
+  "notfound.create_prompt": "Vill du skapa denna sida?",
+  "notfound.create_button": "Skapa denna sida"
 }

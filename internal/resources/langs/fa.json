@@ -238,5 +238,10 @@
   "links.invalid_url": "لطفاً یک آدرس معتبر وارد کنید",
   "links.no_results_title": "هیچ لینکی یافت نشد",
   "links.no_results_message": "تلاش کنید معیارهای جستجو یا فیلترها را تغییر دهید",
-  "links.add_new_link": "افزودن لینک جدید"
+  "links.add_new_link": "افزودن لینک جدید",
+
+  "notfound.title": "404 - صفحه یافت نشد",
+  "notfound.message": "صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
+  "notfound.create_prompt": "آیا می‌خواهید این صفحه را ایجاد کنید؟",
+  "notfound.create_button": "ایجاد این صفحه"
 }

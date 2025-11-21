@@ -238,5 +238,10 @@
   "links.invalid_url": "有効なURLを入力してください",
   "links.no_results_title": "リンクが見つかりません",
   "links.no_results_message": "検索条件やフィルターを変更してください",
-  "links.add_new_link": "新しいリンクを追加"
+  "links.add_new_link": "新しいリンクを追加",
+
+  "notfound.title": "404 - ページが見つかりません",
+  "notfound.message": "お探しのページは存在しないか、移動されました。",
+  "notfound.create_prompt": "このページを作成しますか？",
+  "notfound.create_button": "このページを作成"
 }

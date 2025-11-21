@@ -238,5 +238,10 @@
   "links.invalid_url": "Indtast venligst en gyldig URL",
   "links.no_results_title": "Ingen links fundet",
   "links.no_results_message": "Prøv at ændre søgekriterier eller filtre",
-  "links.add_new_link": "Tilføj nyt link"
+  "links.add_new_link": "Tilføj nyt link",
+
+  "notfound.title": "404 - Siden blev ikke fundet",
+  "notfound.message": "Siden du leder efter eksisterer ikke eller er blevet flyttet.",
+  "notfound.create_prompt": "Vil du oprette denne side?",
+  "notfound.create_button": "Opret denne side"
 }

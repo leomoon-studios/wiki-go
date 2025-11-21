@@ -238,5 +238,10 @@
   "links.invalid_url": "请输入有效的网址",
   "links.no_results_title": "未找到链接",
   "links.no_results_message": "尝试调整您的搜索条件或筛选器",
-  "links.add_new_link": "添加新链接"
+  "links.add_new_link": "添加新链接",
+
+  "notfound.title": "404 - 页面未找到",
+  "notfound.message": "您要查找的页面不存在或已移动。",
+  "notfound.create_prompt": "您想创建此页面吗？",
+  "notfound.create_button": "创建此页面"
 }

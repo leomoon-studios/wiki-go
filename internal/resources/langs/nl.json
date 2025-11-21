@@ -238,5 +238,10 @@
   "links.invalid_url": "Voer een geldige URL in",
   "links.no_results_title": "Geen links gevonden",
   "links.no_results_message": "Probeer je zoekterm of filters aan te passen",
-  "links.add_new_link": "Nieuwe link toevoegen"
+  "links.add_new_link": "Nieuwe link toevoegen",
+
+  "notfound.title": "404 - Pagina niet gevonden",
+  "notfound.message": "De pagina die je zoekt bestaat niet of is verplaatst.",
+  "notfound.create_prompt": "Wil je deze pagina aanmaken?",
+  "notfound.create_button": "Deze pagina aanmaken"
 }
