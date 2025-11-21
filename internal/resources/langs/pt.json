@@ -235,5 +235,8 @@
   "links.update_button": "Atualizar Link",
   "links.fetch_details": "Buscar Detalhes do Link",
   "links.fetching_metadata": "Buscando informações da página...",
-  "links.invalid_url": "Por favor, insira uma URL válida"
+  "links.invalid_url": "Por favor, insira uma URL válida",
+  "links.no_results_title": "Nenhum link encontrado",
+  "links.no_results_message": "Tente ajustar seus termos de pesquisa ou filtros",
+  "links.add_new_link": "Adicionar novo link"
 }

@@ -235,5 +235,8 @@
   "links.update_button": "Uppdatera länk",
   "links.fetch_details": "Hämta länkdetaljer",
   "links.fetching_metadata": "Hämtar sidinformation...",
-  "links.invalid_url": "Vänligen ange en giltig URL"
+  "links.invalid_url": "Vänligen ange en giltig URL",
+  "links.no_results_title": "Inga länkar hittades",
+  "links.no_results_message": "Försök justera dina söktermer eller filter",
+  "links.add_new_link": "Lägg till ny länk"
 }

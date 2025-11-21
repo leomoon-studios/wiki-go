@@ -235,5 +235,8 @@
   "links.update_button": "更新链接",
   "links.fetch_details": "获取链接详情",
   "links.fetching_metadata": "正在获取页面信息...",
-  "links.invalid_url": "请输入有效的网址"
+  "links.invalid_url": "请输入有效的网址",
+  "links.no_results_title": "未找到链接",
+  "links.no_results_message": "尝试调整您的搜索条件或筛选器",
+  "links.add_new_link": "添加新链接"
 }

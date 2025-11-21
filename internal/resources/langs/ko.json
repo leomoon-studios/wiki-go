@@ -235,5 +235,8 @@
   "links.update_button": "링크 업데이트",
   "links.fetch_details": "링크 세부정보 가져오기",
   "links.fetching_metadata": "페이지 정보를 가져오는 중...",
-  "links.invalid_url": "유효한 URL을 입력하세요"
+  "links.invalid_url": "유효한 URL을 입력하세요",
+  "links.no_results_title": "링크를 찾을 수 없습니다",
+  "links.no_results_message": "검색어나 필터를 조정해 보세요",
+  "links.add_new_link": "새 링크 추가"
 }

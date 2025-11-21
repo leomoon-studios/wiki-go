@@ -235,5 +235,8 @@
   "links.update_button": "更新連結",
   "links.fetch_details": "取得連結詳情",
   "links.fetching_metadata": "正在取得頁面資訊...",
-  "links.invalid_url": "請輸入有效的網址"
+  "links.invalid_url": "請輸入有效的網址",
+  "links.no_results_title": "未找到連結",
+  "links.no_results_message": "嘗試調整您的搜尋條件或篩選器",
+  "links.add_new_link": "新增連結"
 }

@@ -235,5 +235,8 @@
   "links.update_button": "Link bijwerken",
   "links.fetch_details": "Link details ophalen",
   "links.fetching_metadata": "Pagina-informatie ophalen...",
-  "links.invalid_url": "Voer een geldige URL in"
+  "links.invalid_url": "Voer een geldige URL in",
+  "links.no_results_title": "Geen links gevonden",
+  "links.no_results_message": "Probeer je zoekterm of filters aan te passen",
+  "links.add_new_link": "Nieuwe link toevoegen"
 }

@@ -235,5 +235,8 @@
   "links.update_button": "Bağlantıyı Güncelle",
   "links.fetch_details": "Bağlantı Detaylarını Getir",
   "links.fetching_metadata": "Sayfa bilgileri getiriliyor...",
-  "links.invalid_url": "Lütfen geçerli bir URL girin"
+  "links.invalid_url": "Lütfen geçerli bir URL girin",
+  "links.no_results_title": "Bağlantı bulunamadı",
+  "links.no_results_message": "Arama terimlerinizi veya filtrelerinizi ayarlamayı deneyin",
+  "links.add_new_link": "Yeni bağlantı ekle"
 }

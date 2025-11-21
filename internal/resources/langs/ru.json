@@ -235,5 +235,8 @@
   "links.update_button": "Обновить ссылку",
   "links.fetch_details": "Получить данные ссылки",
   "links.fetching_metadata": "Получение информации о странице...",
-  "links.invalid_url": "Пожалуйста, введите корректный URL"
+  "links.invalid_url": "Пожалуйста, введите корректный URL",
+  "links.no_results_title": "Ссылки не найдены",
+  "links.no_results_message": "Попробуйте изменить условия поиска или фильтры",
+  "links.add_new_link": "Добавить новую ссылку"
 }

@@ -235,5 +235,8 @@
   "links.update_button": "Oppdater lenke",
   "links.fetch_details": "Hent lenkedetaljer",
   "links.fetching_metadata": "Henter sideinformasjon...",
-  "links.invalid_url": "Vennligst skriv inn en gyldig URL"
+  "links.invalid_url": "Vennligst skriv inn en gyldig URL",
+  "links.no_results_title": "Ingen lenker funnet",
+  "links.no_results_message": "Prøv å justere søkeord eller filtre",
+  "links.add_new_link": "Legg til ny lenke"
 }
