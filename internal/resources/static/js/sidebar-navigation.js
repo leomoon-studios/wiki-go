@@ -197,11 +197,6 @@
             return;
         }
         
-        // Check if touch is on scrollable content
-        const scrollableParent = findScrollableParent(e.target);
-        if (scrollableParent && !isLeftEdgeTouch) {
-            return; // Don't interfere with scrollable content
-        }
     }
 
     function handleTouchMove(e) {
@@ -240,8 +235,24 @@
         touchEndX = e.changedTouches[0].clientX;
         
         if (isDragging) {
-            // Handle drag-to-open/close with snap threshold
-            handleDragEnd();
+            // Check for fast swipe during drag
+            const swipeDistance = touchEndX - touchStartX;
+            const swipeTime = Date.now() - startTime;
+            const velocity = Math.abs(swipeDistance) / swipeTime;
+            const sidebarOpen = sidebar.classList.contains('active');
+
+            // If fast swipe, override drag threshold
+            if (velocity > 0.8 && swipeTime < CONFIG.maxSwipeTime) {
+                if (swipeDistance > 0 && !sidebarOpen) {
+                    openSidebar();
+                } else if (swipeDistance < 0 && sidebarOpen) {
+                    closeSidebar();
+                } else {
+                    handleDragEnd();
+                }
+            } else {
+                handleDragEnd();
+            }
         } else {
             // Handle simple swipe gestures
             handleSwipeGesture();
@@ -304,12 +315,23 @@
     // ========== DRAG END LOGIC ==========
     
     function handleDragEnd() {
-        if (dragProgress >= CONFIG.snapThreshold) {
-            // Snap to open if dragged beyond threshold
-            openSidebar();
+        const isOpen = sidebar.classList.contains('active');
+        
+        if (isOpen) {
+            // Closing: dragProgress goes from 1 (open) to 0 (closed)
+            // Close if dragged enough (progress < 1 - threshold)
+            if (dragProgress < (1 - CONFIG.snapThreshold)) {
+                closeSidebar();
+            } else {
+                openSidebar(); // Snap back to open
+            }
         } else {
-            // Snap back to closed if not dragged far enough
-            resetSidebarTransforms();
+            // Opening: dragProgress goes from 0 (closed) to 1 (open)
+            if (dragProgress >= CONFIG.snapThreshold) {
+                openSidebar();
+            } else {
+                resetSidebarTransforms(); // Snap back to closed
+            }
         }
     }
 
