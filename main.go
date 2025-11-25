@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 
+	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
 	"wiki-go/internal/handlers"
 	"wiki-go/internal/migration"
@@ -25,6 +27,12 @@ func main() {
 	cfg, err := config.LoadConfig(config.ConfigFilePath)
 	if err != nil {
 		log.Fatal("Error loading config:", err)
+	}
+
+	// Initialize session store for persistent logins
+	sessionPath := filepath.Join(cfg.Wiki.RootDir, "temp", "sessions.json")
+	if err := auth.InitSessionStore(sessionPath); err != nil {
+		log.Printf("Warning: Failed to initialize session store: %v", err)
 	}
 
 	// Ensure the homepage exists

@@ -22,7 +22,7 @@ We take the security of Wiki-Go seriously. If you believe you've found a securit
 Wiki-Go includes several security features:
 
 - **Password Storage**: All passwords are hashed using bcrypt with appropriate cost factors.
-- **Authentication**: Session-based authentication with secure, HTTP-only cookies.
+- **Authentication**: Session-based authentication with secure, HTTP-only cookies and hashed token persistence.
 - **TLS Support**: Built-in TLS support for encrypted connections.
 - **Role-Based Access Control**: Fine-grained permissions through admin, editor, and viewer roles.
 - **File Upload Validation**: MIME type checking for uploaded files (can be disabled if needed).
@@ -82,6 +82,24 @@ security:
 - Regular failed login: "Invalid username or password"
 - Banned state: "Too many failed login attempts; try again later"
 - When banned, the client also receives HTTP status 429 (Too Many Requests) with a "Retry-After" header
+
+## Session Security
+
+Wiki-Go implements secure session management with persistence capabilities.
+
+### Storage and Persistence
+
+- **File-Based Storage**: Active sessions are persisted to `data/temp/sessions.json` to maintain login state across application restarts.
+- **Token Hashing**: Session tokens are hashed using SHA256 before being stored on disk. This provides a critical security layer:
+  - The browser holds the raw token (the "key").
+  - The server stores the hashed token (the "lock").
+  - If the session file is compromised, attackers only obtain the hashes, which cannot be used to authenticate requests.
+
+### Session Lifecycle
+
+- **Expiration**: Standard sessions expire after 24 hours. "Keep me logged in" sessions persist for 30 days.
+- **Automatic Cleanup**: The system automatically purges expired sessions from both memory and disk to maintain hygiene and security.
+- **Secure Cookies**: Session tokens are transmitted via `HttpOnly`, `SameSite=Strict` cookies, preventing XSS and CSRF attacks.
 
 ## Security Recommendations
 

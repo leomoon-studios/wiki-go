@@ -2,7 +2,10 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -12,15 +15,80 @@ import (
 
 // Session represents a user session
 type Session struct {
-	Username  string
-	Role      string  // User role: "admin", "editor", or "viewer"
-	CreatedAt time.Time
+	Username     string    `json:"username"`
+	Role         string    `json:"role"` // User role: "admin", "editor", or "viewer"
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	LastAccessed time.Time `json:"last_accessed"`
 }
 
 var (
-	sessions = make(map[string]Session)
-	mu       sync.RWMutex
+	sessions     = make(map[string]Session)
+	mu           sync.RWMutex
+	sessionStore *SessionStore
 )
+
+// IsExpired checks if the session has expired
+func (s *Session) IsExpired() bool {
+	return time.Now().After(s.ExpiresAt)
+}
+
+// InitSessionStore initializes the session store and loads existing sessions
+func InitSessionStore(filePath string) error {
+	sessionStore = NewSessionStore(filePath)
+	loadedSessions, err := sessionStore.LoadSessions()
+	if err != nil {
+		return err
+	}
+
+	mu.Lock()
+	sessions = loadedSessions
+	// Cleanup expired sessions on startup
+	for token, session := range sessions {
+		if session.IsExpired() {
+			delete(sessions, token)
+		}
+	}
+	mu.Unlock()
+
+	// Start background cleanup goroutine
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			// We need to pass the map to CleanupExpiredSessions
+			// But we need to be careful about concurrency.
+			// The CleanupExpiredSessions in session_store.go as I wrote it
+			// takes the map and modifies it.
+			// However, the map 'sessions' is global here and protected by 'mu'.
+			// The SessionStore.CleanupExpiredSessions I wrote assumes it owns the map or locks it.
+			// But here 'sessions' is the global map.
+
+			// Let's adjust the strategy.
+			// We should lock 'mu', perform cleanup on 'sessions', and then save.
+			mu.Lock()
+			deleted := 0
+			for token, session := range sessions {
+				if session.IsExpired() {
+					delete(sessions, token)
+					deleted++
+				}
+			}
+			if deleted > 0 {
+				sessionStore.SaveSessions(sessions)
+			}
+			mu.Unlock()
+		}
+	}()
+
+	return nil
+}
+
+// hashToken returns the SHA256 hash of the token
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
 
 // GenerateSessionToken generates a random session token
 func GenerateSessionToken() (string, error) {
@@ -39,19 +107,30 @@ func CreateSession(w http.ResponseWriter, username string, role string, keepLogg
 		return err
 	}
 
-	mu.Lock()
-	sessions[token] = Session{
-		Username:  username,
-		Role:      role,
-		CreatedAt: time.Now(),
-	}
-	mu.Unlock()
-
 	// Set cookie expiration time based on keepLoggedIn flag
 	maxAge := 3600 * 24 // 24 hours by default
 	if keepLoggedIn {
 		maxAge = 3600 * 24 * 30 // 30 days for persistent login
 	}
+
+	hashedToken := hashToken(token)
+
+	mu.Lock()
+	sessions[hashedToken] = Session{
+		Username:     username,
+		Role:         role,
+		CreatedAt:    time.Now(),
+		ExpiresAt:    time.Now().Add(time.Duration(maxAge) * time.Second),
+		LastAccessed: time.Now(),
+	}
+	if sessionStore != nil {
+		if err := sessionStore.SaveSessions(sessions); err != nil {
+			log.Printf("Error saving sessions in CreateSession: %v", err)
+		}
+	} else {
+		log.Println("Warning: sessionStore is nil in CreateSession")
+	}
+	mu.Unlock()
 
 	// Set the secure HTTP-only session token cookie
 	http.SetCookie(w, &http.Cookie{
@@ -85,16 +164,26 @@ func GetSession(r *http.Request) *Session {
 		return nil
 	}
 
-	mu.RLock()
-	session, exists := sessions[c.Value]
-	mu.RUnlock()
+	mu.Lock()
+	defer mu.Unlock()
 
+	hashedToken := hashToken(c.Value)
+	session, exists := sessions[hashedToken]
 	if !exists {
 		return nil
 	}
 
-	// Session expiration is now handled by cookie expiration time
-	// which is set in CreateSession based on the keepLoggedIn parameter
+	if session.IsExpired() {
+		delete(sessions, hashedToken)
+		if sessionStore != nil {
+			sessionStore.SaveSessions(sessions)
+		}
+		return nil
+	}
+
+	// Update LastAccessed
+	session.LastAccessed = time.Now()
+	sessions[hashedToken] = session
 
 	return &session
 }
@@ -106,8 +195,19 @@ func ClearSession(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		return
 	}
 
+	hashedToken := hashToken(c.Value)
+
 	mu.Lock()
-	delete(sessions, c.Value)
+	if _, exists := sessions[hashedToken]; exists {
+		delete(sessions, hashedToken)
+		if sessionStore != nil {
+			if err := sessionStore.SaveSessions(sessions); err != nil {
+				log.Printf("Error saving sessions in ClearSession: %v", err)
+			}
+		}
+	} else {
+		log.Printf("Warning: Session not found during logout for token hash: %s", hashedToken)
+	}
 	mu.Unlock()
 
 	// Clear the session token cookie
