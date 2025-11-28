@@ -7,10 +7,14 @@
     <meta name="doc-path" content="{{.CurrentDir.Path}}">
     <meta name="enable-link-embedding" content="{{.Config.Wiki.EnableLinkEmbedding}}">
     <meta name="disable-content-max-width" content="{{.Config.Wiki.DisableContentMaxWidth}}">
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
     <!-- Favicons -->
     {{if hasFavicon .Config.Wiki.RootDir "ico"}}<link rel="icon" href="/static/favicon.ico" type="image/x-icon">{{end}}
     {{if hasFavicon .Config.Wiki.RootDir "svg"}}<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">{{end}}
     {{if hasFavicon .Config.Wiki.RootDir "png"}}<link rel="icon" href="/static/favicon.png" type="image/png">{{end}}
+    <link rel="manifest" href="/manifest.json">
     <!-- Prevent theme flash - load these scripts first -->
     <script src="/static/js/debug-toggle.js?={{getVersion}}"></script>
     <script src="/static/js/utilities.js?={{getVersion}}"></script>

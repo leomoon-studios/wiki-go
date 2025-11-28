@@ -290,6 +290,44 @@ func SetupRoutes(cfg *config.Config) {
 		http.ServeFile(w, r, filepath.Join("internal", "resources", "static", "logo.png"))
 	})
 
+	mux.HandleFunc("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/manifest+json")
+		w.Header().Set("Cache-Control", "public, max-age=604800")
+
+		// Check if custom manifest exists
+		customPath := filepath.Join(cfg.Wiki.RootDir, "static", "manifest.json")
+		if fileExists(customPath) {
+			http.ServeFile(w, r, customPath)
+			return
+		}
+
+		// Read the embedded manifest
+		dataFS := resources.GetFileSystem()
+		file, err := dataFS.Open("manifest.json")
+		if err != nil {
+			http.Error(w, "Manifest not found", http.StatusNotFound)
+			return
+		}
+		defer file.Close()
+
+		// Decode the JSON
+		var manifest map[string]interface{}
+		if err := json.NewDecoder(file).Decode(&manifest); err != nil {
+			http.Error(w, "Invalid manifest", http.StatusInternalServerError)
+			return
+		}
+
+		// Update name and short_name from config
+		manifest["name"] = cfg.Wiki.Title
+		manifest["short_name"] = cfg.Wiki.Title
+
+		// Encode back to JSON
+		if err := json.NewEncoder(w).Encode(manifest); err != nil {
+			http.Error(w, "Error encoding manifest", http.StatusInternalServerError)
+			return
+		}
+	})
+
 	// API Routes
 	mux.HandleFunc("/api/login", handlers.LoginHandler)
 	mux.HandleFunc("/api/check-auth", handlers.CheckAuthHandler)

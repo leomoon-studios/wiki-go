@@ -139,7 +139,7 @@ func CreateSession(w http.ResponseWriter, username string, role string, keepLogg
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   !cfg.Server.AllowInsecureCookies,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   maxAge,
 	})
 
@@ -150,7 +150,7 @@ func CreateSession(w http.ResponseWriter, username string, role string, keepLogg
 		Path:     "/",
 		HttpOnly: false,
 		Secure:   !cfg.Server.AllowInsecureCookies,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   maxAge,
 	})
 

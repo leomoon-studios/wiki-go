@@ -1,0 +1,22 @@
+{
+  "name": "Wiki-Go",
+  "short_name": "Wiki-Go",
+  "description": "A modern, feature-rich, databaseless flat-file wiki platform built with Go.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/static/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
