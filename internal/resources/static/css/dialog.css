@@ -335,7 +335,8 @@ body:has([class*="-dialog"].active) {
 }
 
 /* ---------- Settings Dialog ---------- */
-.settings-dialog .dialog-container {
+.settings-dialog .dialog-container,
+.new-document-dialog .dialog-container {
     width: 600px;
     max-width: 90%;
     max-height: 90vh;
