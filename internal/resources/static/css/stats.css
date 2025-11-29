@@ -136,7 +136,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .wiki-stats {
         padding: 10px;
     }

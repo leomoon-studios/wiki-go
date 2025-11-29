@@ -499,7 +499,7 @@ body:has([class*="-dialog"].active) {
     cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .settings-tabs,
     .file-upload-tabs {
         overflow-x: auto;

@@ -796,7 +796,7 @@
 .CodeMirror pre.CodeMirror-line { padding: 0 10px 0 5px !important;}
 
 /* Mobile responsive styles */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .editor-container {
         margin: 0 -8px;
         width: calc(100% + 16px);

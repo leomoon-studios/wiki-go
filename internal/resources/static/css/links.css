@@ -101,7 +101,7 @@
 }
 
 /* Mobile responsive fixes */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .search-filter-row {
         flex-direction: column;
         gap: 12px;
@@ -182,7 +182,7 @@
 }
 
 /* Responsive design for search controls */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .search-filter-row {
         flex-direction: column;
         align-items: stretch;
@@ -509,7 +509,7 @@ body.role-editor .editor-admin-only {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .links-layout {
         width: 100%;
         position: static;

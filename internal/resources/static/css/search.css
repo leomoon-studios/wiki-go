@@ -152,7 +152,7 @@
 }
 
 /* Mobile search results */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .search-results {
         left: 0;
         padding: 16px;

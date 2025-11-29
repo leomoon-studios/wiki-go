@@ -355,7 +355,7 @@ body.role-editor .editor-admin-only {
 }
 
 /* Mobile view */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .kanban-board {
         flex-direction: column;
     }

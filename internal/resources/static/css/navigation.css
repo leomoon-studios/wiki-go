@@ -275,8 +275,6 @@ body.has-password-warning .breadcrumbs {
     display: none !important; /* Chrome, Safari, Opera */
 }
 
-
-
 .breadcrumbs a {
     color: var(--primary-color);
     text-decoration: none;
@@ -292,7 +290,7 @@ body.has-password-warning .breadcrumbs {
 }
 
 /* Mobile responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     /* Hamburger and sidebar for mobile */
     .hamburger {
         display: flex;

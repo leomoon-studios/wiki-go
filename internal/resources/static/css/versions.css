@@ -256,7 +256,7 @@
 }
 
 /* Responsive styles for version history dialog */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
     .version-history-dialog .dialog-container {
         width: 95%;
         max-height: 90vh;
