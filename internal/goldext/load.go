@@ -17,6 +17,7 @@ var (
 	_ = TypographyPreprocessor
 	_ = EmojiPreprocessor
 	_ = DetailsPreprocessor
+	_ = InfoBoxPreprocessor
 	// _ = TaskListPreprocessor
 	_ = TocPreprocessor
 	_ = HeadingAnchorPreprocessor
@@ -36,9 +37,6 @@ func init() {
 	// Step 1: Process Mermaid FIRST, before any other processors can touch the content
 	RegisterPreprocessor(MermaidPreprocessor) // Process mermaid diagrams first
 
-	// Step 2: Security-related preprocessing (add this early to sanitize content before other processors)
-	RegisterPreprocessor(ScriptSanitizePreprocessor) // Sanitize script tags
-
 	// Step 3: Register preprocessors that handle code blocks
 	RegisterPreprocessor(LinkPreprocessor)      // Process links and images
 	RegisterPreprocessor(DirectionPreprocessor) // Process RTL/LTR blocks
@@ -47,6 +45,7 @@ func init() {
 	RegisterPreprocessor(VimeoPreprocessor)     // Process Vimeo video blocks
 	RegisterPreprocessor(StatsPreprocessor)     // Process stats shortcodes
 	RegisterPreprocessor(DetailsPreprocessor)   // Process details blocks
+	RegisterPreprocessor(InfoBoxPreprocessor)   // Process GitHub-flavored alerts
 	// RegisterPreprocessor(TaskListPreprocessor)  // Process task lists before rendering
 	RegisterPreprocessor(TocPreprocessor)       // Process table of contents markers
 	RegisterPreprocessor(HeadingAnchorPreprocessor) // Add ¶ anchors to headings
@@ -60,4 +59,7 @@ func init() {
 	// These preprocessors will skip content inside MathJax blocks ($ and $$)
 	RegisterPreprocessor(SuperscriptPreprocessor) // Process superscript (avoids MathJax content)
 	RegisterPreprocessor(SubscriptPreprocessor)   // Process subscript (avoids MathJax content)
+
+	// Step 6: Security-related preprocessing (run last to sanitize all generated content and handle unwrapped code blocks)
+	RegisterPreprocessor(ScriptSanitizePreprocessor) // Sanitize script tags
 }

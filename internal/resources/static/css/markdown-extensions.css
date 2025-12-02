@@ -237,6 +237,74 @@ mark {
     opacity: 1;
 }
 
+/* GitHub-flavored Alerts */
+.markdown-alert {
+    padding: 8px 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid;
+    border-radius: 0 4px 4px 0;
+    /* background-color: var(--blockquote-bg); */ /* Optional: background color */
+}
+
+.markdown-alert-title {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.markdown-alert-title svg,
+.markdown-alert-title i {
+    margin-right: 8px;
+    fill: currentColor;
+}
+
+.markdown-alert-content {
+    font-size: 14px;
+}
+
+.markdown-alert-content > :first-child {
+    margin-top: 0;
+}
+
+.markdown-alert-content > :last-child {
+    margin-bottom: 0;
+}
+
+/* Alert Colors - Light Theme */
+.markdown-alert-note { border-color: #0969da; }
+.markdown-alert-note .markdown-alert-title { color: #0969da; }
+
+.markdown-alert-tip { border-color: #1a7f37; }
+.markdown-alert-tip .markdown-alert-title { color: #1a7f37; }
+
+.markdown-alert-important { border-color: #8250df; }
+.markdown-alert-important .markdown-alert-title { color: #8250df; }
+
+.markdown-alert-warning { border-color: #9a6700; }
+.markdown-alert-warning .markdown-alert-title { color: #9a6700; }
+
+.markdown-alert-caution { border-color: #cf222e; }
+.markdown-alert-caution .markdown-alert-title { color: #cf222e; }
+
+/* Alert Colors - Dark Theme */
+:root[data-theme="dark"] .markdown-alert-note { border-color: #2f81f7; }
+:root[data-theme="dark"] .markdown-alert-note .markdown-alert-title { color: #2f81f7; }
+
+:root[data-theme="dark"] .markdown-alert-tip { border-color: #3fb950; }
+:root[data-theme="dark"] .markdown-alert-tip .markdown-alert-title { color: #3fb950; }
+
+:root[data-theme="dark"] .markdown-alert-important { border-color: #a371f7; }
+:root[data-theme="dark"] .markdown-alert-important .markdown-alert-title { color: #a371f7; }
+
+:root[data-theme="dark"] .markdown-alert-warning { border-color: #d29922; }
+:root[data-theme="dark"] .markdown-alert-warning .markdown-alert-title { color: #d29922; }
+
+:root[data-theme="dark"] .markdown-alert-caution { border-color: #f85149; }
+:root[data-theme="dark"] .markdown-alert-caution .markdown-alert-title { color: #f85149; }
+
 /* Print styles */
 @media print {
     /* Collapsible sections */
