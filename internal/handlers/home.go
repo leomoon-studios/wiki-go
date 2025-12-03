@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -491,6 +492,19 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		return
 	}
 
+	// Check access
+	session := auth.GetSession(r)
+	if !auth.CanAccessDocument("/", session, cfg) {
+		if session == nil {
+			// Redirect to login if not authenticated
+			http.Redirect(w, r, "/login?redirect="+url.QueryEscape("/"), http.StatusFound)
+			return
+		}
+		// Show 403 Forbidden if authenticated but unauthorized
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	// Detect edit mode from query parameter
 	mode := r.URL.Query().Get("mode")
 	isEditMode := mode == "edit"
@@ -518,6 +532,11 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		http.Error(w, "Failed to build navigation", http.StatusInternalServerError)
 		return
 	}
+
+	// Filter navigation based on access
+	nav = utils.FilterNavigation(nav, func(p string) bool {
+		return auth.CanAccessDocument(p, session, cfg)
+	})
 
 	// Mark active navigation item
 	utils.MarkActiveNavItem(nav, "/")
@@ -550,7 +569,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Get authentication status
-	session := auth.GetSession(r)
+	// session is already retrieved above
 	isAuthenticated := session != nil
 	
 	// Get user role

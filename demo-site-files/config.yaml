@@ -45,3 +45,23 @@ users:
     - username: admin
       password: $2a$10$eJtF6/g7dpPtWv6QP9jmVuybt4uTFlb.r5Q2paCqmWHcl.W5DfSba
       role: admin
+    - username: john
+      password: $2a$10$eJtF6/g7dpPtWv6QP9jmVuybt4uTFlb.r5Q2paCqmWHcl.W5DfSba
+      role: editor
+      groups:
+        - finance-team
+        - project-alpha
+    - username: jane
+      password: $2a$10$eJtF6/g7dpPtWv6QP9jmVuybt4uTFlb.r5Q2paCqmWHcl.W5DfSba
+      role: viewer
+      groups:
+        - finance-team
+access_rules:
+    - pattern: "/finance/**"
+      access: restricted
+      groups: [finance-team]
+      description: "Financial documents and reports"
+    - pattern: "/internal/**"
+      access: private
+    - pattern: "/public/**"
+      access: public

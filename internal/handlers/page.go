@@ -63,12 +63,30 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		return
 	}
 
+	// Check access
+	session := auth.GetSession(r)
+	if !auth.CanAccessDocument(path, session, cfg) {
+		if session == nil {
+			// Redirect to login if not authenticated
+			http.Redirect(w, r, "/login?redirect="+url.QueryEscape(path), http.StatusFound)
+			return
+		}
+		// Show 403 Forbidden if authenticated but unauthorized
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	// Build navigation
 	nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Filter navigation based on access
+	nav = utils.FilterNavigation(nav, func(p string) bool {
+		return auth.CanAccessDocument(p, session, cfg)
+	})
 
 	// Mark active navigation item
 	utils.MarkActiveNavItem(nav, path)
@@ -190,7 +208,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	var isAuthenticated bool
 
 	// Get authentication status - do this for ALL pages
-	session := auth.GetSession(r)
+	// session is already retrieved at the beginning of the function
 	isAuthenticated = session != nil
 
 	// Get user role

@@ -7,6 +7,9 @@ import (
 	"encoding/hex"
 	"log"
 	"net/http"
+	"net/url"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 	"wiki-go/internal/config"
@@ -16,7 +19,8 @@ import (
 // Session represents a user session
 type Session struct {
 	Username     string    `json:"username"`
-	Role         string    `json:"role"` // User role: "admin", "editor", or "viewer"
+	Role         string    `json:"role"`             // User role: "admin", "editor", or "viewer"
+	Groups       []string  `json:"groups,omitempty"` // User groups
 	CreatedAt    time.Time `json:"created_at"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	LastAccessed time.Time `json:"last_accessed"`
@@ -101,7 +105,7 @@ func GenerateSessionToken() (string, error) {
 }
 
 // CreateSession creates a new session for the user
-func CreateSession(w http.ResponseWriter, username string, role string, keepLoggedIn bool, cfg *config.Config) error {
+func CreateSession(w http.ResponseWriter, username string, role string, groups []string, keepLoggedIn bool, cfg *config.Config) error {
 	token, err := GenerateSessionToken()
 	if err != nil {
 		return err
@@ -119,6 +123,7 @@ func CreateSession(w http.ResponseWriter, username string, role string, keepLogg
 	sessions[hashedToken] = Session{
 		Username:     username,
 		Role:         role,
+		Groups:       groups,
 		CreatedAt:    time.Now(),
 		ExpiresAt:    time.Now().Add(time.Duration(maxAge) * time.Second),
 		LastAccessed: time.Now(),
@@ -232,15 +237,14 @@ func ClearSession(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 }
 
 // ValidateCredentials validates user credentials against the config
-func ValidateCredentials(username, password string, cfg *config.Config) (bool, string) {
+func ValidateCredentials(username, password string, cfg *config.Config) (bool, string, []string) {
 	for _, user := range cfg.Users {
 		if user.Username == username && crypto.CheckPasswordHash(password, user.Password) {
-			// Use the user's role
-			role := user.Role
-			return true, role
+			// Use the user's role and groups
+			return true, user.Role, user.Groups
 		}
 	}
-	return false, ""
+	return false, "", nil
 }
 
 // CheckAuth verifies if the user is authenticated and returns their session
@@ -248,17 +252,20 @@ func CheckAuth(r *http.Request) *Session {
 	return GetSession(r)
 }
 
-// RequireAuth checks if the wiki is private and if the user is authenticated
-// Returns true if the user is allowed to access the page
+// RequireAuth checks if the user is allowed to access the requested path
 func RequireAuth(r *http.Request, cfg *config.Config) bool {
-	// If the wiki is not private, allow access
-	if !cfg.Wiki.Private {
-		return true
+	path := r.URL.Path
+
+	// Clean and decode the path to match PageHandler logic
+	path = filepath.Clean(path)
+	path = strings.TrimSuffix(path, "/")
+	path = strings.ReplaceAll(path, "\\", "/")
+	if decodedPath, err := url.QueryUnescape(path); err == nil {
+		path = decodedPath
 	}
 
-	// If the wiki is private, check if the user is authenticated
 	session := GetSession(r)
-	return session != nil
+	return CanAccessDocument(path, session, cfg)
 }
 
 // RequireRole checks if user has required role or higher

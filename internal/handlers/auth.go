@@ -88,7 +88,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate credentials
-	valid, role := auth.ValidateCredentials(req.Username, req.Password, cfg)
+	valid, role, groups := auth.ValidateCredentials(req.Username, req.Password, cfg)
 	if !valid {
 		if loginBan != nil {
 			if dur, bannedNow := loginBan.RegisterFailure(ip); bannedNow {
@@ -116,7 +116,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create session
-	if err := auth.CreateSession(w, req.Username, role, req.KeepLoggedIn, cfg); err != nil {
+	if err := auth.CreateSession(w, req.Username, role, groups, req.KeepLoggedIn, cfg); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": false,
@@ -148,9 +148,10 @@ func CheckAuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Return user information including role
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
+		"success":  true,
 		"username": session.Username,
 		"role":     session.Role,
+		"groups":   session.Groups,
 	})
 }
 

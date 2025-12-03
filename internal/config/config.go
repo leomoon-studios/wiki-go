@@ -18,9 +18,18 @@ const ConfigFilePath = "data/config.yaml"
 
 // User represents a user with authentication credentials
 type User struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Role     string `yaml:"role"`     // "admin", "editor", or "viewer"
+	Username string   `yaml:"username"`
+	Password string   `yaml:"password"`
+	Role     string   `yaml:"role"`             // "admin", "editor", or "viewer"
+	Groups   []string `yaml:"groups,omitempty"` // Optional groups for access control
+}
+
+// AccessRule defines a path-based access control rule
+type AccessRule struct {
+	Pattern     string   `yaml:"pattern"`
+	Access      string   `yaml:"access"` // "public", "private", "restricted"
+	Groups      []string `yaml:"groups,omitempty"`
+	Description string   `yaml:"description,omitempty"`
 }
 
 // Role constants - using the ones defined in roles package
@@ -54,17 +63,18 @@ type Config struct {
 		Notice                    string `yaml:"notice"`
 		Timezone                  string `yaml:"timezone"`
 		Private                   bool   `yaml:"private"`
-		DisableComments           bool   `yaml:"disable_comments"` // Disable comments system-wide when true
-		DisableFileUploadChecking bool   `yaml:"disable_file_upload_checking"` // Disable mimetype checking for file uploads when true
-		EnableLinkEmbedding       bool   `yaml:"enable_link_embedding"` // Enable automatic link embedding from clipboard when true
-		HideAttachments           bool   `yaml:"hide_attachments"` // Hide attachments section in documents when true
-		DisableContentMaxWidth    bool   `yaml:"disable_content_max_width"` // Disable 900px content width limit when true
+		DisableComments           bool   `yaml:"disable_comments"`              // Disable comments system-wide when true
+		DisableFileUploadChecking bool   `yaml:"disable_file_upload_checking"`  // Disable mimetype checking for file uploads when true
+		EnableLinkEmbedding       bool   `yaml:"enable_link_embedding"`         // Enable automatic link embedding from clipboard when true
+		HideAttachments           bool   `yaml:"hide_attachments"`              // Hide attachments section in documents when true
+		DisableContentMaxWidth    bool   `yaml:"disable_content_max_width"`     // Disable 900px content width limit when true
 		MaxVersions               int    `yaml:"max_versions"`
 		MaxUploadSize             int    `yaml:"max_upload_size"` // Maximum upload file size in MB
 		Language                  string `yaml:"language"`        // Default language for the wiki
 	} `yaml:"wiki"`
-	Users []User `yaml:"users"`
-	Security struct {
+	Users       []User       `yaml:"users"`
+	AccessRules []AccessRule `yaml:"access_rules,omitempty"`
+	Security    struct {
 		LoginBan struct {
 			Enabled           bool `yaml:"enabled"`
 			MaxFailures       int  `yaml:"max_failures"`
@@ -249,13 +259,35 @@ security:
         # Maximum ban duration in seconds (24 hours)
         max_ban_seconds: %d
 users:
+%s
+access_rules:
 %s`
 }
 
 // FormatUserEntry formats a single user entry for the config file
 func FormatUserEntry(user User) string {
-	return fmt.Sprintf("    - username: %s\n      password: %s\n      role: %s",
+	entry := fmt.Sprintf("    - username: %s\n      password: %s\n      role: %s",
 		user.Username, user.Password, user.Role)
+
+	if len(user.Groups) > 0 {
+		entry += "\n      groups:"
+		for _, group := range user.Groups {
+			entry += fmt.Sprintf("\n        - %s", group)
+		}
+	}
+	return entry
+}
+
+// FormatAccessRuleEntry formats a single access rule entry for the config file
+func FormatAccessRuleEntry(rule AccessRule) string {
+	entry := fmt.Sprintf("    - pattern: \"%s\"\n      access: %s", rule.Pattern, rule.Access)
+	if len(rule.Groups) > 0 {
+		entry += fmt.Sprintf("\n      groups: [%s]", strings.Join(rule.Groups, ", "))
+	}
+	if rule.Description != "" {
+		entry += fmt.Sprintf("\n      description: \"%s\"", rule.Description)
+	}
+	return entry
 }
 
 // SaveConfig saves the configuration to a writer
@@ -267,6 +299,15 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 			usersStr.WriteString("\n")
 		}
 		usersStr.WriteString(FormatUserEntry(user))
+	}
+
+	// Format all access rules
+	var accessRulesStr strings.Builder
+	for _, rule := range cfg.AccessRules {
+		if accessRulesStr.Len() > 0 {
+			accessRulesStr.WriteString("\n")
+		}
+		accessRulesStr.WriteString(FormatAccessRuleEntry(rule))
 	}
 
 	// Fill in the template with values from the config
@@ -299,6 +340,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		cfg.Security.LoginBan.InitialBanSeconds,
 		cfg.Security.LoginBan.MaxBanSeconds,
 		usersStr.String(),
+		accessRulesStr.String(),
 	)
 
 	_, err := w.Write([]byte(configData))

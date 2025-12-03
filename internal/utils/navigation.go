@@ -205,3 +205,33 @@ func MarkActiveNavItem(root *types.NavItem, currentPath string) {
 		}
 	}
 }
+
+// FilterNavigation filters the navigation tree based on a predicate function
+func FilterNavigation(node *types.NavItem, allow func(path string) bool) *types.NavItem {
+	if node == nil {
+		return nil
+	}
+
+	// Create a new node to avoid modifying the original tree
+	newNode := &types.NavItem{
+		Title:          node.Title,
+		Path:           node.Path,
+		IsDir:          node.IsDir,
+		IsActive:       node.IsActive,
+		DocumentLayout: node.DocumentLayout,
+		Children:       make([]*types.NavItem, 0),
+	}
+
+	for _, child := range node.Children {
+		// Check if child path is allowed
+		if allow(child.Path) {
+			// Recursively filter children
+			filteredChild := FilterNavigation(child, allow)
+			if filteredChild != nil {
+				newNode.Children = append(newNode.Children, filteredChild)
+			}
+		}
+	}
+
+	return newNode
+}
