@@ -174,3 +174,30 @@
 .add-user-btn:hover {
     background-color: var(--primary-hover);
 }
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-main-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-groups-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.user-groups-list .group-tag {
+    font-size: 0.75em;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+}

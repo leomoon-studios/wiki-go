@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="/static/css/search.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/buttons.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/dialog.css?={{getVersion}}">
+    <link rel="stylesheet" href="/static/css/access-rules.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/forms.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/typography.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/users.css?={{getVersion}}">
@@ -98,6 +99,9 @@
 
     <!-- Include settings dialog template -->
     {{template "settings-dialog" .}}
+
+    <!-- Include access rule dialog template -->
+    {{template "access-rule-dialog" .}}
 
     <!-- Include add column dialog template -->
     {{template "add-column-dialog" .}}
@@ -277,6 +281,7 @@
     <script src="/static/js/search.js?={{getVersion}}"></script>
     <script src="/static/js/move-document.js?={{getVersion}}"></script>
     <script src="/static/js/import-manager.js?={{getVersion}}"></script>
+    <script src="/static/js/access-rules-manager.js?={{getVersion}}"></script>
     <script src="/static/js/i18n.js?={{getVersion}}"></script>
     {{if not .Config.Wiki.DisableComments}}
     <script src="/static/js/comments.js?={{getVersion}}"></script>

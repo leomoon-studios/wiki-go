@@ -17,7 +17,8 @@ body:has([class*="-dialog"].active) {
 .version-history-dialog,
 .settings-dialog,
 .add-column-dialog,
-.add-link-dialog {
+.add-link-dialog,
+.access-rule-dialog {
     display: none;
     position: fixed;
     top: 0;
@@ -45,7 +46,8 @@ body:has([class*="-dialog"].active) {
 .version-history-dialog.active,
 .settings-dialog.active,
 .add-column-dialog.active,
-.add-link-dialog.active {
+.add-link-dialog.active,
+.access-rule-dialog.active {
     display: flex;
     opacity: 1;
     visibility: visible;

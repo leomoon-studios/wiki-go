@@ -349,6 +349,55 @@ document.addEventListener('DOMContentLoaded', function() {
     const userRoleSelect = document.getElementById('userRole');
     const saveUserBtn = document.getElementById('saveUserBtn');
     const cancelUserBtn = document.getElementById('cancelUserBtn');
+    
+    // User Groups Management
+    const userSelectedGroups = document.getElementById('userSelectedGroups');
+    const userGroupInput = document.getElementById('userGroupInput');
+    const addUserGroupBtn = document.getElementById('addUserGroupBtn');
+    let currentUserGroups = [];
+
+    // Group management logic for User Form
+    if (addUserGroupBtn && userGroupInput) {
+        addUserGroupBtn.addEventListener('click', addUserGroup);
+        userGroupInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addUserGroup();
+            }
+        });
+    }
+
+    function addUserGroup() {
+        const groupName = userGroupInput.value.trim();
+        if (groupName && !currentUserGroups.includes(groupName)) {
+            currentUserGroups.push(groupName);
+            renderUserGroups();
+            userGroupInput.value = '';
+        }
+    }
+
+    function removeUserGroup(groupName) {
+        currentUserGroups = currentUserGroups.filter(g => g !== groupName);
+        renderUserGroups();
+    }
+
+    function renderUserGroups() {
+        if (!userSelectedGroups) return;
+        
+        userSelectedGroups.innerHTML = '';
+        currentUserGroups.forEach(group => {
+            const tag = document.createElement('div');
+            tag.className = 'group-tag-removable';
+            tag.innerHTML = `
+                <span>${group}</span>
+                <span class="remove-group" data-group="${group}">&times;</span>
+            `;
+            tag.querySelector('.remove-group').addEventListener('click', function() {
+                removeUserGroup(this.getAttribute('data-group'));
+            });
+            userSelectedGroups.appendChild(tag);
+        });
+    }
 
     // Add event listeners for user management
     if (userForm) {
@@ -446,15 +495,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set role badge class based on role
             const roleBadgeClass = `role-badge role-${role}`;
 
+            // Render groups
+            const groupsHtml = user.groups && user.groups.length > 0 
+                ? `<div class="user-groups-list">
+                    ${user.groups.map(g => `<span class="group-tag">${g}</span>`).join('')}
+                   </div>` 
+                : '';
+
             return `
                 <div class="user-item" data-username="${user.username}">
                     <div class="user-info">
-                        <span class="username">${user.username}</span>
-                        <span class="${roleBadgeClass}">${roleDisplay}</span>
-                        ${isCurrentUser ? `<span class="current-user-badge">${window.i18n ? window.i18n.t('common.you') : 'You'}</span>` : ''}
+                        <div class="user-main-info">
+                            <span class="username">${user.username}</span>
+                            <span class="${roleBadgeClass}">${roleDisplay}</span>
+                            ${isCurrentUser ? `<span class="current-user-badge">${window.i18n ? window.i18n.t('common.you') : 'You'}</span>` : ''}
+                        </div>
+                        ${groupsHtml}
                     </div>
                     <div class="user-actions">
-                        <button class="edit-user-btn" title="Edit user" data-username="${user.username}" data-user='${JSON.stringify({role: role, is_admin: user.is_admin})}'>
+                        <button class="edit-user-btn" title="Edit user" data-username="${user.username}" data-user='${JSON.stringify({role: role, is_admin: user.is_admin, groups: user.groups || []})}'>
                             <i class="fa fa-pencil"></i>
                         </button>
                         ${!isCurrentUser ? `
@@ -500,6 +559,11 @@ document.addEventListener('DOMContentLoaded', function() {
         saveUserBtn.textContent = 'Add User';
         saveUserBtn.setAttribute('data-i18n', 'users.add_button');
 
+        // Reset groups
+        currentUserGroups = [];
+        renderUserGroups();
+        if (userGroupInput) userGroupInput.value = '';
+
         // Change button text to "Clear" in add mode
         cancelUserBtn.textContent = 'Clear';
         cancelUserBtn.setAttribute('data-i18n', 'users.clear_button');
@@ -536,6 +600,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // For backward compatibility
             userRoleSelect.value = user.is_admin ? 'admin' : 'viewer';
         }
+
+        // Set groups
+        currentUserGroups = user.groups || [];
+        renderUserGroups();
+        if (userGroupInput) userGroupInput.value = '';
+
         saveUserBtn.textContent = 'Update User';
         saveUserBtn.setAttribute('data-i18n', 'users.update_button');
 
@@ -594,7 +664,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         username,
                         password,
-                        role: role
+                        role: role,
+                        groups: currentUserGroups
                     })
                 });
             } else {
@@ -607,7 +678,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         username,
                         new_password: password || undefined,
-                        role: role
+                        role: role,
+                        groups: currentUserGroups
                     })
                 });
             }

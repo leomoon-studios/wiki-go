@@ -1,0 +1,293 @@
+.access-control-management {
+    padding: 10px;
+}
+
+.access-rules-intro {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+
+.access-rules-intro h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.info-box {
+    background-color: var(--bg-secondary);
+    border-left: 4px solid var(--primary-color);
+    padding: 10px 15px;
+    margin-top: 15px;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.info-box i {
+    color: var(--primary-color);
+    margin-top: 3px;
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.list-header h4 {
+    margin: 0;
+}
+
+.access-rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.access-rule-item {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    gap: 15px;
+}
+
+.rule-icon {
+    font-size: 1.5em;
+    width: 40px;
+    text-align: center;
+}
+
+.rule-content {
+    flex: 1;
+}
+
+.rule-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.rule-title {
+    /* font-weight: bold; */
+    font-size: 0.9em;
+}
+
+.rule-access-badge {
+    font-size: 0.8em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+.rule-subtitle {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.rule-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.group-tag {
+    font-size: 0.8em;
+    background-color: var(--primary-color-dim);
+    color: var(--primary-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.rule-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.rule-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.rule-action-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.rule-action-btn.delete-rule:hover {
+    color: var(--error-color);
+    background-color: var(--error-bg);
+}
+
+/* Access Rule Dialog Styles */
+/* Note: Main dialog container styles are inherited from dialog.css */
+
+.access-rule-dialog .dialog-container {
+    width: 700px;
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding-top: 25px;
+}
+
+.access-rule-dialog .close-dialog {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    background-color: transparent;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.access-rule-dialog .close-dialog:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.folder-picker-container {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    background-color: var(--bg-secondary);
+    padding: 10px;
+}
+
+.folder-tree-item {
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.folder-tree-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.folder-tree-item.selected {
+    background-color: var(--primary-color-dim);
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.folder-tree-item .folder-icon {
+    color: var(--text-secondary);
+}
+
+.folder-tree-item.selected .folder-icon {
+    color: var(--primary-color);
+}
+
+.selected-folder-display {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+    width: auto;
+}
+
+.radio-option label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.separator-line {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 20px 0;
+}
+
+.groups-input-container {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px;
+    background-color: var(--bg-secondary);
+}
+
+.selected-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+    min-height: 28px;
+}
+
+.group-tag-removable {
+    background-color: var(--primary-color-dim);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.group-tag-removable .remove-group {
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+.group-tag-removable .remove-group:hover {
+    opacity: 1;
+}
+
+.add-group-wrapper {
+    display: flex;
+    gap: 5px;
+}
+
+.add-group-wrapper input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}

@@ -13,6 +13,7 @@
             <button class="tab-button" data-tab="security-tab">{{t "settings.security"}}</button>
             <button class="tab-button" data-tab="content-tab">{{t "settings.content"}}</button>
             <button class="tab-button" data-tab="users-tab">{{t "settings.users"}}</button>
+            <button class="tab-button" data-tab="access-control-tab">{{t "settings.access_control"}}</button>
             <button class="tab-button" data-tab="import-tab">{{t "settings.import"}}</button>
         </div>
 
@@ -153,11 +154,68 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label>{{t "access.access_groups"}}</label>
+                                <div class="groups-input-container">
+                                    <div id="userSelectedGroups" class="selected-groups">
+                                        <!-- Selected groups will be added here -->
+                                    </div>
+                                    <div class="add-group-wrapper">
+                                        <input type="text" id="userGroupInput" placeholder="{{t "access.add_group"}}">
+                                        <button type="button" id="addUserGroupBtn" class="dialog-button small"><i class="fa fa-plus"></i></button>
+                                    </div>
+                                </div>
+                                <small class="form-help">{{t "users.groups_help"}}</small>
+                            </div>
                             <div class="form-actions">
                                 <button type="submit" class="dialog-button primary" id="saveUserBtn">{{t "users.add_button"}}</button>
                                 <button type="button" class="dialog-button" id="cancelUserBtn">{{t "users.clear_button"}}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+            <div id="access-control-tab" class="tab-pane">
+                <div class="access-control-management">
+                    <div class="access-rules-intro">
+                        <h3>{{t "access.title"}}</h3>
+                        <p>{{t "access.description"}}</p>
+                        <div class="info-box">
+                            <i class="fa fa-info-circle"></i>
+                            <p>{{t "access.tip"}}</p>
+                        </div>
+                    </div>
+
+                    <div class="access-rules-list-container">
+                        <div class="list-header">
+                            <h4>{{t "access.active_rules"}}</h4>
+                            <button id="addRuleBtn" class="dialog-button small primary">
+                                <i class="fa fa-plus"></i> {{t "access.add_rule"}}
+                            </button>
+                        </div>
+                        <div id="accessRulesList" class="access-rules-list">
+                            <!-- Rules will be populated here -->
+                        </div>
+
+                        <template id="access-rule-template">
+                            <div class="access-rule-item">
+                                <div class="rule-icon"></div>
+                                <div class="rule-content">
+                                    <div class="rule-header">
+                                        <span class="rule-title"></span>
+                                        <span class="rule-access-badge"></span>
+                                    </div>
+                                    <div class="rule-subtitle"></div>
+                                    <div class="rule-groups"></div>
+                                </div>
+                                <div class="rule-actions">
+                                    <button class="rule-action-btn move-up" title="{{t "common.move_up"}}"><i class="fa fa-arrow-up"></i></button>
+                                    <button class="rule-action-btn move-down" title="{{t "common.move_down"}}"><i class="fa fa-arrow-down"></i></button>
+                                    <button class="rule-action-btn edit-rule" title="{{t "common.edit"}}"><i class="fa fa-pencil"></i></button>
+                                    <button class="rule-action-btn delete-rule" title="{{t "common.delete"}}"><i class="fa fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>

@@ -29,6 +29,11 @@
     font-family: inherit;
 }
 
+.form-group input[type="radio"],
+.form-group input[type="checkbox"] {
+    width: auto;
+}
+
 .form-group input:focus,
 .form-group textarea:focus {
     border-color: var(--primary-hover);

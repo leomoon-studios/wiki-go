@@ -18,18 +18,18 @@ const ConfigFilePath = "data/config.yaml"
 
 // User represents a user with authentication credentials
 type User struct {
-	Username string   `yaml:"username"`
-	Password string   `yaml:"password"`
-	Role     string   `yaml:"role"`             // "admin", "editor", or "viewer"
-	Groups   []string `yaml:"groups,omitempty"` // Optional groups for access control
+	Username string   `yaml:"username" json:"username"`
+	Password string   `yaml:"password" json:"password,omitempty"`
+	Role     string   `yaml:"role" json:"role"`                       // "admin", "editor", or "viewer"
+	Groups   []string `yaml:"groups,omitempty" json:"groups,omitempty"` // Optional groups for access control
 }
 
 // AccessRule defines a path-based access control rule
 type AccessRule struct {
-	Pattern     string   `yaml:"pattern"`
-	Access      string   `yaml:"access"` // "public", "private", "restricted"
-	Groups      []string `yaml:"groups,omitempty"`
-	Description string   `yaml:"description,omitempty"`
+	Pattern     string   `yaml:"pattern" json:"pattern"`
+	Access      string   `yaml:"access" json:"access"` // "public", "private", "restricted"
+	Groups      []string `yaml:"groups,omitempty" json:"groups,omitempty"`
+	Description string   `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
 // Role constants - using the ones defined in roles package

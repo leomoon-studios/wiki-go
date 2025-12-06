@@ -584,6 +584,7 @@ function handleEscapeKey(e) {
     const isUserConfirmDialogOpen = document.querySelector('.user-confirmation-dialog')?.classList.contains('active');
     const isNewDocDialogOpen = document.querySelector('.new-document-dialog')?.classList.contains('active');
     const isSettingsDialogOpen = document.querySelector('.settings-dialog')?.classList.contains('active');
+    const isAccessRuleDialogOpen = document.querySelector('.access-rule-dialog')?.classList.contains('active');
     const isMoveDocDialogOpen = document.querySelector('.move-document-dialog')?.classList.contains('active');
     const isAddLinkDialogOpen = document.querySelector('.add-link-dialog')?.classList.contains('active');
     const isSearchResultsOpen = document.querySelector('.search-results')?.classList.contains('active');
@@ -623,6 +624,13 @@ function handleEscapeKey(e) {
     } else if (isNewDocDialogOpen) {
         // Close new document dialog
         window.DocumentManager.hideNewDocDialog();
+        e.preventDefault();
+    } else if (isAccessRuleDialogOpen) {
+        // Close access rule dialog
+        const dialog = document.querySelector('.access-rule-dialog');
+        if (dialog) {
+            dialog.classList.remove('active');
+        }
         e.preventDefault();
     } else if (isSettingsDialogOpen) {
         // Close settings dialog

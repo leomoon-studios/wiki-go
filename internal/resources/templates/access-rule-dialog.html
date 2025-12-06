@@ -1,0 +1,88 @@
+{{define "access-rule-dialog"}}
+<!-- Access Rule Dialog -->
+<div class="access-rule-dialog" dir="auto">
+    <div class="dialog-container">
+        <button class="close-dialog" aria-label="Close access rule dialog">
+            <i class="fa fa-times"></i>
+        </button>
+        <h2 class="dialog-title">{{t "access.dialog_title"}}</h2>
+        <div class="error-message"></div>
+        <form class="access-rule-form" id="accessRuleForm">
+            <input type="hidden" id="ruleIndex" name="ruleIndex" value="-1">
+            
+            <div class="form-group">
+                <label>{{t "access.select_folder"}}</label>
+                <div class="folder-picker-container">
+                    <div id="folderTree" class="folder-tree">
+                        <!-- Folder tree will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="selected-folder-display">
+                    <strong>{{t "access.selected_folder"}}:</strong> <span id="selectedFolderPath">/</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>{{t "access.match_type"}}</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="matchExact" name="matchType" value="exact">
+                        <label for="matchExact">{{t "access.match_exact"}}</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="matchRecursive" name="matchType" value="recursive" checked>
+                        <label for="matchRecursive">{{t "access.match_recursive"}}</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="matchChildren" name="matchType" value="children">
+                        <label for="matchChildren">{{t "access.match_children"}}</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="separator-line"></div>
+
+            <div class="form-group">
+                <label>{{t "access.access_level"}}</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="accessPublic" name="accessLevel" value="public">
+                        <label for="accessPublic">{{t "access.rule_access_public"}} <span class="text-muted">({{t "access.rule_everyone"}})</span></label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="accessPrivate" name="accessLevel" value="private">
+                        <label for="accessPrivate">{{t "access.rule_access_private"}} <span class="text-muted">({{t "access.rule_authenticated"}})</span></label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="accessRestricted" name="accessLevel" value="restricted" checked>
+                        <label for="accessRestricted">{{t "access.rule_access_restricted"}} <span class="text-muted">({{t "settings.users"}})</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="groupsContainer">
+                <label>{{t "access.access_groups"}}</label>
+                <div class="groups-input-container">
+                    <div id="selectedGroups" class="selected-groups">
+                        <!-- Selected groups will be added here -->
+                    </div>
+                    <div class="add-group-wrapper">
+                        <input type="text" id="groupInput" placeholder="{{t "access.add_group"}}">
+                        <button type="button" id="addGroupBtn" class="dialog-button small"><i class="fa fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="ruleDescription">{{t "access.rule_description"}}</label>
+                <input type="text" id="ruleDescription" name="ruleDescription" placeholder="{{t "access.description_placeholder"}}">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="dialog-button primary">{{t "access.save_rule"}}</button>
+                <button type="button" class="dialog-button cancel-dialog">{{t "common.cancel"}}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
