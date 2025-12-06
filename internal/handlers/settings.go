@@ -158,13 +158,13 @@ func UpdateWikiSettingsHandler(w http.ResponseWriter, r *http.Request) {
 // saveConfig saves the configuration to a file
 func saveConfig(path string, cfg *config.Config) error {
 	// Create a backup of the current config file
-	if _, err := os.Stat(path); err == nil {
-		backupPath := path + ".bak"
-		input, err := os.ReadFile(path)
-		if err == nil {
-			os.WriteFile(backupPath, input, 0644)
-		}
-	}
+	// if _, err := os.Stat(path); err == nil {
+	// 	backupPath := path + ".bak"
+	// 	input, err := os.ReadFile(path)
+	// 	if err == nil {
+	// 		os.WriteFile(backupPath, input, 0644)
+	// 	}
+	// }
 
 	// Create a temporary file with a unique name using timestamp
 	tempFile := fmt.Sprintf("%s.%d.tmp", path, time.Now().UnixNano())

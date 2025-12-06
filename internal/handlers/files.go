@@ -46,6 +46,13 @@ type DocumentsResponse struct {
 	Documents []Document `json:"documents"`
 }
 
+// FolderInfo represents information about a folder
+type FolderInfo struct {
+	Path  string `json:"path"`
+	Name  string `json:"name"`
+	Level int    `json:"level"`
+}
+
 // UploadFileHandler handles file uploads to the document's directory
 func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	// Set appropriate headers
@@ -1270,4 +1277,92 @@ func dirExists(path string) bool {
 		return false
 	}
 	return info.IsDir()
+}
+
+// ListFoldersHandler returns a hierarchical list of folders in the documents directory
+func ListFoldersHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
+	// Check if user is authenticated and has admin role
+	session := auth.GetSession(r)
+	if session == nil || session.Role != config.RoleAdmin {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Unauthorized. Admin access required.",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var folders []FolderInfo
+
+	// Add root folder (homepage)
+	folders = append(folders, FolderInfo{
+		Path:  "/",
+		Name:  "/ (homepage)",
+		Level: 0,
+	})
+
+	rootDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
+
+	// Walk the directory
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the root dir itself
+		if path == rootDir {
+			return nil
+		}
+
+		// Only process directories
+		if !d.IsDir() {
+			return nil
+		}
+
+		// Skip hidden directories
+		if strings.HasPrefix(d.Name(), ".") {
+			return filepath.SkipDir
+		}
+
+		// Calculate relative path
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return nil
+		}
+
+		// Normalize path separators
+		relPath = filepath.ToSlash(relPath)
+
+		// Calculate level (depth)
+		// Top-level folders in documents should be level 0
+		parts := strings.Split(relPath, "/")
+		level := len(parts) - 1
+
+		// Construct the full virtual path (e.g. /finance/reports)
+		virtualPath := "/" + relPath
+
+		folders = append(folders, FolderInfo{
+			Path:  virtualPath,
+			Name:  d.Name(),
+			Level: level,
+		})
+
+		return nil
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Failed to list folders: " + err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"folders": folders,
+	})
 }

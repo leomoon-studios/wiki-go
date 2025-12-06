@@ -78,8 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentRules = data.rules || [];
                 renderRulesList();
             } else {
-                // If API not ready, use empty list or mock
-                console.log('API not ready yet');
+                console.error('Failed to load access rules');
                 currentRules = [];
                 renderRulesList();
             }
@@ -111,18 +110,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const titleEl = clone.querySelector('.rule-title');
             const subtitleEl = clone.querySelector('.rule-subtitle');
 
+            // Parse pattern for display
+            let basePath = rule.pattern;
+            let matchIcon = 'fa-file-text-o';
+            let matchText = 'This document only';
+            
+            if (basePath.endsWith('/**')) {
+                basePath = basePath.substring(0, basePath.length - 3) || '/';
+                matchIcon = 'fa-sitemap';
+                matchText = 'This document and all sub-documents';
+            } else if (basePath.endsWith('/*')) {
+                basePath = basePath.substring(0, basePath.length - 2) || '/';
+                matchIcon = 'fa-folder-open-o';
+                matchText = 'Direct children only';
+            }
+
+            const matchHtml = `<span class="match-type" title="${matchText}"><i class="fa ${matchIcon}"></i></span>`;
+
             if (rule.description) {
                 titleEl.textContent = rule.description;
-                // Description is normal text
+                titleEl.style.fontFamily = 'inherit';
                 
-                subtitleEl.textContent = rule.pattern;
-                subtitleEl.style.fontFamily = 'monospace';
+                subtitleEl.innerHTML = `${matchHtml} <span class="rule-path">${basePath}</span>`;
+                subtitleEl.style.display = 'block';
             } else {
-                titleEl.textContent = rule.pattern;
+                titleEl.textContent = basePath;
                 titleEl.style.fontFamily = 'monospace';
                 
-                subtitleEl.textContent = '';
-                subtitleEl.style.display = 'none';
+                subtitleEl.innerHTML = `${matchHtml} <span class="match-text">${matchText}</span>`;
+                subtitleEl.style.display = 'block';
             }
             
             const badge = clone.querySelector('.rule-access-badge');
@@ -147,8 +163,16 @@ document.addEventListener('DOMContentLoaded', function() {
             clone.querySelector('.delete-rule').onclick = () => deleteRule(index);
 
             // Disable move buttons appropriately
-            if (index === 0) clone.querySelector('.move-up').disabled = true;
-            if (index === currentRules.length - 1) clone.querySelector('.move-down').disabled = true;
+            if (index === 0) {
+                const btn = clone.querySelector('.move-up');
+                btn.disabled = true;
+                btn.style.visibility = 'hidden';
+            }
+            if (index === currentRules.length - 1) {
+                const btn = clone.querySelector('.move-down');
+                btn.disabled = true;
+                btn.style.display = 'none';
+            }
 
             accessRulesList.appendChild(clone);
         });
@@ -161,6 +185,20 @@ document.addEventListener('DOMContentLoaded', function() {
         currentGroups = [];
         selectedFolder = '/';
         ruleIndexInput.value = index;
+
+        // Determine selectedFolder based on index (Edit Mode) BEFORE populating tree
+        if (index >= 0) {
+            const rule = currentRules[index];
+            let pattern = rule.pattern;
+            
+            if (pattern.endsWith('/**')) {
+                selectedFolder = pattern.substring(0, pattern.length - 3) || '/';
+            } else if (pattern.endsWith('/*')) {
+                selectedFolder = pattern.substring(0, pattern.length - 2) || '/';
+            } else {
+                selectedFolder = pattern;
+            }
+        }
         
         // Populate Folder Tree (Mock for now, or fetch)
         await populateFolderTree();
@@ -169,18 +207,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Edit Mode
             const rule = currentRules[index];
             
-            // Parse pattern to set folder and match type
+            // Parse pattern to set match type
             let pattern = rule.pattern;
             let matchType = 'exact';
             
             if (pattern.endsWith('/**')) {
                 matchType = 'recursive';
-                selectedFolder = pattern.substring(0, pattern.length - 3) || '/';
             } else if (pattern.endsWith('/*')) {
                 matchType = 'children';
-                selectedFolder = pattern.substring(0, pattern.length - 2) || '/';
-            } else {
-                selectedFolder = pattern;
             }
 
             selectedFolderPath.textContent = selectedFolder;
@@ -310,20 +344,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideRuleForm();
                 loadAccessRules();
             } else {
-                // Fallback for UI testing if API fails
-                console.warn('API call failed, updating UI locally for testing');
-                if (index >= 0) currentRules[index] = rule;
-                else currentRules.push(rule);
-                renderRulesList();
-                hideRuleForm();
+                const errorData = await response.json().catch(() => ({}));
+                alert('Failed to save rule: ' + (errorData.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error saving rule:', error);
-            // For now, just update local state to simulate
-            if (index >= 0) currentRules[index] = rule;
-            else currentRules.push(rule);
-            renderRulesList();
-            hideRuleForm();
+            alert('Error saving rule: ' + error.message);
         }
     }
 
@@ -338,15 +364,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 loadAccessRules();
             } else {
-                // Simulate
-                currentRules.splice(index, 1);
-                renderRulesList();
+                alert('Failed to delete rule');
             }
         } catch (error) {
             console.error('Error deleting rule:', error);
-            // Simulate
-            currentRules.splice(index, 1);
-            renderRulesList();
+            alert('Error deleting rule');
         }
     }
 
@@ -382,19 +404,23 @@ document.addEventListener('DOMContentLoaded', function() {
         folderTree.innerHTML = '<div class="loading">Loading folders...</div>';
         
         try {
-            // Mock folders for demonstration until API is ready
-            folderTree.innerHTML = '';
-            
-            // Add Root
-            addFolderToTree('/', '/', 0);
-            
-            // Mock folders
-            addFolderToTree('/finance', 'finance', 0);
-            addFolderToTree('/finance/reports', 'reports', 1);
-            addFolderToTree('/internal', 'internal', 0);
-            addFolderToTree('/public', 'public', 0);
-
+            const response = await fetch('/api/folders');
+            if (response.ok) {
+                const data = await response.json();
+                folderTree.innerHTML = '';
+                
+                if (data.folders && data.folders.length > 0) {
+                    data.folders.forEach(folder => {
+                        addFolderToTree(folder.path, folder.name, folder.level);
+                    });
+                } else {
+                    folderTree.innerHTML = '<div class="empty-message">No folders found</div>';
+                }
+            } else {
+                folderTree.innerHTML = '<div class="error">Failed to load folders</div>';
+            }
         } catch (error) {
+            console.error('Error loading folders:', error);
             folderTree.innerHTML = '<div class="error">Failed to load folders</div>';
         }
     }

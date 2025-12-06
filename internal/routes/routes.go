@@ -379,6 +379,9 @@ func SetupRoutes(cfg *config.Config) {
 	// Access Rules API - Admin only
 	mux.HandleFunc("/api/access-rules", adminMiddleware(handlers.AccessRulesHandler))
 	mux.HandleFunc("/api/access-rules/", adminMiddleware(handlers.AccessRulesHandler))
+	mux.HandleFunc("/api/folders", adminMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handlers.ListFoldersHandler(w, r, cfg)
+	}))
 
 	// Version history API - Editor or Admin
 	mux.HandleFunc("/api/versions/", editorMiddleware(func(w http.ResponseWriter, r *http.Request) {

@@ -11,22 +11,25 @@ import (
 
 // User represents a user in the response
 type UserResponse struct {
-	Username string `json:"username"`
-	Role     string `json:"role"` // "admin", "editor", or "viewer"
+	Username string   `json:"username"`
+	Role     string   `json:"role"`             // "admin", "editor", or "viewer"
+	Groups   []string `json:"groups,omitempty"` // Optional groups
 }
 
 // UserCreateRequest represents the request body for creating a user
 type UserCreateRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"` // "admin", "editor", or "viewer"
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	Role     string   `json:"role"`             // "admin", "editor", or "viewer"
+	Groups   []string `json:"groups,omitempty"` // Optional groups
 }
 
 // UserUpdateRequest represents the request body for updating a user
 type UserUpdateRequest struct {
-	Username    string `json:"username"`
-	NewPassword string `json:"new_password,omitempty"`
-	Role        string `json:"role"` // "admin", "editor", or "viewer"
+	Username    string   `json:"username"`
+	NewPassword string   `json:"new_password,omitempty"`
+	Role        string   `json:"role"`             // "admin", "editor", or "viewer"
+	Groups      []string `json:"groups,omitempty"` // Optional groups
 }
 
 // UsersHandler handles user management endpoints
@@ -72,6 +75,7 @@ func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 		users = append(users, UserResponse{
 			Username: user.Username,
 			Role:     role,
+			Groups:   user.Groups,
 		})
 	}
 
@@ -133,7 +137,8 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	updatedConfig.Users = append(updatedConfig.Users, config.User{
 		Username: req.Username,
 		Password: hashedPassword,
-		Role: req.Role,
+		Role:     req.Role,
+		Groups:   req.Groups,
 	})
 
 	// Save the updated config
@@ -192,6 +197,8 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		if user.Username == req.Username {
 			// Update the user's role
 			updatedConfig.Users[i].Role = req.Role
+			// Update groups
+			updatedConfig.Users[i].Groups = req.Groups
 			// Update password if provided
 			if req.NewPassword != "" {
 				hashedPassword, err := crypto.HashPassword(req.NewPassword)

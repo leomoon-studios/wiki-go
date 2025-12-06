@@ -291,3 +291,23 @@
     color: var(--text-secondary);
     font-size: 0.9em;
 }
+
+.rule-path {
+    font-family: monospace;
+    background-color: var(--bg-tertiary);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.match-type {
+    color: var(--text-secondary);
+    margin-right: 5px;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+}
+
+.match-text {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
