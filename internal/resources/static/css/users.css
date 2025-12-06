@@ -17,24 +17,45 @@
 }
 
 .users-list {
-    max-height: 300px;
+    max-height: 500px;
     overflow-y: auto;
     margin-top: 10px;
+    padding-right: 5px; /* Space for scrollbar */
+}
+
+/* Custom Scrollbar for Users List */
+.users-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.users-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.users-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+}
+
+.users-list::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary);
 }
 
 .user-item {
-    padding: 8px 10px;
+    padding: 12px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    margin-bottom: 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    background-color: var(--code-bg);
+    align-items: flex-start; /* Align to top */
+    background-color: var(--bg-secondary);
+    transition: border-color 0.2s;
 }
 
 .user-item:hover {
-    background-color: var(--hover-bg);
+    border-color: var(--primary-color);
+    background-color: var(--bg-secondary); /* Keep background consistent */
 }
 
 .user-item .username {
@@ -43,42 +64,41 @@
 
 /* Role badges */
 .role-badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 5px;
-    color: white;
+    font-size: 0.75em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .role-badge.role-admin {
-    background-color: var(--primary-color);
+    background-color: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary-color);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
 }
 
 .role-badge.role-editor {
-    background-color: #28a745; /* Green for editors */
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
 }
 
 .role-badge.role-viewer {
-    background-color: #6c757d; /* Gray for viewers */
-}
-
-/* For backward compatibility */
-.user-item .admin-badge {
-    background-color: var(--primary-color);
-    color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 5px;
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #aab0b5;
+    border: 1px solid rgba(108, 117, 125, 0.3);
 }
 
 .user-item .current-user-badge {
-    background-color: var(--success-color);
-    color: white;
-    font-size: 0.7rem;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 0.7em;
     padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 5px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: bold;
 }
 
 .user-actions {
@@ -194,10 +214,41 @@
 }
 
 .user-groups-list .group-tag {
-    font-size: 0.75em;
+    font-size: 0.8em;
     background-color: var(--bg-tertiary);
     color: var(--text-secondary);
-    padding: 1px 5px;
-    border-radius: 3px;
+    padding: 2px 8px;
+    border-radius: 4px;
     border: 1px solid var(--border-color);
+}
+
+.users-list-container h3,
+.user-form-container h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: var(--text-primary);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .users-management {
+        flex-direction: column;
+    }
+
+    .users-list-container {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding-right: 0;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .users-list {
+        max-height: 300px;
+    }
+    
+    .user-main-info {
+        flex-wrap: wrap;
+    }
 }
