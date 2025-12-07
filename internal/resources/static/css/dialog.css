@@ -199,18 +199,42 @@ body:has([class*="-dialog"].active) {
 .dialog-container {
     background: var(--bg-color);
     border-radius: 8px;
-    padding: 24px;
+    padding: 0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     width: 90%;
     max-width: 400px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden;
 }
 
 .dialog-title {
-    margin-top: 0;
-    margin-bottom: 24px;
+    margin: 0;
+    padding: 24px 24px 16px 24px;
     color: var(--text-color);
     font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+/* Scrollable content areas */
+.dialog-container > form,
+.dialog-container > .tab-content,
+.dialog-container > .dialog-message,
+.dialog-container > .message-content,
+.dialog-container > .confirm-content,
+.dialog-container > .import-management,
+.dialog-container > .version-list-container,
+.dialog-container > .access-rule-form,
+.dialog-container > .new-document-form,
+.dialog-container > .settings-form,
+.login-container > .login-form {
+    padding: 0 24px 24px 24px;
+    overflow-y: auto;
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .close-dialog {
@@ -233,12 +257,13 @@ body:has([class*="-dialog"].active) {
 .error-message {
     color: #ff4444;
     text-align: center;
-    margin-bottom: 15px;
+    margin: 0 24px 15px 24px;
     font-size: 14px;
     display: none;
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(255, 68, 68, 0.1);
+    flex-shrink: 0;
 }
 
 .error-message[style*="display: block"] {
@@ -282,41 +307,44 @@ body:has([class*="-dialog"].active) {
 }
 
 .message-dialog .dialog-container,
-.user-confirmation-dialog .dialog-container {
+.user-confirmation_dialog .dialog-container {
     max-width: 450px;
 }
 
 .message-dialog .message-content,
-.user-confirmation-dialog .confirm-content {
+.user-confirmation_dialog .confirm-content {
     margin-bottom: 20px;
     line-height: 1.4;
 }
 
 .message-dialog .message-ok,
-.user-confirmation-dialog .confirm-yes {
+.user-confirmation_dialog .confirm-yes {
     background-color: var(--primary-color);
     color: white;
 }
 
 .message-dialog .message-ok:hover,
-.user-confirmation-dialog .confirm-yes:hover {
+.user-confirmation_dialog .confirm-yes:hover {
     background-color: var(--primary-hover);
 }
 
-.user-confirmation-dialog .confirm-no {
+.user-confirmation_dialog .confirm-no {
     background-color: var(--border-color);
     color: var(--text-color);
 }
 
-.user-confirmation-dialog .confirm-no:hover {
+.user-confirmation_dialog .confirm-no:hover {
     background-color: var(--hover-bg);
 }
 
 /* Login form styles */
 .login-title {
     text-align: center;
-    margin-bottom: 20px;
+    margin: 0;
+    padding: 24px 24px 16px 24px;
     color: var(--text-color);
+    flex-shrink: 0;
+    font-size: 1.5rem; /* Match dialog-title */
 }
 
 .login-form {
@@ -342,14 +370,15 @@ body:has([class*="-dialog"].active) {
     width: 600px;
     max-width: 90%;
     max-height: 90vh;
-    overflow-y: auto;
+    /* overflow-y: auto; - Removed to allow internal scrolling */
 }
 
 .settings-tabs,
 .file-upload-tabs {
     display: flex;
-    margin-bottom: 20px;
+    margin: 0 24px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .tab-button {
