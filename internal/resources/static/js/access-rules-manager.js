@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validation
         if (accessLevel === 'restricted' && currentGroups.length === 0) {
-            alert('Please add at least one group for restricted access.');
+            window.showMessageDialog('Validation Error', 'Please add at least one group for restricted access.');
             return;
         }
 
@@ -345,31 +345,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAccessRules();
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                alert('Failed to save rule: ' + (errorData.message || 'Unknown error'));
+                window.showMessageDialog('Error', 'Failed to save rule: ' + (errorData.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error saving rule:', error);
-            alert('Error saving rule: ' + error.message);
+            window.showMessageDialog('Error', 'Error saving rule: ' + error.message);
         }
     }
 
-    async function deleteRule(index) {
-        if (!confirm('Are you sure you want to delete this rule?')) return;
-        
-        try {
-            const response = await fetch(`/api/access-rules/${index}`, {
-                method: 'DELETE'
-            });
+    function deleteRule(index) {
+        window.showConfirmDialog('Delete Rule', 'Are you sure you want to delete this rule?', async (confirmed) => {
+            if (!confirmed) return;
             
-            if (response.ok) {
-                loadAccessRules();
-            } else {
-                alert('Failed to delete rule');
+            try {
+                const response = await fetch(`/api/access-rules/${index}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadAccessRules();
+                } else {
+                    window.showMessageDialog('Error', 'Failed to delete rule');
+                }
+            } catch (error) {
+                console.error('Error deleting rule:', error);
+                window.showMessageDialog('Error', 'Error deleting rule');
             }
-        } catch (error) {
-            console.error('Error deleting rule:', error);
-            alert('Error deleting rule');
-        }
+        });
     }
 
     async function moveRule(index, direction) {
