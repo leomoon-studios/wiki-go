@@ -142,22 +142,8 @@
     width: 700px;
     max-width: 95%;
     max-height: 90vh;
-    overflow-y: auto;
-    padding-top: 25px;
-}
-
-.access-rule-dialog .close-dialog {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 10;
-    background-color: transparent;
-    border-radius: 4px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* overflow-y: auto; - Removed to allow internal scrolling */
+    padding-top: 0; /* Let dialog.css handle padding */
 }
 
 .access-rule-dialog .close-dialog:hover {
