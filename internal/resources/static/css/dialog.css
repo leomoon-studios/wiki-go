@@ -216,6 +216,30 @@ body:has([class*="-dialog"].active) {
     color: var(--text-color);
     font-size: 1.5rem;
     flex-shrink: 0;
+    transition: box-shadow 0.2s ease;
+}
+
+/* Dialog Scroll Shadows */
+.dialog-container.scrolled .dialog-title,
+.login-container.scrolled .login-title {
+    box-shadow: var(--shadow);
+    z-index: 10;
+    position: relative;
+}
+
+/* For dialogs with tabs (Settings), remove shadow from title and add to tabs */
+.dialog-container:has(.settings-tabs).scrolled .dialog-title {
+    box-shadow: none;
+}
+
+.settings-tabs {
+    transition: box-shadow 0.2s ease;
+}
+
+.dialog-container.scrolled .settings-tabs {
+    box-shadow: var(--shadow);
+    z-index: 10;
+    position: relative;
 }
 
 /* Scrollable content areas */
@@ -247,6 +271,7 @@ body:has([class*="-dialog"].active) {
     cursor: pointer;
     padding: 5px;
     transition: all 0.2s;
+    z-index: 20;
 }
 
 .close-dialog:hover {

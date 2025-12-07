@@ -68,4 +68,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check on scroll
     window.addEventListener('scroll', updateShadows);
+
+    // Dialog scroll shadows
+    const dialogContainers = document.querySelectorAll('.dialog-container, .login-container');
+    dialogContainers.forEach(container => {
+        // We need to prioritize direct children that are scrollable.
+        let scrollable = container.querySelector(':scope > form, :scope > .tab-content, :scope > .dialog-message, :scope > .message-content, :scope > .confirm-content, :scope > .import-management, :scope > .version-list-container, :scope > .access-rule-form, :scope > .new-document-form, :scope > .settings-form, :scope > .login-form');
+        
+        // Fallback for older browsers that don't support :scope or if structure is different
+        if (!scrollable) {
+             scrollable = container.querySelector('.tab-content, form, .dialog-message, .message-content, .confirm-content');
+        }
+        
+        if (scrollable) {
+            scrollable.addEventListener('scroll', () => {
+                if (scrollable.scrollTop > 0) {
+                    container.classList.add('scrolled');
+                } else {
+                    container.classList.remove('scrolled');
+                }
+            });
+        }
+    });
 });
