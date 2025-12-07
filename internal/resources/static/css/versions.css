@@ -260,26 +260,45 @@
     .version-history-dialog .dialog-container {
         width: 95%;
         max-height: 90vh;
-        padding: 15px;
+        padding: 0;
+    }
+
+    .version-history-dialog .dialog-content {
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .version-history-layout {
         flex-direction: column;
         max-height: none;
-    }
-
-    .version-list-container,
-    .version-preview-container {
-        width: 100%;
-        max-height: 50vh;
-        border-right: none;
-        padding: 10px;
-        box-sizing: border-box;
+        height: auto;
+        overflow: visible;
     }
 
     .version-list-container {
+        width: 100%;
+        max-height: 35vh;
+        border-right: none;
         border-bottom: 1px solid var(--border-color);
-        overflow-x: hidden;
+        padding: 10px;
+        box-sizing: border-box;
+        flex: none;
+    }
+
+    .version-preview-container {
+        width: 100%;
+        max-height: none;
+        height: auto;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow: visible;
+        flex: none;
+    }
+
+    .version-preview {
+        overflow: visible;
+        height: auto;
     }
 
     .version-item {

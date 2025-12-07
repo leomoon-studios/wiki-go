@@ -72,21 +72,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Dialog scroll shadows
     const dialogContainers = document.querySelectorAll('.dialog-container, .login-container');
     dialogContainers.forEach(container => {
-        // We need to prioritize direct children that are scrollable.
-        let scrollable = container.querySelector(':scope > form, :scope > .tab-content, :scope > .dialog-message, :scope > .message-content, :scope > .confirm-content, :scope > .import-management, :scope > .version-list-container, :scope > .access-rule-form, :scope > .new-document-form, :scope > .settings-form, :scope > .login-form');
+        // Find all potential scrollable elements within the container
+        // We use :scope > for direct children where applicable, but also look deeper for version history
+        const directScrollables = Array.from(container.querySelectorAll(':scope > form, :scope > .tab-content, :scope > .dialog-message, :scope > .message-content, :scope > .confirm-content, :scope > .import-management, :scope > .access-rule-form, :scope > .new-document-form, :scope > .settings-form, :scope > .login-form'));
         
-        // Fallback for older browsers that don't support :scope or if structure is different
-        if (!scrollable) {
-             scrollable = container.querySelector('.tab-content, form, .dialog-message, .message-content, .confirm-content');
+        // Version history has nested scrollable areas (desktop) or the main content (mobile)
+        // We also check .dialog-content which is scrollable in mobile version history
+        const versionScrollables = Array.from(container.querySelectorAll('.version-list-container, .version-preview-container, .dialog-content'));
+        
+        const allScrollables = [...directScrollables, ...versionScrollables];
+        
+        // Fallback for older browsers or if structure is different (simple search)
+        if (allScrollables.length === 0) {
+             const fallback = container.querySelector('.tab-content, form, .dialog-message, .message-content, .confirm-content');
+             if (fallback) allScrollables.push(fallback);
         }
         
-        if (scrollable) {
-            scrollable.addEventListener('scroll', () => {
-                if (scrollable.scrollTop > 0) {
+        if (allScrollables.length > 0) {
+            const checkScroll = () => {
+                // If ANY of the scrollable areas are scrolled, show the shadow
+                const isScrolled = allScrollables.some(el => el.scrollTop > 0);
+                if (isScrolled) {
                     container.classList.add('scrolled');
                 } else {
                     container.classList.remove('scrolled');
                 }
+            };
+            
+            allScrollables.forEach(el => {
+                el.addEventListener('scroll', checkScroll);
             });
         }
     });
