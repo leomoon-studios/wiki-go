@@ -248,6 +248,7 @@ body:has([class*="-dialog"].active) {
 .dialog-container > .dialog-message,
 .dialog-container > .message-content,
 .dialog-container > .confirm-content,
+.dialog-container > .dialog-message,
 .dialog-container > .import-management,
 .dialog-container > .version-list-container,
 .dialog-container > .access-rule-form,
@@ -259,6 +260,21 @@ body:has([class*="-dialog"].active) {
     flex: 1;
     width: 100%;
     box-sizing: border-box;
+}
+
+.dialog-container > .dialog-warning {
+    padding: 0 24px 10px 24px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.dialog-container > .form-actions {
+    padding: 0 24px 24px 24px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin-top: 0;
 }
 
 .close-dialog {
