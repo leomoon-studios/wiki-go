@@ -24,9 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentRules = [];
     let currentGroups = [];
+    let selectedFolder = '/';
 
     // Initialize
-    if (accessRulesList) {
+    const userRole = document.querySelector('meta[name="user-role"]')?.content;
+    if (accessRulesList && userRole === 'admin') {
         loadAccessRules();
     }
 
