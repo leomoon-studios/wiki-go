@@ -278,5 +278,20 @@
   "access.access_groups": "Access Groups",
   "access.add_group": "Add Group",
   "access.save_rule": "Save Rule",
-  "access.description_placeholder": "Optional, defaults to folder name"
+  "access.description_placeholder": "Optional, defaults to folder name",
+  "access.no_rules": "No access rules defined",
+  "access.root": "Root",
+  "access.validation_error": "Validation Error",
+  "access.error_no_groups": "Please add at least one group for restricted access.",
+  "access.error_save_failed": "Failed to save rule",
+  "access.error_save": "Error saving rule",
+  "access.delete_title": "Delete Rule",
+  "access.delete_confirm": "Are you sure you want to delete this rule?",
+  "access.error_delete_failed": "Failed to delete rule",
+  "access.error_delete": "Error deleting rule",
+  "access.loading_folders": "Loading folders...",
+  "access.no_folders": "No folders found",
+  "access.error_load_folders": "Failed to load folders",
+  "common.error": "Error",
+  "common.unknown_error": "Unknown error"
 }

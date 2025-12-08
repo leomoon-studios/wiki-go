@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentRules = [];
     let currentGroups = [];
-    let selectedFolder = '/';
 
     // Initialize
     if (accessRulesList) {
@@ -93,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         accessRulesList.innerHTML = '';
         
         if (currentRules.length === 0) {
-            accessRulesList.innerHTML = '<div class="empty-message">No access rules defined</div>';
+            accessRulesList.innerHTML = `<div class="empty-message" data-i18n="access.no_rules">${window.i18n ? window.i18n.t('access.no_rules') : 'No access rules defined'}</div>`;
             return;
         }
 
@@ -113,18 +112,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Parse pattern for display
             let basePath = rule.pattern;
             let matchIcon = 'fa-file-text-o';
-            let matchText = 'This document only';
+            let matchKey = 'access.match_exact';
+            let matchDefault = 'This document only';
             
             if (basePath.endsWith('/**')) {
                 basePath = basePath.substring(0, basePath.length - 3) || '/';
                 matchIcon = 'fa-sitemap';
-                matchText = 'This document and all sub-documents';
+                matchKey = 'access.match_recursive';
+                matchDefault = 'This document and all sub documents';
             } else if (basePath.endsWith('/*')) {
                 basePath = basePath.substring(0, basePath.length - 2) || '/';
                 matchIcon = 'fa-folder-open-o';
-                matchText = 'Direct children only';
+                matchKey = 'access.match_children';
+                matchDefault = 'Direct children only';
             }
 
+            const matchText = window.i18n ? window.i18n.t(matchKey) : matchDefault;
             const matchHtml = `<span class="match-type" title="${matchText}"><i class="fa ${matchIcon}"></i></span>`;
 
             if (rule.description) {
@@ -137,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 titleEl.textContent = basePath;
                 titleEl.style.fontFamily = 'monospace';
                 
-                subtitleEl.innerHTML = `${matchHtml} <span class="match-text">${matchText}</span>`;
+                subtitleEl.innerHTML = `${matchHtml} <span class="match-text" data-i18n="${matchKey}">${matchText}</span>`;
                 subtitleEl.style.display = 'block';
             }
             
@@ -311,7 +314,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validation
         if (accessLevel === 'restricted' && currentGroups.length === 0) {
-            window.showMessageDialog('Validation Error', 'Please add at least one group for restricted access.');
+            window.showMessageDialog(
+                window.i18n ? window.i18n.t('access.validation_error') : 'Validation Error',
+                window.i18n ? window.i18n.t('access.error_no_groups') : 'Please add at least one group for restricted access.'
+            );
             return;
         }
 
@@ -319,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pattern: pattern,
             access: accessLevel,
             groups: accessLevel === 'restricted' ? currentGroups : [],
-            description: ruleDescription.value || selectedFolder || 'Root'
+            description: ruleDescription.value || selectedFolder || (window.i18n ? window.i18n.t('access.root') : 'Root')
         };
 
         try {
@@ -345,16 +351,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAccessRules();
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                window.showMessageDialog('Error', 'Failed to save rule: ' + (errorData.message || 'Unknown error'));
+                const errorTitle = window.i18n ? window.i18n.t('common.error') : 'Error';
+                const errorPrefix = window.i18n ? window.i18n.t('access.error_save_failed') : 'Failed to save rule';
+                const unknownError = window.i18n ? window.i18n.t('common.unknown_error') : 'Unknown error';
+                
+                window.showMessageDialog(errorTitle, errorPrefix + ': ' + (errorData.message || unknownError));
             }
         } catch (error) {
             console.error('Error saving rule:', error);
-            window.showMessageDialog('Error', 'Error saving rule: ' + error.message);
+            const errorTitle = window.i18n ? window.i18n.t('common.error') : 'Error';
+            const errorPrefix = window.i18n ? window.i18n.t('access.error_save') : 'Error saving rule';
+            
+            window.showMessageDialog(errorTitle, errorPrefix + ': ' + error.message);
         }
     }
 
     function deleteRule(index) {
-        window.showConfirmDialog('Delete Rule', 'Are you sure you want to delete this rule?', async (confirmed) => {
+        const deleteTitle = window.i18n ? window.i18n.t('access.delete_title') : 'Delete Rule';
+        const deleteConfirm = window.i18n ? window.i18n.t('access.delete_confirm') : 'Are you sure you want to delete this rule?';
+        
+        window.showConfirmDialog(deleteTitle, deleteConfirm, async (confirmed) => {
             if (!confirmed) return;
             
             try {
@@ -365,11 +381,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok) {
                     loadAccessRules();
                 } else {
-                    window.showMessageDialog('Error', 'Failed to delete rule');
+                    window.showMessageDialog(
+                        window.i18n ? window.i18n.t('common.error') : 'Error',
+                        window.i18n ? window.i18n.t('access.error_delete_failed') : 'Failed to delete rule'
+                    );
                 }
             } catch (error) {
                 console.error('Error deleting rule:', error);
-                window.showMessageDialog('Error', 'Error deleting rule');
+                window.showMessageDialog(
+                    window.i18n ? window.i18n.t('common.error') : 'Error',
+                    window.i18n ? window.i18n.t('access.error_delete') : 'Error deleting rule'
+                );
             }
         });
     }
@@ -403,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function populateFolderTree() {
-        folderTree.innerHTML = '<div class="loading">Loading folders...</div>';
+        folderTree.innerHTML = `<div class="loading">${window.i18n ? window.i18n.t('access.loading_folders') : 'Loading folders...'}</div>`;
         
         try {
             const response = await fetch('/api/folders');
@@ -416,14 +438,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         addFolderToTree(folder.path, folder.name, folder.level);
                     });
                 } else {
-                    folderTree.innerHTML = '<div class="empty-message">No folders found</div>';
+                    folderTree.innerHTML = `<div class="empty-message">${window.i18n ? window.i18n.t('access.no_folders') : 'No folders found'}</div>`;
                 }
             } else {
-                folderTree.innerHTML = '<div class="error">Failed to load folders</div>';
+                folderTree.innerHTML = `<div class="error">${window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders'}</div>`;
             }
         } catch (error) {
             console.error('Error loading folders:', error);
-            folderTree.innerHTML = '<div class="error">Failed to load folders</div>';
+            folderTree.innerHTML = `<div class="error">${window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders'}</div>`;
         }
     }
 
