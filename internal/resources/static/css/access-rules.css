@@ -297,3 +297,35 @@
     color: var(--text-secondary);
     font-size: 0.9em;
 }
+
+@media (max-width: 600px) {
+    .access-rule-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .rule-content {
+        flex: 1 1 calc(100% - 60px);
+        min-width: 0;
+    }
+
+    .rule-actions {
+        flex-basis: 100%;
+        justify-content: flex-end;
+        padding-top: 8px;
+        margin-top: 5px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .rule-header {
+        flex-wrap: wrap;
+    }
+    
+    .rule-title {
+        word-break: break-word;
+    }
+
+    .rule-subtitle {
+        word-break: break-all;
+    }
+}

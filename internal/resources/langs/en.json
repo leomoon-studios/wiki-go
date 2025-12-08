@@ -256,8 +256,7 @@
   "delete_document.cancel_button": "No, Cancel",
 
   "access.title": "Access",
-  "access.description": "Define path-based access rules for sections of your wiki. Rules are evaluated in order. First match wins.",
-  "access.tip": "Tip: Create group access rules here, then assign users to groups in the Users tab.",
+  "access.description": "Define path-based access rules for sections of your wiki, then assign users to groups in the Users tab. Rules are evaluated in order. First match wins.",
   "access.active_rules": "Active Rules",
   "access.add_rule": "Add New Rule",
   "access.rule_access_public": "Public",
