@@ -27,6 +27,8 @@
   "common.create": "Create",
   "common.sending": "Sending...",
   "common.view": "View",
+  "common.error": "Error",
+  "common.unknown_error": "Unknown error",
 
   "nav.home": "Home",
 
@@ -249,12 +251,6 @@
   "notfound.create_prompt": "Would you like to create this page?",
   "notfound.create_button": "Create This Page",
 
-  "delete_document.title": "Delete Document",
-  "delete_document.message": "Are you sure you want to delete this document? This action cannot be undone.",
-  "delete_document.warning": "Warning: If this is a folder, all contents including subfolders and documents will be deleted.",
-  "delete_document.confirm_button": "Yes, Delete",
-  "delete_document.cancel_button": "No, Cancel",
-
   "access.title": "Access",
   "access.description": "Define path-based access rules for sections of your wiki, then assign users to groups in the Users tab. Rules are evaluated in order. First match wins.",
   "access.active_rules": "Active Rules",
@@ -291,6 +287,10 @@
   "access.loading_folders": "Loading folders...",
   "access.no_folders": "No folders found",
   "access.error_load_folders": "Failed to load folders",
-  "common.error": "Error",
-  "common.unknown_error": "Unknown error"
+
+  "delete_document.title": "Delete Document",
+  "delete_document.message": "Are you sure you want to delete this document? This action cannot be undone.",
+  "delete_document.warning": "Warning: If this is a folder, all contents including subfolders and documents will be deleted.",
+  "delete_document.confirm_button": "Yes, Delete",
+  "delete_document.cancel_button": "No, Cancel"
 }
