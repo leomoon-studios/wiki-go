@@ -46,3 +46,20 @@ func IsNumeric(s string) bool {
 	}
 	return true
 }
+
+// IsValidFilename checks if a filename is safe to use
+func IsValidFilename(filename string) bool {
+	// Check for empty filename
+	if filename == "" {
+		return false
+	}
+
+	// Check for path traversal characters
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return false
+	}
+
+	// Check for allowed characters (alphanumeric, dot, underscore, dash)
+	validName := regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+	return validName.MatchString(filename)
+}

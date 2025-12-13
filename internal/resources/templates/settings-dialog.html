@@ -15,6 +15,7 @@
             <button class="tab-button" data-tab="users-tab">{{t "settings.users"}}</button>
             <button class="tab-button" data-tab="access-control-tab">{{t "settings.access"}}</button>
             <button class="tab-button" data-tab="import-tab">{{t "settings.import"}}</button>
+            <button class="tab-button" data-tab="backup-tab">{{t "settings.backup"}}</button>
         </div>
 
         <div class="tab-content">
@@ -237,6 +238,36 @@
                         <button type="button" class="dialog-button" id="cancelImportButton">{{t "common.cancel"}}</button>
                     </div>
                 </form>
+            </div>
+            <div id="backup-tab" class="tab-pane">
+                <div class="backup-management">
+                    <p class="form-help">{{t "backup.description"}}</p>
+                    
+                    <div class="backup-actions" style="margin-bottom: 20px;">
+                        <button id="createBackupBtn" class="dialog-button primary">
+                            <i class="fa fa-archive"></i> {{t "backup.create_button"}}
+                        </button>
+                    </div>
+
+                    <div class="backup-progress-container" style="display: none; margin-bottom: 20px;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="backupProgressBar"></div>
+                        </div>
+                        <div class="progress-status">
+                            <span id="backupProgressText">0%</span>
+                            <span id="backupProgressDetails"></span>
+                        </div>
+                    </div>
+
+                    <div class="files-management">
+                        <div class="files-list-container">
+                            <h3>{{t "backup.available_backups"}}</h3>
+                            <div id="backupList" class="files-list">
+                                <div class="empty-message">{{t "backup.loading"}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

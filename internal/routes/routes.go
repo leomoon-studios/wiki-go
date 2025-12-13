@@ -424,6 +424,21 @@ func SetupRoutes(cfg *config.Config) {
 		handlers.ImportStatusHandler(w, r, cfg)
 	})
 
+	// Backup API - Admin only
+	mux.HandleFunc("/api/backup/start", adminMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handlers.StartBackupHandler(w, r, cfg)
+	}))
+	mux.HandleFunc("/api/backup/list", adminMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handlers.ListBackupsHandler(w, r, cfg)
+	}))
+	mux.HandleFunc("/api/backup/status/", adminMiddleware(handlers.BackupStatusHandler))
+	mux.HandleFunc("/api/backup/download/", adminMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handlers.DownloadBackupHandler(w, r, cfg)
+	}))
+	mux.HandleFunc("/api/backup/delete/", adminMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handlers.DeleteBackupHandler(w, r, cfg)
+	}))
+
 	// Sitemap routes
 	mux.HandleFunc("/sitemap/", func(w http.ResponseWriter, r *http.Request) {
 		handlers.SitemapHandler(w, r, cfg)

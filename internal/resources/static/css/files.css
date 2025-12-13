@@ -155,11 +155,12 @@
     padding-left: 12px;
 }
 
-.file-actions button {
+.file-actions button,
+.file-actions .download-file-btn {
     border: none;
     background-color: var(--hover-bg);
     cursor: pointer;
-    padding: 8px;
+    padding: 0;
     border-radius: 4px;
     color: var(--text-secondary);
     transition: all 0.2s ease;
@@ -169,22 +170,34 @@
     justify-content: center;
     width: 32px;
     height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    box-sizing: border-box;
+    text-decoration: none;
+    line-height: 1;
 }
 
-.file-actions button span {
+.file-actions button span,
+.file-actions .download-file-btn span {
     display: none; /* Hide text labels */
 }
 
-.file-actions button:hover {
+.file-actions button:hover,
+.file-actions .download-file-btn:hover {
     background-color: var(--border-color);
     color: var(--text-color);
     transform: translateY(-1px);
 }
 
-.file-actions button svg {
+.file-actions button svg,
+.file-actions .download-file-btn i {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .file-actions .copy-url-btn:hover,
@@ -214,12 +227,12 @@
     background-color: rgba(255, 82, 82, 0.15);
 }
 
-.file-actions .rename-file-btn, .file-actions .view-file-btn {
+.file-actions .rename-file-btn, .file-actions .view-file-btn, .file-actions .download-file-btn {
     color: var(--text-color);
     background-color: rgba(var(--text-color-rgb, 128, 128, 128), 0.08);
 }
 
-.file-actions .rename-file-btn:hover, .file-actions .view-file-btn:hover {
+.file-actions .rename-file-btn:hover, .file-actions .view-file-btn:hover, .file-actions .download-file-btn:hover {
     color: var(--primary-color);
     background-color: rgba(var(--primary-color-rgb, 0, 120, 210), 0.15);
 }

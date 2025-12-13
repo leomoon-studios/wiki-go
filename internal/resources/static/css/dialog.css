@@ -406,7 +406,13 @@ body:has([class*="-dialog"].active) {
 }
 
 /* ---------- Settings Dialog ---------- */
-.settings-dialog .dialog-container,
+.settings-dialog .dialog-container {
+    width: 800px;
+    max-width: 90%;
+    max-height: 90vh;
+    /* overflow-y: auto; - Removed to allow internal scrolling */
+}
+
 .new-document-dialog .dialog-container {
     width: 600px;
     max-width: 90%;
