@@ -15,6 +15,7 @@ import (
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
+	"wiki-go/internal/utils"
 )
 
 // FileResponse represents the response for file operations
@@ -1345,7 +1346,7 @@ func ListFoldersHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 
 		folders = append(folders, FolderInfo{
 			Path:  virtualPath,
-			Name:  d.Name(),
+			Name:  utils.GetDocumentTitle(path),
 			Level: level,
 		})
 
