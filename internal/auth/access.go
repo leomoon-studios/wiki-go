@@ -47,6 +47,17 @@ func matchPattern(pattern, path string) bool {
 		pattern = "/" + pattern
 	}
 
+	// Special handling for root recursive pattern (/**)
+	// In this wiki architecture, the homepage (/) is physically located in data/pages/home,
+	// while all other documents are in data/documents.
+	// A recursive rule on root (/**) should logically apply to the homepage and its children.
+	// Since other documents are NOT children of the homepage in the file system,
+	// we restrict /** to only match the root path itself.
+	// This prevents a "Recursive Homepage" rule from matching the entire wiki.
+	if pattern == "/**" {
+		return path == "/"
+	}
+
 	// Convert glob to regex
 	var regexBuilder strings.Builder
 	regexBuilder.WriteString("^")

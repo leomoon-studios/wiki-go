@@ -241,13 +241,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add Mode
             accessRuleForm.reset();
             selectedFolderPath.textContent = '/';
-            document.querySelector('input[name="matchType"][value="recursive"]').checked = true;
+            // Default to exact match for root, recursive for others (but here we are at root)
+            document.querySelector('input[name="matchType"][value="exact"]').checked = true;
             document.querySelector('input[name="accessLevel"][value="restricted"]').checked = true;
             ruleDescription.value = '';
         }
 
         renderGroups();
         updateGroupsVisibility();
+        updateMatchTypeOptions(selectedFolder);
         accessRuleDialog.classList.add('active');
     }
 
@@ -264,6 +266,33 @@ document.addEventListener('DOMContentLoaded', function() {
             groupsContainer.style.display = 'block';
         } else {
             groupsContainer.style.display = 'none';
+        }
+    }
+
+    function updateMatchTypeOptions(path) {
+        const recursiveInput = document.querySelector('input[name="matchType"][value="recursive"]');
+        const childrenInput = document.querySelector('input[name="matchType"][value="children"]');
+        const exactInput = document.querySelector('input[name="matchType"][value="exact"]');
+
+        if (path === '/') {
+            if (recursiveInput) {
+                recursiveInput.disabled = true;
+                if (recursiveInput.parentElement.tagName === 'LABEL') recursiveInput.parentElement.style.opacity = '0.5';
+            }
+            if (childrenInput) {
+                childrenInput.disabled = true;
+                if (childrenInput.parentElement.tagName === 'LABEL') childrenInput.parentElement.style.opacity = '0.5';
+            }
+            if (exactInput) exactInput.checked = true;
+        } else {
+            if (recursiveInput) {
+                recursiveInput.disabled = false;
+                if (recursiveInput.parentElement.tagName === 'LABEL') recursiveInput.parentElement.style.opacity = '1';
+            }
+            if (childrenInput) {
+                childrenInput.disabled = false;
+                if (childrenInput.parentElement.tagName === 'LABEL') childrenInput.parentElement.style.opacity = '1';
+            }
         }
     }
 
@@ -467,6 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
             item.classList.add('selected');
             selectedFolder = path;
             selectedFolderPath.textContent = path;
+            updateMatchTypeOptions(path);
         };
         
         folderTree.appendChild(item);

@@ -86,6 +86,12 @@ func CreateAccessRuleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Prevent recursive rules on root
+	if rule.Pattern == "/**" {
+		sendJSONError(w, "Recursive rules on root (/**) are not allowed.", http.StatusBadRequest, "")
+		return
+	}
+
 	// Create a copy of the current config
 	updatedConfig := *cfg
 
@@ -127,6 +133,12 @@ func UpdateAccessRuleHandler(w http.ResponseWriter, r *http.Request, index int) 
 	// Validate rule
 	if rule.Pattern == "" {
 		sendJSONError(w, "Pattern is required", http.StatusBadRequest, "")
+		return
+	}
+
+	// Prevent recursive rules on root
+	if rule.Pattern == "/**" {
+		sendJSONError(w, "Recursive rules on root (/**) are not allowed.", http.StatusBadRequest, "")
 		return
 	}
 
