@@ -141,13 +141,8 @@
 .access-rule-dialog .dialog-container {
     width: 700px;
     max-width: 95%;
-    max-height: 90vh;
     /* overflow-y: auto; - Removed to allow internal scrolling */
     padding-top: 0; /* Let dialog.css handle padding */
-}
-
-.access-rule-dialog .close-dialog:hover {
-    background-color: var(--bg-tertiary);
 }
 
 .folder-picker-container {

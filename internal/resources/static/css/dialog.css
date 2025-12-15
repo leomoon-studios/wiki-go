@@ -206,7 +206,7 @@ body:has([class*="-dialog"].active) {
     position: relative;
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 85vh;
     overflow: hidden;
 }
 
@@ -279,8 +279,8 @@ body:has([class*="-dialog"].active) {
 
 .close-dialog {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     background: none;
     border: none;
     color: var(--text-color);
@@ -292,6 +292,7 @@ body:has([class*="-dialog"].active) {
 
 .close-dialog:hover {
     color: var(--primary-hover);
+    background-color: var(--hover-bg);
 }
 
 /* Error message styles */
@@ -335,7 +336,8 @@ body:has([class*="-dialog"].active) {
 }
 
 .confirmation-dialog .dialog-warning {
-    margin-bottom: 20px;
+    margin: 0 24px 20px 24px;
+    width: auto;
     color: var(--danger-color);
     font-weight: bold;
     padding: 8px;
@@ -409,14 +411,12 @@ body:has([class*="-dialog"].active) {
 .settings-dialog .dialog-container {
     width: 800px;
     max-width: 90%;
-    max-height: 90vh;
     /* overflow-y: auto; - Removed to allow internal scrolling */
 }
 
 .new-document-dialog .dialog-container {
     width: 600px;
     max-width: 90%;
-    max-height: 90vh;
     /* overflow-y: auto; - Removed to allow internal scrolling */
 }
 

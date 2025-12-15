@@ -4,15 +4,10 @@
 .version-history-dialog .dialog-container {
     max-width: 900px;
     width: 90%;
-    max-height: 80vh;
     position: relative;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}
-
-.version-history-dialog .close-dialog:hover {
-    background-color: var(--hover-bg);
 }
 
 .version-history-dialog .close-dialog svg {
@@ -259,7 +254,6 @@
 @media (max-width: 950px) {
     .version-history-dialog .dialog-container {
         width: 95%;
-        max-height: 90vh;
         padding: 0;
     }
 
