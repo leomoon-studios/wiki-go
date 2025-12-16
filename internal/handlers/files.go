@@ -323,16 +323,6 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		return
 	}
 
-	// Authentication: Require login if the wiki is private
-	if !auth.RequireAuth(r, cfg) {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(FileResponse{
-			Success: false,
-			Message: "Unauthorized. Please log in to access files.",
-		})
-		return
-	}
-
 	// Get the document path from the URL
 	path := strings.TrimPrefix(r.URL.Path, "/api/files/list")
 
@@ -348,6 +338,26 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	path = filepath.Clean(path)
 	path = strings.TrimSuffix(path, "/")
 	path = strings.ReplaceAll(path, "\\", "/")
+
+	// Determine logical path for access check
+	logicalPath := "/" + path
+	if path == "pages/home" {
+		logicalPath = "/"
+	} else if strings.HasPrefix(path, "pages/home/") {
+		// Handle potential sub-resources of homepage if any
+		logicalPath = "/" + strings.TrimPrefix(path, "pages/home/")
+	}
+
+	// Check access permissions
+	session := auth.GetSession(r)
+	if !auth.CanAccessDocument(logicalPath, session, cfg) {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(FileResponse{
+			Success: false,
+			Message: "Unauthorized. You do not have permission to access files for this document.",
+		})
+		return
+	}
 
 	// Determine the full filesystem path to the document's directory
 	var dirPath string
@@ -546,12 +556,6 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		return
 	}
 
-	// Authentication: Require login if the wiki is private
-	if !auth.RequireAuth(r, cfg) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	// Get the file path from the URL
 	path := strings.TrimPrefix(r.URL.Path, "/api/files/")
 
@@ -561,6 +565,28 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	// Clean and normalize the path
 	path = filepath.Clean(path)
 	path = strings.ReplaceAll(path, "\\", "/")
+
+	// Check access permissions
+	// We need to determine the document path from the file path
+	// The path is like "pages/home/image.png" or "finance/doc/image.png"
+	docPath := filepath.Dir(path)
+	
+	// Determine logical path for access check
+	logicalPath := "/" + docPath
+	if docPath == "pages/home" {
+		logicalPath = "/"
+	} else if strings.HasPrefix(docPath, "pages/home/") {
+		logicalPath = "/" + strings.TrimPrefix(docPath, "pages/home/")
+	} else if docPath == "." {
+		// Should not happen for valid document attachments, but handle gracefully
+		logicalPath = "/"
+	}
+
+	session := auth.GetSession(r)
+	if !auth.CanAccessDocument(logicalPath, session, cfg) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	// Determine the full filesystem path to the file
 	var filePath string
