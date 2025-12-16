@@ -187,30 +187,7 @@
     color: var(--text-secondary);
 }
 
-.radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.radio-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.radio-option input[type="radio"] {
-    margin: 0;
-    width: auto;
-}
-
-.radio-option label {
-    margin: 0;
-    cursor: pointer;
-    font-weight: normal;
-}
+/* Radio styles moved to forms.css */
 
 .separator-line {
     height: 1px;

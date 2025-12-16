@@ -187,6 +187,107 @@
     color: var(--text-color);
 }
 
+/* Custom radio button styling */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.radio-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+}
+
+.radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.radio-option label {
+    position: relative;
+    padding-left: 28px;
+    cursor: pointer;
+    display: inline-block;
+    margin-bottom: 0;
+    user-select: none;
+    font-weight: normal;
+    color: var(--text-color);
+}
+
+/* Radio circle */
+.radio-option label:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    background-color: var(--bg-color);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* Inner dot */
+.radio-option label:after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+}
+
+/* Checked state */
+.radio-option input[type="radio"]:checked + label:before {
+    border-color: var(--primary-color);
+}
+
+.radio-option input[type="radio"]:checked + label:after {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+}
+
+/* Focus state */
+.radio-option input[type="radio"]:focus-visible + label:before {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
+}
+
+/* Hover state */
+.radio-option label:hover:before {
+    border-color: var(--primary-color);
+}
+
+/* Disabled state */
+.radio-option input[type="radio"]:disabled + label {
+    cursor: not-allowed;
+    opacity: 0.6;
+    color: var(--text-muted);
+}
+
+.radio-option input[type="radio"]:disabled + label:before {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.radio-option input[type="radio"]:disabled:checked + label:after {
+    background-color: var(--text-muted);
+}
+
 /* Dark mode specific styles */
 :root[data-theme="dark"] .language-selector {
     background-color: var(--code-bg);
