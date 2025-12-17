@@ -84,7 +84,7 @@ func VimeoPreprocessor(markdown string, _ string) string {
 						replacement := `<div class="video-container">
 <iframe src="https://player.vimeo.com/video/` + videoID + `"
 width="560" height="315" frameborder="0"
-allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+allow="autoplay; fullscreen; picture-in-picture"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>Vimeo Video</strong></p>
@@ -134,7 +134,7 @@ allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 						replacement := `<div class="video-container">
 <iframe src="https://player.vimeo.com/video/` + videoID + `"
 width="560" height="315" frameborder="0"
-allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+allow="autoplay; fullscreen; picture-in-picture"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>Vimeo Video</strong></p>
@@ -175,7 +175,7 @@ allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 			replacement := `<div class="video-container">
 <iframe src="https://player.vimeo.com/video/` + videoID + `"
 width="560" height="315" frameborder="0"
-allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+allow="autoplay; fullscreen; picture-in-picture"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>Vimeo Video</strong></p>

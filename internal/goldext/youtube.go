@@ -83,8 +83,7 @@ func YouTubePreprocessor(markdown string, _ string) string {
 						videoURL := "https://www.youtube.com/watch?v=" + videoID
 						replacement := `<div class="video-container">
 <iframe width="560" height="315" src="https://www.youtube.com/embed/` + videoID + `"
-frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-allowfullscreen></iframe>
+frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>YouTube Video</strong></p>
@@ -133,8 +132,7 @@ allowfullscreen></iframe>
 						videoURL := "https://www.youtube.com/watch?v=" + videoID
 						replacement := `<div class="video-container">
 <iframe width="560" height="315" src="https://www.youtube.com/embed/` + videoID + `"
-frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-allowfullscreen></iframe>
+frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>YouTube Video</strong></p>
@@ -174,8 +172,7 @@ allowfullscreen></iframe>
 			videoURL := "https://www.youtube.com/watch?v=" + videoID
 			replacement := `<div class="video-container">
 <iframe width="560" height="315" src="https://www.youtube.com/embed/` + videoID + `"
-frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-allowfullscreen></iframe>
+frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
 </div>
 <div class="video-print-placeholder">
 <p><strong>YouTube Video</strong></p>
