@@ -138,18 +138,51 @@ async function updatePreview(content) {
             }
         });
 
-        // Initialize any client-side renderers (Prism, MathJax, etc)
-        if (window.Prism) {
-            Prism.highlightAllUnder(previewElement);
+        // Use lazy loader to ensure libraries are loaded before rendering
+        const promises = [];
+
+        // Load and initialize Prism if there are code blocks
+        if (previewElement.querySelector('pre code')) {
+            if (window.LazyLoader) {
+                promises.push(window.LazyLoader.forceLoad('prism').then(() => {
+                    if (window.Prism) {
+                        Prism.highlightAllUnder(previewElement);
+                    }
+                }));
+            } else if (window.Prism) {
+                Prism.highlightAllUnder(previewElement);
+            }
         }
 
-        if (window.MathJax) {
-            MathJax.typeset([previewElement]);
+        // Load and initialize MathJax if there are math formulas
+        if (previewElement.querySelector('.math, .katex, [class*="math"]') || 
+            previewElement.textContent.includes('$')) {
+            if (window.LazyLoader) {
+                promises.push(window.LazyLoader.forceLoad('mathjax').then(() => {
+                    if (window.MathJax) {
+                        MathJax.typeset([previewElement]);
+                    }
+                }));
+            } else if (window.MathJax) {
+                MathJax.typeset([previewElement]);
+            }
         }
 
-        if (window.mermaid) {
-            mermaid.init(undefined, previewElement.querySelectorAll('.mermaid'));
+        // Load and initialize Mermaid if there are diagrams
+        if (previewElement.querySelector('.mermaid')) {
+            if (window.LazyLoader) {
+                promises.push(window.LazyLoader.forceLoad('mermaid').then(() => {
+                    if (window.mermaid) {
+                        mermaid.init(undefined, previewElement.querySelectorAll('.mermaid'));
+                    }
+                }));
+            } else if (window.mermaid) {
+                mermaid.init(undefined, previewElement.querySelectorAll('.mermaid'));
+            }
         }
+
+        // Wait for all libraries to load and render
+        await Promise.all(promises);
 
     } catch (error) {
         console.error('Preview error:', error);

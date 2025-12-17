@@ -217,32 +217,73 @@
                 </div>
             `;
 
-            // Apply syntax highlighting to code blocks
-            if (typeof Prism !== 'undefined') {
-                targetElement.querySelectorAll('pre code').forEach((block) => {
-                    Prism.highlightElement(block);
-                });
-            }
-
-            // Process math formulas if MathJax is available
-            if (typeof MathJax !== 'undefined') {
-                try {
-                    MathJax.typesetPromise([targetElement]);
-                } catch (mathError) {
-                    console.error('MathJax error:', mathError);
+            // Use lazy loader to load libraries if needed
+            const promises = [];
+            
+            // Check and load Prism if there are code blocks
+            if (targetElement.querySelector('pre code')) {
+                if (window.LazyLoader) {
+                    promises.push(window.LazyLoader.forceLoad('prism').then(() => {
+                        if (typeof Prism !== 'undefined') {
+                            targetElement.querySelectorAll('pre code').forEach((block) => {
+                                Prism.highlightElement(block);
+                            });
+                        }
+                    }));
+                } else if (typeof Prism !== 'undefined') {
+                    targetElement.querySelectorAll('pre code').forEach((block) => {
+                        Prism.highlightElement(block);
+                    });
                 }
             }
 
-            // Initialize Mermaid diagrams in the preview content
-            if (typeof mermaid !== 'undefined' && window.MermaidHandler) {
-                try {
-                    console.log('Using MermaidHandler for version preview');
-                    // Simply use our centralized handler for version preview
-                    window.MermaidHandler.initVersionPreview(targetElement);
-                } catch (mermaidError) {
-                    console.error('Mermaid handler error:', mermaidError);
+            // Check and load MathJax if there are math formulas
+            if (targetElement.querySelector('.math, .katex, [class*="math"]') || 
+                targetElement.textContent.includes('$')) {
+                if (window.LazyLoader) {
+                    promises.push(window.LazyLoader.forceLoad('mathjax').then(() => {
+                        if (typeof MathJax !== 'undefined') {
+                            try {
+                                MathJax.typesetPromise([targetElement]);
+                            } catch (mathError) {
+                                console.error('MathJax error:', mathError);
+                            }
+                        }
+                    }));
+                } else if (typeof MathJax !== 'undefined') {
+                    try {
+                        MathJax.typesetPromise([targetElement]);
+                    } catch (mathError) {
+                        console.error('MathJax error:', mathError);
+                    }
                 }
             }
+
+            // Check and load Mermaid if there are diagrams
+            if (targetElement.querySelector('.mermaid')) {
+                if (window.LazyLoader) {
+                    promises.push(window.LazyLoader.forceLoad('mermaid').then(() => {
+                        if (typeof mermaid !== 'undefined' && window.MermaidHandler) {
+                            try {
+                                console.log('Using MermaidHandler for version preview');
+                                window.MermaidHandler.initVersionPreview(targetElement);
+                            } catch (mermaidError) {
+                                console.error('Mermaid handler error:', mermaidError);
+                            }
+                        }
+                    }));
+                } else if (typeof mermaid !== 'undefined' && window.MermaidHandler) {
+                    try {
+                        console.log('Using MermaidHandler for version preview');
+                        window.MermaidHandler.initVersionPreview(targetElement);
+                    } catch (mermaidError) {
+                        console.error('Mermaid handler error:', mermaidError);
+                    }
+                }
+            }
+
+            // Wait for all libraries to load and process
+            await Promise.all(promises);
         } catch (error) {
             console.error('Error loading version preview:', error);
             targetElement.innerHTML = `<div class="error-message">Failed to load preview: ${error.message}</div>`;

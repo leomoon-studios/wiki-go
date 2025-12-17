@@ -194,6 +194,18 @@ window.MermaidHandler = {
 };
 
 // Initialize main document on page load
-document.addEventListener('DOMContentLoaded', function() {
-  window.MermaidHandler.initMain();
-});
+// Note: When lazy-loaded, this will be called manually by lazy-loader.js
+// When loaded directly (edit mode, etc), this will auto-initialize
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    // Only auto-initialize if we have mermaid diagrams
+    if (document.querySelector('.mermaid')) {
+      window.MermaidHandler.initMain();
+    }
+  });
+} else {
+  // DOM already loaded, check and initialize if needed
+  if (document.querySelector('.mermaid')) {
+    window.MermaidHandler.initMain();
+  }
+}
