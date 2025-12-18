@@ -227,16 +227,19 @@ body:has([class*="-dialog"].active) {
     position: relative;
 }
 
-/* For dialogs with tabs (Settings), remove shadow from title and add to tabs */
-.dialog-container:has(.settings-tabs).scrolled .dialog-title {
+/* For dialogs with tabs (Settings, Attachments), remove shadow from title and add to tabs */
+.dialog-container:has(.settings-tabs).scrolled .dialog-title,
+.dialog-container:has(.file-upload-tabs).scrolled .dialog-title {
     box-shadow: none;
 }
 
-.settings-tabs {
+.settings-tabs,
+.file-upload-tabs {
     transition: box-shadow 0.2s ease;
 }
 
-.dialog-container.scrolled .settings-tabs {
+.dialog-container.scrolled .settings-tabs,
+.dialog-container.scrolled .file-upload-tabs {
     box-shadow: var(--shadow);
     z-index: 10;
     position: relative;

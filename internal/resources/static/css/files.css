@@ -21,12 +21,17 @@
 
 /* Files list styles */
 .files-list {
-    max-height: 300px;
-    overflow-y: auto;
     margin-top: 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 10px;
+}
+
+.files-bulk-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
 .file-item, .user-item {
@@ -44,6 +49,10 @@
 
 .file-item:hover {
     background-color: var(--hover-bg);
+}
+
+.file-select-checkbox {
+    margin-right: 10px;
 }
 
 .file-info {

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Invalid file type. Allowed types: {{allowedTypes}}",
   "attachments.error_content_mismatch": "File content doesn't match its extension. Security violation detected.",
   "attachments.error_svg_sanitization": "The SVG file contains potentially harmful content that cannot be sanitized.",
+  "attachments.select_unreferenced": "Select Unreferenced",
+  "attachments.delete_selected": "Delete Selected",
+  "attachments.delete_selected_count": "Delete Selected ({{count}})",
+  "attachments.delete_bulk_title": "Delete Files",
+  "attachments.delete_bulk_confirm": "Are you sure you want to delete these {{count}} files? This action cannot be undone.",
+  "attachments.delete_results_title": "Delete Results",
+  "attachments.delete_results_message": "Deleted {{success}} files. Failed to delete {{failed}} files.",
 
   "delete_file.title": "Delete File",
   "delete_file.confirm_message": "Are you sure you want to delete this file? This action cannot be undone.",

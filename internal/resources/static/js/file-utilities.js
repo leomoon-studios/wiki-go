@@ -130,6 +130,7 @@ function renderFilesList(files, mentionedFiles) {
 
         return `
             <div class="file-item${highlightClass}" data-file-url="${safeFile.URL}">
+                <input type="checkbox" class="file-select-checkbox" data-filename="${safeFile.Name}">
                 <div class="file-info">
                     <div class="file-icon">${getFileIcon(safeFile.Type)}</div>
                     <div class="file-name" data-path="${filePath}" data-current-name="${safeFile.Name}">
@@ -267,6 +268,102 @@ function renderFilesList(files, mentionedFiles) {
         // Remove the click event for opening files - now using the view button instead
         item.style.cursor = 'default';
     });
+
+    // Initialize bulk actions
+    initBulkActions(filesList);
+}
+
+function initBulkActions(filesList) {
+    const selectUnreferencedBtn = document.getElementById('selectUnreferencedBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    if (!selectUnreferencedBtn || !deleteSelectedBtn) return;
+
+    // Update delete button state when checkboxes change
+    const updateDeleteButtonState = () => {
+        const checkedCount = filesList.querySelectorAll('.file-select-checkbox:checked').length;
+        deleteSelectedBtn.disabled = checkedCount === 0;
+        
+        if (checkedCount > 0) {
+            const text = window.i18n ? window.i18n.t('attachments.delete_selected_count', { count: checkedCount }) : `Delete Selected (${checkedCount})`;
+            deleteSelectedBtn.textContent = text.replace('{{count}}', checkedCount);
+        } else {
+            deleteSelectedBtn.textContent = window.i18n ? window.i18n.t('attachments.delete_selected') : 'Delete Selected';
+        }
+    };
+
+    // Add change listener to all checkboxes
+    filesList.querySelectorAll('.file-select-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateDeleteButtonState);
+    });
+
+    // Initialize button state
+    updateDeleteButtonState();
+
+    // Select Unreferenced handler
+    selectUnreferencedBtn.onclick = () => {
+        filesList.querySelectorAll('.file-item').forEach(item => {
+            const checkbox = item.querySelector('.file-select-checkbox');
+            const isReferenced = item.classList.contains('mentioned-in-doc');
+            if (checkbox) {
+                checkbox.checked = !isReferenced;
+            }
+        });
+        updateDeleteButtonState();
+    };
+
+    // Delete Selected handler
+    deleteSelectedBtn.onclick = () => {
+        const selectedFiles = Array.from(filesList.querySelectorAll('.file-select-checkbox:checked'))
+            .map(cb => cb.getAttribute('data-filename'));
+        
+        if (selectedFiles.length === 0) return;
+
+        const title = window.i18n ? window.i18n.t('attachments.delete_bulk_title') : 'Delete Files';
+        let message = window.i18n ? window.i18n.t('attachments.delete_bulk_confirm', { count: selectedFiles.length }) : `Are you sure you want to delete these ${selectedFiles.length} files? This action cannot be undone.`;
+        message = message.replace('{{count}}', selectedFiles.length);
+
+        showConfirmDialog(
+            title,
+            message,
+            async (confirmed) => {
+                if (!confirmed) return;
+
+                const docPath = getCurrentDocPath();
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const filename of selectedFiles) {
+                    try {
+                        const path = `${docPath}/${filename}`;
+                        const deleteUrl = `/api/files/delete/${path}`;
+                        
+                        const response = await fetch(deleteUrl, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                        }
+                    } catch (e) {
+                        failCount++;
+                    }
+                }
+
+                // Reload list
+                await loadDocumentFiles();
+                
+                // Show result if there were failures
+                if (failCount > 0) {
+                    const resultTitle = window.i18n ? window.i18n.t('attachments.delete_results_title') : 'Delete Results';
+                    let resultMsg = window.i18n ? window.i18n.t('attachments.delete_results_message', { success: successCount, failed: failCount }) : `Deleted ${successCount} files. Failed to delete ${failCount} files.`;
+                    resultMsg = resultMsg.replace('{{success}}', successCount).replace('{{failed}}', failCount);
+                    showMessageDialog(resultTitle, resultMsg);
+                }
+            }
+        );
+    };
 }
 
 // Load document files from API
