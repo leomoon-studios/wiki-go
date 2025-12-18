@@ -117,6 +117,13 @@
   "attachments.error_file_type": "نوع ملف غير صالح. الأنواع المسموح بها: {{allowedTypes}}",
   "attachments.error_content_mismatch": "محتوى الملف لا يتطابق مع امتداده. تم اكتشاف انتهاك أمني.",
   "attachments.error_svg_sanitization": "يحتوي ملف SVG على محتوى ضار محتمل لا يمكن تنظيفه.",
+  "attachments.select_unreferenced": "تحديد غير المرجعية",
+  "attachments.delete_selected": "حذف المحدد",
+  "attachments.delete_selected_count": "حذف المحدد ({{count}})",
+  "attachments.delete_bulk_title": "حذف الملفات",
+  "attachments.delete_bulk_confirm": "هل أنت متأكد أنك تريد حذف هذه الملفات الـ {{count}}؟ لا يمكن التراجع عن هذا الإجراء.",
+  "attachments.delete_results_title": "نتائج الحذف",
+  "attachments.delete_results_message": "تم حذف {{success}} ملفات. فشل حذف {{failed}} ملفات.",
 
   "delete_file.title": "حذف الملف",
   "delete_file.confirm_message": "هل أنت متأكد من رغبتك في حذف هذا الملف؟ لا يمكن التراجع عن هذا الإجراء.",

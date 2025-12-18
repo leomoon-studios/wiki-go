@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Недопустимый тип файла. Разрешенные типы: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Содержимое файла не соответствует его расширению. Обнаружено нарушение безопасности.",
   "attachments.error_svg_sanitization": "SVG-файл содержит потенциально вредоносный контент, который не может быть обезврежен.",
+  "attachments.select_unreferenced": "Выбрать неиспользуемые",
+  "attachments.delete_selected": "Удалить выбранные",
+  "attachments.delete_selected_count": "Удалить выбранные ({{count}})",
+  "attachments.delete_bulk_title": "Удалить файлы",
+  "attachments.delete_bulk_confirm": "Вы уверены, что хотите удалить эти {{count}} файлов? Это действие нельзя отменить.",
+  "attachments.delete_results_title": "Результаты удаления",
+  "attachments.delete_results_message": "Удалено {{success}} файлов. Не удалось удалить {{failed}} файлов.",
 
   "delete_file.title": "Удалить файл",
   "delete_file.confirm_message": "Вы уверены, что хотите удалить этот файл? Это действие нельзя отменить.",

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Type de fichier non valide. Types autorisés : {{allowedTypes}}",
   "attachments.error_content_mismatch": "Le contenu du fichier ne correspond pas à son extension. Violation de sécurité détectée.",
   "attachments.error_svg_sanitization": "Le fichier SVG contient du contenu potentiellement nuisible qui ne peut pas être assaini.",
+  "attachments.select_unreferenced": "Sélectionner les non référencés",
+  "attachments.delete_selected": "Supprimer la sélection",
+  "attachments.delete_selected_count": "Supprimer la sélection ({{count}})",
+  "attachments.delete_bulk_title": "Supprimer les fichiers",
+  "attachments.delete_bulk_confirm": "Êtes-vous sûr de vouloir supprimer ces {{count}} fichiers ? Cette action ne peut pas être annulée.",
+  "attachments.delete_results_title": "Résultats de la suppression",
+  "attachments.delete_results_message": "{{success}} fichiers supprimés. Échec de la suppression de {{failed}} fichiers.",
 
   "delete_file.title": "Supprimer le fichier",
   "delete_file.confirm_message": "Êtes-vous sûr de vouloir supprimer ce fichier ? Cette action ne peut pas être annulée.",

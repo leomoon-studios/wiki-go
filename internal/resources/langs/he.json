@@ -117,6 +117,13 @@
   "attachments.error_file_type": "סוג קובץ לא חוקי. סוגים מותרים: {{allowedTypes}}",
   "attachments.error_content_mismatch": "תוכן הקובץ אינו תואם את הסיומת שלו. זוהתה הפרת אבטחה.",
   "attachments.error_svg_sanitization": "קובץ ה-SVG מכיל תוכן פוטנציאלי מזיק שלא ניתן לסנן.",
+  "attachments.select_unreferenced": "בחר קבצים לא מקושרים",
+  "attachments.delete_selected": "מחק נבחרים",
+  "attachments.delete_selected_count": "מחק נבחרים ({{count}})",
+  "attachments.delete_bulk_title": "מחק קבצים",
+  "attachments.delete_bulk_confirm": "האם אתה בטוח שברצונך למחוק {{count}} קבצים אלה? פעולה זו אינה ניתנת לביטול.",
+  "attachments.delete_results_title": "תוצאות מחיקה",
+  "attachments.delete_results_message": "נמחקו {{success}} קבצים. נכשל במחיקת {{failed}} קבצים.",
 
   "delete_file.title": "מחק קובץ",
   "delete_file.confirm_message": "האם אתה בטוח שברצונך למחוק קובץ זה? פעולה זו אינה ניתנת לביטול.",

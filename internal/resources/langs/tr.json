@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Geçersiz dosya türü. İzin verilen türler: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Dosya içeriği uzantısıyla eşleşmiyor. Güvenlik ihlali tespit edildi.",
   "attachments.error_svg_sanitization": "SVG dosyası, temizlenemeyen potansiyel olarak zararlı içerik içeriyor.",
+  "attachments.select_unreferenced": "Referanssızları Seç",
+  "attachments.delete_selected": "Seçilenleri Sil",
+  "attachments.delete_selected_count": "Seçilenleri Sil ({{count}})",
+  "attachments.delete_bulk_title": "Dosyaları Sil",
+  "attachments.delete_bulk_confirm": "Bu {{count}} dosyayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+  "attachments.delete_results_title": "Silme Sonuçları",
+  "attachments.delete_results_message": "{{success}} dosya silindi. {{failed}} dosya silinemedi.",
 
   "delete_file.title": "Dosyayı Sil",
   "delete_file.confirm_message": "Bu dosyayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",

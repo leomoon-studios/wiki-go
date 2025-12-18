@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Ugyldig filtype. Tilladte typer: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Filindholdet matcher ikke dens filendelse. Sikkerhedsovertrædelse registreret.",
   "attachments.error_svg_sanitization": "SVG-filen indeholder potentielt skadeligt indhold, som ikke kan renses.",
+  "attachments.select_unreferenced": "Vælg ikke-refererede",
+  "attachments.delete_selected": "Slet valgte",
+  "attachments.delete_selected_count": "Slet valgte ({{count}})",
+  "attachments.delete_bulk_title": "Slet filer",
+  "attachments.delete_bulk_confirm": "Er du sikker på, at du vil slette disse {{count}} filer? Denne handling kan ikke fortrydes.",
+  "attachments.delete_results_title": "Sletningsresultater",
+  "attachments.delete_results_message": "Slettede {{success}} filer. Kunne ikke slette {{failed}} filer.",
 
   "delete_file.title": "Slet fil",
   "delete_file.confirm_message": "Er du sikker på, at du vil slette denne fil? Denne handling kan ikke fortrydes.",

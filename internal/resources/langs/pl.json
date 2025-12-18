@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Nieprawidłowy typ pliku. Dozwolone typy: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Zawartość pliku nie odpowiada jego rozszerzeniu. Wykryto naruszenie bezpieczeństwa.",
   "attachments.error_svg_sanitization": "Plik SVG zawiera potencjalnie szkodliwą zawartość, której nie można oczyścić.",
+  "attachments.select_unreferenced": "Wybierz nieużywane",
+  "attachments.delete_selected": "Usuń wybrane",
+  "attachments.delete_selected_count": "Usuń wybrane ({{count}})",
+  "attachments.delete_bulk_title": "Usuń pliki",
+  "attachments.delete_bulk_confirm": "Czy na pewno chcesz usunąć te {{count}} pliki? Tej operacji nie można cofnąć.",
+  "attachments.delete_results_title": "Wyniki usuwania",
+  "attachments.delete_results_message": "Usunięto {{success}} plików. Nie udało się usunąć {{failed}} plików.",
 
   "delete_file.title": "Usuń plik",
   "delete_file.confirm_message": "Czy na pewno chcesz usunąć ten plik? Tej operacji nie można cofnąć.",

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Virheellinen tiedostotyyppi. Sallitut tyypit: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Tiedoston sisältö ei vastaa sen tiedostopäätettä. Havaittu tietoturvarikkomus.",
   "attachments.error_svg_sanitization": "SVG-tiedosto sisältää mahdollisesti haitallista sisältöä, jota ei voida puhdistaa.",
+  "attachments.select_unreferenced": "Valitse viittaamattomat",
+  "attachments.delete_selected": "Poista valitut",
+  "attachments.delete_selected_count": "Poista valitut ({{count}})",
+  "attachments.delete_bulk_title": "Poista tiedostot",
+  "attachments.delete_bulk_confirm": "Haluatko varmasti poistaa nämä {{count}} tiedostoa? Tätä toimintoa ei voi kumota.",
+  "attachments.delete_results_title": "Poistotulokset",
+  "attachments.delete_results_message": "Poistettiin {{success}} tiedostoa. {{failed}} tiedoston poistaminen epäonnistui.",
 
   "delete_file.title": "Poista tiedosto",
   "delete_file.confirm_message": "Haluatko varmasti poistaa tämän tiedoston? Tätä toimintoa ei voi kumota.",

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Neplatný typ souboru. Povolené typy: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Obsah souboru neodpovídá jeho příponě. Zjištěno narušení bezpečnosti.",
   "attachments.error_svg_sanitization": "Soubor SVG obsahuje potenciálně škodlivý obsah, který nelze vyčistit.",
+  "attachments.select_unreferenced": "Vybrat neodkazované",
+  "attachments.delete_selected": "Smazat vybrané",
+  "attachments.delete_selected_count": "Smazat vybrané ({{count}})",
+  "attachments.delete_bulk_title": "Smazat soubory",
+  "attachments.delete_bulk_confirm": "Opravdu chcete smazat těchto {{count}} souborů? Tuto akci nelze vrátit zpět.",
+  "attachments.delete_results_title": "Výsledky mazání",
+  "attachments.delete_results_message": "Smazáno {{success}} souborů. Nepodařilo se smazat {{failed}} souborů.",
 
   "delete_file.title": "Smazat soubor",
   "delete_file.confirm_message": "Opravdu chcete smazat tento soubor? Tuto akci nelze vrátit zpět.",

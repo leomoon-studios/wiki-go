@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Ongeldig bestandstype. Toegestane typen: {{allowedTypes}}",
   "attachments.error_content_mismatch": "De bestandsinhoud komt niet overeen met de extensie. Beveiligingsovertreding gedetecteerd.",
   "attachments.error_svg_sanitization": "Het SVG-bestand bevat mogelijk schadelijke inhoud die niet kan worden opgeschoond.",
+  "attachments.select_unreferenced": "Selecteer niet-gerefereerde",
+  "attachments.delete_selected": "Verwijder geselecteerde",
+  "attachments.delete_selected_count": "Verwijder geselecteerde ({{count}})",
+  "attachments.delete_bulk_title": "Bestanden verwijderen",
+  "attachments.delete_bulk_confirm": "Weet je zeker dat je deze {{count}} bestanden wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+  "attachments.delete_results_title": "Verwijder resultaten",
+  "attachments.delete_results_message": "{{success}} bestanden verwijderd. Kon {{failed}} bestanden niet verwijderen.",
 
   "delete_file.title": "Bestand verwijderen",
   "delete_file.confirm_message": "Weet je zeker dat je dit bestand wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Ungültiger Dateityp. Erlaubte Typen: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Der Dateiinhalt stimmt nicht mit der Erweiterung überein. Sicherheitsverletzung erkannt.",
   "attachments.error_svg_sanitization": "Die SVG-Datei enthält potenziell schädlichen Inhalt, der nicht bereinigt werden kann.",
+  "attachments.select_unreferenced": "Nicht referenzierte auswählen",
+  "attachments.delete_selected": "Ausgewählte löschen",
+  "attachments.delete_selected_count": "Ausgewählte löschen ({{count}})",
+  "attachments.delete_bulk_title": "Dateien löschen",
+  "attachments.delete_bulk_confirm": "Sind Sie sicher, dass Sie diese {{count}} Dateien löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "attachments.delete_results_title": "Löschergebnisse",
+  "attachments.delete_results_message": "{{success}} Dateien gelöscht. {{failed}} Dateien konnten nicht gelöscht werden.",
 
   "delete_file.title": "Datei löschen",
   "delete_file.confirm_message": "Sind Sie sicher, dass Sie diese Datei löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",

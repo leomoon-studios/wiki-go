@@ -116,8 +116,13 @@
   "attachments.error_file_size": "파일 크기가 {{maxFileSize}} 제한을 초과합니다",
   "attachments.error_file_type": "잘못된 파일 유형입니다. 허용된 유형: {{allowedTypes}}",
   "attachments.error_content_mismatch": "파일 내용이 확장자와 일치하지 않습니다. 보안 위반이 감지되었습니다.",
-  "attachments.error_svg_sanitization": "SVG 파일에 정화할 수 없는 잠재적으로 유해한 콘텐츠가 포함되어 있습니다.",
-
+  "attachments.error_svg_sanitization": "SVG 파일에 정화할 수 없는 잠재적으로 유해한 콘텐츠가 포함되어 있습니다.",  "attachments.select_unreferenced": "참조되지 않은 항목 선택",
+  "attachments.delete_selected": "선택 항목 삭제",
+  "attachments.delete_selected_count": "선택 항목 삭제 ({{count}})",
+  "attachments.delete_bulk_title": "파일 삭제",
+  "attachments.delete_bulk_confirm": "이 {{count}}개의 파일을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다。",
+  "attachments.delete_results_title": "삭제 결과",
+  "attachments.delete_results_message": "{{success}}개의 파일이 삭제되었습니다. {{failed}}개의 파일을 삭제하지 못했습니다。",
   "delete_file.title": "파일 삭제",
   "delete_file.confirm_message": "이 파일을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
 

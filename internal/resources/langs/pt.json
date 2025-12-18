@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Tipo de arquivo inválido. Tipos permitidos: {{allowedTypes}}",
   "attachments.error_content_mismatch": "O conteúdo do arquivo não corresponde à sua extensão. Violação de segurança detectada.",
   "attachments.error_svg_sanitization": "O arquivo SVG contém conteúdo potencialmente prejudicial que não pode ser higienizado.",
+  "attachments.select_unreferenced": "Selecionar não referenciados",
+  "attachments.delete_selected": "Excluir selecionados",
+  "attachments.delete_selected_count": "Excluir selecionados ({{count}})",
+  "attachments.delete_bulk_title": "Excluir arquivos",
+  "attachments.delete_bulk_confirm": "Tem certeza de que deseja excluir estes {{count}} arquivos? Esta ação não pode ser desfeita.",
+  "attachments.delete_results_title": "Resultados da exclusão",
+  "attachments.delete_results_message": "{{success}} arquivos excluídos. Falha ao excluir {{failed}} arquivos.",
 
   "delete_file.title": "Excluir Arquivo",
   "delete_file.confirm_message": "Tem certeza de que deseja excluir este arquivo? Esta ação não pode ser desfeita.",

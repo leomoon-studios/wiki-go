@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Tipo di file non valido. Tipi consentiti: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Il contenuto del file non corrisponde alla sua estensione. Rilevata violazione della sicurezza.",
   "attachments.error_svg_sanitization": "Il file SVG contiene contenuti potenzialmente dannosi che non possono essere sanificati.",
+  "attachments.select_unreferenced": "Seleziona non referenziati",
+  "attachments.delete_selected": "Elimina selezionati",
+  "attachments.delete_selected_count": "Elimina selezionati ({{count}})",
+  "attachments.delete_bulk_title": "Elimina file",
+  "attachments.delete_bulk_confirm": "Sei sicuro di voler eliminare questi {{count}} file? Questa azione non può essere annullata.",
+  "attachments.delete_results_title": "Risultati eliminazione",
+  "attachments.delete_results_message": "Eliminati {{success}} file. Impossibile eliminare {{failed}} file.",
 
   "delete_file.title": "Elimina File",
   "delete_file.confirm_message": "Sei sicuro di voler eliminare questo file? Questa azione non può essere annullata.",

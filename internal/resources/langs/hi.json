@@ -117,6 +117,13 @@
   "attachments.error_file_type": "अमान्य फाइल प्रकार। अनुमत प्रकार: {{allowedTypes}}",
   "attachments.error_content_mismatch": "फ़ाइल सामग्री उसके एक्सटेंशन से मेल नहीं खाती। सुरक्षा उल्लंघन का पता चला।",
   "attachments.error_svg_sanitization": "SVG फ़ाइल में संभावित हानिकारक सामग्री है जिसे साफ़ नहीं किया जा सकता।",
+  "attachments.select_unreferenced": "असंदर्भित चुनें",
+  "attachments.delete_selected": "चयनित हटाएं",
+  "attachments.delete_selected_count": "चयनित हटाएं ({{count}})",
+  "attachments.delete_bulk_title": "फ़ाइलें हटाएं",
+  "attachments.delete_bulk_confirm": "क्या आप वाकई इन {{count}} फ़ाइलों को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+  "attachments.delete_results_title": "परिणाम हटाएं",
+  "attachments.delete_results_message": "{{success}} फ़ाइलें हटाई गईं। {{failed}} फ़ाइलों को हटाने में विफल।",
 
   "delete_file.title": "फाइल हटाएं",
   "delete_file.confirm_message": "क्या आप वाकई इस फाइल को हटाना चाहते हैं? यह क्रिया वापस नहीं ली जा सकती।",

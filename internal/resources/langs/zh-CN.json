@@ -117,6 +117,13 @@
   "attachments.error_file_type": "无效的文件类型。允许的类型：{{allowedTypes}}",
   "attachments.error_content_mismatch": "文件内容与其扩展名不匹配。检测到安全违规。",
   "attachments.error_svg_sanitization": "SVG文件包含无法净化的潜在有害内容。",
+  "attachments.select_unreferenced": "选择未引用的文件",
+  "attachments.delete_selected": "删除选定项",
+  "attachments.delete_selected_count": "删除选定项 ({{count}})",
+  "attachments.delete_bulk_title": "删除文件",
+  "attachments.delete_bulk_confirm": "您确定要删除这 {{count}} 个文件吗？此操作无法撤消。",
+  "attachments.delete_results_title": "删除结果",
+  "attachments.delete_results_message": "已删除 {{success}} 个文件。删除 {{failed}} 个文件失败。",
 
   "delete_file.title": "删除文件",
   "delete_file.confirm_message": "您确定要删除此文件吗？此操作无法撤消。",

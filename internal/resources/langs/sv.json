@@ -117,6 +117,13 @@
   "attachments.error_file_type": "Ogiltig filtyp. Tillåtna typer: {{allowedTypes}}",
   "attachments.error_content_mismatch": "Filinnehållet matchar inte dess filändelse. Säkerhetsöverträdelse upptäckt.",
   "attachments.error_svg_sanitization": "SVG-filen innehåller potentiellt skadligt innehåll som inte kan saneras.",
+  "attachments.select_unreferenced": "Välj orefererade",
+  "attachments.delete_selected": "Ta bort valda",
+  "attachments.delete_selected_count": "Ta bort valda ({{count}})",
+  "attachments.delete_bulk_title": "Ta bort filer",
+  "attachments.delete_bulk_confirm": "Är du säker på att du vill ta bort dessa {{count}} filer? Denna åtgärd kan inte ångras.",
+  "attachments.delete_results_title": "Borttagningsresultat",
+  "attachments.delete_results_message": "Tog bort {{success}} filer. Misslyckades med att ta bort {{failed}} filer.",
 
   "delete_file.title": "Ta bort fil",
   "delete_file.confirm_message": "Är du säker på att du vill ta bort denna fil? Denna åtgärd kan inte ångras.",

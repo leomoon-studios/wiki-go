@@ -117,6 +117,13 @@
   "attachments.error_file_type": "無効なファイルタイプです。許可されているタイプ: {{allowedTypes}}",
   "attachments.error_content_mismatch": "ファイルの内容が拡張子と一致しません。セキュリティ違反が検出されました。",
   "attachments.error_svg_sanitization": "SVGファイルに無害化できない潜在的に有害なコンテンツが含まれています。",
+  "attachments.select_unreferenced": "参照されていないものを選択",
+  "attachments.delete_selected": "選択したものを削除",
+  "attachments.delete_selected_count": "選択したものを削除 ({{count}})",
+  "attachments.delete_bulk_title": "ファイルを削除",
+  "attachments.delete_bulk_confirm": "これら {{count}} 個のファイルを削除してもよろしいですか？この操作は元に戻せません。",
+  "attachments.delete_results_title": "削除結果",
+  "attachments.delete_results_message": "{{success}} 個のファイルを削除しました。{{failed}} 個のファイルの削除に失敗しました。",
 
   "delete_file.title": "ファイルを削除",
   "delete_file.confirm_message": "このファイルを削除してもよろしいですか？この操作は元に戻せません。",

@@ -117,6 +117,13 @@
   "attachments.error_file_type": "نوع فایل نامعتبر است. انواع مجاز: {{allowedTypes}}",
   "attachments.error_content_mismatch": "محتوای فایل با پسوند آن مطابقت ندارد. نقض امنیتی شناسایی شد.",
   "attachments.error_svg_sanitization": "فایل SVG حاوی محتوای بالقوه مضر است که نمی‌توان آن را پاکسازی کرد.",
+  "attachments.select_unreferenced": "انتخاب بدون مرجع",
+  "attachments.delete_selected": "حذف انتخاب شده‌ها",
+  "attachments.delete_selected_count": "حذف انتخاب شده‌ها ({{count}})",
+  "attachments.delete_bulk_title": "حذف فایل‌ها",
+  "attachments.delete_bulk_confirm": "آیا مطمئن هستید که می‌خواهید این {{count}} فایل را حذف کنید؟ این عمل قابل بازگشت نیست.",
+  "attachments.delete_results_title": "نتایج حذف",
+  "attachments.delete_results_message": "{{success}} فایل حذف شد. حذف {{failed}} فایل با شکست مواجه شد.",
 
   "delete_file.title": "حذف فایل",
   "delete_file.confirm_message": "آیا مطمئن هستید که می‌خواهید این فایل را حذف کنید؟ این عمل قابل بازگشت نیست.",
