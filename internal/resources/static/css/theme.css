@@ -218,3 +218,34 @@ body.has-password-warning .hamburger {
     height: 20px;
     fill: currentColor;
 }
+
+/* Mobile touch optimizations */
+@media (hover: none) {
+    /* Prevent sticky hover on touch devices for editor buttons only */
+    /* Using body prefix to ensure higher specificity than editor.css */
+    body .editor-button:not(.active):not(.primary):hover,
+    body .custom-toolbar button:not(.active):hover {
+        background-color: transparent !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-color) !important;
+    }
+
+    /* Reset opacity hover effect for primary editor buttons */
+    body .editor-button.primary:hover {
+        opacity: 1 !important;
+    }
+}
+
+/* Disable tap highlight for editor buttons */
+body .editor-button,
+body .custom-toolbar button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Active state for feedback on tap - move button down slightly */
+body .editor-button:active,
+body .custom-toolbar button:active {
+    transform: translateY(2px) !important;
+    transition: none !important;
+}

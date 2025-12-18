@@ -2,7 +2,7 @@
 
 /* ---------- Content typography ---------- */
 /* Add scroll margin to prevent headings from being hidden behind the fixed top bar */
-.content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+.content h1, .content h2, .content h3, .content h4, .content h5, .content h6, sup[id^="fnref"] {
     scroll-margin-top: 80px;
 }
 
