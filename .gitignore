@@ -45,3 +45,6 @@ cmd
 !SECURITY.md
 # for quick python tests
 /.venv
+
+# emacs backup files
+*~
