@@ -109,6 +109,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			extension.Footnote,       // Enable footnotes
 			extension.DefinitionList, // Enable definition lists
 			extension.GFM,            // GitHub Flavored Markdown
+			goldext.OnePasswordIgnore, // Add data-1p-ignore to code blocks
 			// MathJax is now handled via client-side JavaScript
 		),
 		// Parser options
