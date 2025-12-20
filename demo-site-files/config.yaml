@@ -61,20 +61,17 @@ users:
 access_rules:
     - pattern: "/"
       access: public
-      description: "/"
-    - pattern: "/public"
+      description: "Example Public section visible to everyone"
+    - pattern: "/public/**"
       access: public
-      description: "Public docuents"
+      description: "Example Public section visible to everyone"
     - pattern: "/1-get-started/**"
       access: public
-      description: "Public docuents"
-    - pattern: "/test-category/**"
-      access: public
-      description: "Public docuents"
+      description: "Example Public section visible to everyone"
     - pattern: "/finance/**"
       access: restricted
       groups: [finance-team]
-      description: "Financial documents and reports"
+      description: "Example Finance section visible to finance-team group"
     - pattern: "/internal/**"
       access: private
-      description: "Internal authenticated access only"
+      description: "Example Internal section visible to logged-in users"
