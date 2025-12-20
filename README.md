@@ -74,7 +74,9 @@ If you're running Wiki-Go without SSL/HTTPS and experiencing login issues, you n
 - **Diagrams**: Mermaid diagram integration for creating flowcharts, sequence diagrams, etc.
 
 ### Administration
-- **User Management**: Create and manage users with different permission levels
+- **Access Rules**: Path-based access control with public, private, and group-restricted visibility
+- **User Groups**: Assign users to one or more groups to grant access to restricted documents
+- **User Management**: Create and manage users with different permission levels (admin, editor, viewer)
 - **Admin Panel**: Configure wiki settings through a web interface
 - **Statistics**: Track document metrics and site usage
 
@@ -362,9 +364,14 @@ It's recommended to change these credentials immediately after first login.
 ## Security
 
 - **Authentication**: User authentication with secure password hashing
+- **Role-Based Access**: Three user roles (admin, editor, viewer) with different permission levels
+- **Access Rules**: Path-based document access control with public, private, and group-restricted options
+- **User Groups**: Assign users to groups for fine-grained access to restricted content
 - **Login Rate Limiting**: Protection against brute force attacks with temporary IP bans after multiple failed attempts
 - **Private Mode**: Optional private wiki mode requiring login
 - **Admin Controls**: Separate admin privileges for content management
+
+For detailed security documentation, see [SECURITY.md](SECURITY.md).
 
 ## Usage
 

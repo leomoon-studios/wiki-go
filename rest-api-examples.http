@@ -240,6 +240,38 @@ DELETE {{ base_url }}/api/users?username=newuser
 Cookie: session={{ session }}
 Content-Type: application/json
 
+### Backup
+
+#### Start backup
+# @name start_backup
+POST {{ base_url }}/api/backup/start
+Cookie: session={{ session }}
+
+### Store the backup job ID
+@backup_job_id = {{start_backup.response.body.$.jobId}}
+
+#### Check backup status
+GET {{ base_url }}/api/backup/status/{{ backup_job_id }}
+Cookie: session={{ session }}
+Accept: application/json
+
+#### List backups
+# @name list_backups
+GET {{ base_url }}/api/backup/list
+Cookie: session={{ session }}
+Accept: application/json
+
+### Store the first backup filename
+@backup_filename = {{list_backups.response.body.$.backups[0].name}}
+
+#### Download backup
+GET {{ base_url }}/api/backup/download/{{ backup_filename }}
+Cookie: session={{ session }}
+
+#### Delete backup
+DELETE {{ base_url }}/api/backup/delete/{{ backup_filename }}
+Cookie: session={{ session }}
+
 ### Links API
 
 #### Add a new link to links document
