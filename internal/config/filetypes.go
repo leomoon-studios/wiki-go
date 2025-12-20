@@ -25,6 +25,7 @@ var AllowedFileTypes = []FileTypeConfig{
 	{Extension: "txt", MimeType: "text/plain", DisplayName: "Text File", VerifyContentType: true},
 	{Extension: "log", MimeType: "text/plain", DisplayName: "Log File", VerifyContentType: true},
 	{Extension: "csv", MimeType: "text/plain", DisplayName: "CSV File", VerifyContentType: true},
+	{Extension: "sfd", MimeType: "text/plain", DisplayName: "SFD File", VerifyContentType: true},
 	{Extension: "zip", MimeType: "application/zip", DisplayName: "ZIP Archive", VerifyContentType: true},
 	{Extension: "pdf", MimeType: "application/pdf", DisplayName: "PDF Document", VerifyContentType: true},
 	{Extension: "docx", MimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", DisplayName: "Word Document", VerifyContentType: true},

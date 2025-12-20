@@ -727,7 +727,7 @@ func isContentTypeCompatible(detected, expected string, fileContent []byte, file
 	ext := strings.ToLower(filepath.Ext(filename))
 
 	// Special handling for text-based files
-	if ext == ".svg" || ext == ".txt" || ext == ".log" || ext == ".csv" {
+	if ext == ".svg" || ext == ".txt" || ext == ".log" || ext == ".csv" || ext == ".sfd" {
 		// For SVGs, check if content is XML or text-based
 		if ext == ".svg" {
 			return detected == "image/svg+xml" ||
@@ -737,8 +737,8 @@ func isContentTypeCompatible(detected, expected string, fileContent []byte, file
 				isSVGContent(fileContent)
 		}
 
-		// For TXT, LOG, and CSV files, check if content is primarily text
-		if ext == ".txt" || ext == ".log" || ext == ".csv" {
+		// For TXT, LOG, CSV, XML, and SFD files, check if content is primarily text
+		if ext == ".txt" || ext == ".log" || ext == ".csv" || ext == ".sfd" {
 			return detected == "text/plain" ||
 				strings.HasPrefix(detected, "text/") ||
 				isTextContent(fileContent)

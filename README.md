@@ -40,7 +40,7 @@ If you're running Wiki-Go without SSL/HTTPS and experiencing login issues, you n
 ### Content Management
 - **Markdown Support**: Write content using Markdown syntax for rich formatting
 - **Emoji Shortcodes**: Use emoji shortcodes like `:smile:` in your Markdown content
-- **File Attachments**: Upload and manage images and documents (supports jpg, jpeg, png, gif, svg, txt, log, csv, zip, pdf, docx, xlsx, pptx, mp4)
+- **File Attachments**: Upload and manage images and documents (supports jpg, jpeg, png, gif, svg, txt, log, csv, sfd, zip, pdf, docx, xlsx, pptx, mp4)
 - **Link Management**: Create and organize collections of links with automatic metadata fetching, descriptions, and categorization
 - **Hierarchical Organization**: Organize content in nested directories
 - **Version History**: Track changes with full revision history and restore previous versions
