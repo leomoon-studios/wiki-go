@@ -238,6 +238,29 @@ go build -o wiki-go
 ./wiki-go  # or wiki-go.exe on Windows
 ```
 
+### Command-Line Options
+
+Wiki-Go supports the following command-line options:
+
+| Option        | Description                    | Default                                          |
+| ------------- | ------------------------------ | ------------------------------------------------ |
+| `-configfile` | Path to the configuration file | `data/config.yaml` (relative to binary location) |
+
+**Example:**
+
+```bash
+# Use a custom config file location
+./wiki-go -configfile /etc/wiki-go/config.yaml
+
+# Or with a relative path
+./wiki-go -configfile ./custom-config.yaml
+```
+
+This is useful when:
+- Running multiple Wiki-Go instances with different configurations
+- Deploying in environments where config should be stored separately from the binary
+- Using containerized deployments with mounted config files
+
 ## Configuration
 
 ### Basic Settings

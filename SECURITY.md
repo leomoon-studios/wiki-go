@@ -38,11 +38,19 @@ Wiki-Go implements a hierarchical role system combined with path-based access ru
 
 Each user is assigned one of three roles:
 
-| Role | Permissions |
-|------|-------------|
-| **Admin** | Full access: manage settings, users, access rules, create/edit/delete documents, post comments |
-| **Editor** | Document operations: create, edit, move, delete documents, manage versions, post comments |
-| **Viewer** | Read-only: view documents and post comments |
+| Permission          |       Admin        |       Editor       |       Viewer       |
+| ------------------- | :----------------: | :----------------: | :----------------: |
+| View documents      | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Add documents       | :white_check_mark: | :white_check_mark: |                    |
+| Edit documents      | :white_check_mark: | :white_check_mark: |                    |
+| Delete documents    | :white_check_mark: | :white_check_mark: |                    |
+| Move documents      | :white_check_mark: | :white_check_mark: |                    |
+| Manage versions     | :white_check_mark: | :white_check_mark: |                    |
+| Post comments       | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Delete comments     | :white_check_mark: |                    |                    |
+| Manage users        | :white_check_mark: |                    |                    |
+| Manage access rules | :white_check_mark: |                    |                    |
+| Manage settings     | :white_check_mark: |                    |                    |
 
 Roles are hierarchical, admins bypass all access rule restrictions and always have full access.
 
@@ -68,21 +76,22 @@ Access rules define who can view specific documents or folders based on URL path
 
 #### Access Levels
 
-| Level | Description |
-|-------|-------------|
-| **public** | Anyone can view (including unauthenticated users) |
-| **private** | Only authenticated users can view |
-| **restricted** | Only users in specified groups can view |
+| Who can view          |       Public       |      Private       |     Restricted     |
+| --------------------- | :----------------: | :----------------: | :----------------: |
+| Unauthenticated users | :white_check_mark: |                    |                    |
+| Authenticated users   | :white_check_mark: | :white_check_mark: |                    |
+| Group members         | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Admin users           | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 #### Pattern Matching
 
 Rules use glob-style patterns:
 
-| Pattern | Matches |
-|---------|---------|
+| Pattern       | Matches                                            |
+| ------------- | -------------------------------------------------- |
 | `/finance/**` | `/finance`, `/finance/reports`, `/finance/2024/q1` |
-| `/docs/*` | `/docs/readme` (single level only) |
-| `/secret` | Exactly `/secret` |
+| `/docs/*`     | `/docs/readme` (single level only)                 |
+| `/secret`     | Exactly `/secret`                                  |
 
 #### Rule Evaluation
 
