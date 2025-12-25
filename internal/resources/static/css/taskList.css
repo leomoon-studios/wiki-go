@@ -127,6 +127,7 @@
 
 .task-text {
     display: inline;
+    unicode-bidi: plaintext;
 }
 
 /* Save state indicator for live checkbox editing */

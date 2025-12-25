@@ -198,6 +198,7 @@ html, body {
     transition: all 0.2s ease;
     position: relative;
     gap: 6px;
+    unicode-bidi: plaintext;
 }
 
 .nav-item a:hover {

@@ -59,6 +59,7 @@
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
+    direction: ltr;
 }
 
 .directory-item:hover {
@@ -70,6 +71,8 @@
     text-decoration: none;
     display: block;
     flex: 1;
+    unicode-bidi: plaintext;
+    text-align: left;
 }
 
 .directory-item a:hover {
