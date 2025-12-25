@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 	"fmt"
+	"flag"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -18,6 +20,13 @@ import (
 )
 
 func main() {
+	configfilepath := flag.String("configfile",
+		GetEnvString("CONFIGFILE", config.ConfigFilePath),
+		"where to find config.yaml")
+	flag.Parse()
+
+	config.ConfigFilePath = *configfilepath
+	
 	// Migrate user roles from old IsAdmin to new role-based system
 	if err := migration.MigrateUserRoles(config.ConfigFilePath); err != nil {
 		log.Fatal("Error migrating user roles:", err)
@@ -64,4 +73,12 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func GetEnvString(name, defaultvalue string) string {
+	value, ok := os.LookupEnv(name)
+	if ! ok {
+		return defaultvalue
+	}
+	return value
 }

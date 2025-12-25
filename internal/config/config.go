@@ -14,7 +14,9 @@ import (
 )
 
 // ConfigFilePath defines the global path to the configuration file
-const ConfigFilePath = "data/config.yaml"
+var (
+	ConfigFilePath string = "data/config.yaml"
+)
 
 // User represents a user with authentication credentials
 type User struct {
