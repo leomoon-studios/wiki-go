@@ -27,6 +27,11 @@ func main() {
 
 	config.ConfigFilePath = *configfilepath
 	
+	// Fix broken config file if it exists (from previous bug)
+	if err := migration.FixBrokenConfig(config.ConfigFilePath); err != nil {
+		log.Printf("Warning: Failed to fix broken config: %v", err)
+	}
+
 	// Migrate user roles from old IsAdmin to new role-based system
 	if err := migration.MigrateUserRoles(config.ConfigFilePath); err != nil {
 		log.Fatal("Error migrating user roles:", err)

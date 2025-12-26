@@ -153,6 +153,15 @@ func LoadConfig(path string) (*Config, error) {
 				usersStr.WriteString(FormatUserEntry(user))
 			}
 
+			// Format all access rules
+			var accessRulesStr strings.Builder
+			for _, rule := range config.AccessRules {
+				if accessRulesStr.Len() > 0 {
+					accessRulesStr.WriteString("\n")
+				}
+				accessRulesStr.WriteString(FormatAccessRuleEntry(rule))
+			}
+
 			// Fill in the template with values from the config
 			configData := fmt.Sprintf(
 				GetConfigTemplate(),
@@ -183,6 +192,7 @@ func LoadConfig(path string) (*Config, error) {
 				config.Security.LoginBan.InitialBanSeconds,
 				config.Security.LoginBan.MaxBanSeconds,
 				usersStr.String(),
+				accessRulesStr.String(),
 			)
 
 			// Write the config file
