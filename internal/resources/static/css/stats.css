@@ -113,6 +113,7 @@
     color: var(--primary-color);
     max-width: 100%;
     flex-shrink: 0;
+    unicode-bidi: plaintext;
 }
 
 .wiki-stats.recent-edits a:hover {
