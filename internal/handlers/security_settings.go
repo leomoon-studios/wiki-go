@@ -12,6 +12,7 @@ var securityMu sync.Mutex
 
 // SecuritySettings represents the JSON payload for security settings.
 type SecuritySettings struct {
+	PasswordStrength int `yaml:"passwordstrength"`
     LoginBan struct {
         Enabled           bool `json:"enabled"`
         MaxFailures       int  `json:"max_failures"`
@@ -37,6 +38,7 @@ func handleGetSecurity(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     var resp SecuritySettings
+	resp.PasswordStrength = cfg.Security.PasswordStrength
     resp.LoginBan.Enabled = cfg.Security.LoginBan.Enabled
     resp.LoginBan.MaxFailures = cfg.Security.LoginBan.MaxFailures
     resp.LoginBan.WindowSeconds = cfg.Security.LoginBan.WindowSeconds
@@ -63,6 +65,7 @@ func handleUpdateSecurity(w http.ResponseWriter, r *http.Request) {
     defer securityMu.Unlock()
 
     // Update cfg in-memory
+	cfg.Security.PasswordStrength = req.PasswordStrength
     cfg.Security.LoginBan.Enabled = req.LoginBan.Enabled
     cfg.Security.LoginBan.MaxFailures = req.LoginBan.MaxFailures
     cfg.Security.LoginBan.WindowSeconds = req.LoginBan.WindowSeconds

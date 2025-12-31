@@ -77,6 +77,7 @@ type Config struct {
 	Users       []User       `yaml:"users"`
 	AccessRules []AccessRule `yaml:"access_rules,omitempty"`
 	Security    struct {
+		PasswordStrength int `yaml:"passwordstrength"`
 		LoginBan struct {
 			Enabled           bool `yaml:"enabled"`
 			MaxFailures       int  `yaml:"max_failures"`
@@ -115,6 +116,7 @@ func LoadConfig(path string) (*Config, error) {
 	config.Users = []User{}        // Initialize empty users array
 
 	// Security defaults
+	config.Security.PasswordStrength = 14
 	config.Security.LoginBan.Enabled = true
 	config.Security.LoginBan.MaxFailures = 5
 	config.Security.LoginBan.WindowSeconds = 180
@@ -132,7 +134,7 @@ func LoadConfig(path string) (*Config, error) {
 			}
 
 			// Hash the default admin password
-			hashedPassword, err := crypto.HashPassword("admin")
+			hashedPassword, err := crypto.HashPassword("admin", config.Security.PasswordStrength)
 			if err != nil {
 				return nil, err
 			}
@@ -186,6 +188,7 @@ func LoadConfig(path string) (*Config, error) {
 				config.Wiki.MaxVersions,
 				config.Wiki.MaxUploadSize,
 				config.Wiki.Language,
+				config.Security.PasswordStrength,
 				config.Security.LoginBan.Enabled,
 				config.Security.LoginBan.MaxFailures,
 				config.Security.LoginBan.WindowSeconds,
@@ -259,6 +262,8 @@ wiki:
     # Default language for the wiki interface (en, es, etc.)
     language: "%s"
 security:
+    # cost factor for bcrypt password hashing
+    passwordstrength: %d
     login_ban:
         # Enable protection against brute force login attacks
         enabled: %t
@@ -346,6 +351,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		cfg.Wiki.MaxVersions,
 		cfg.Wiki.MaxUploadSize,
 		cfg.Wiki.Language,
+		cfg.Security.PasswordStrength,
 		cfg.Security.LoginBan.Enabled,
 		cfg.Security.LoginBan.MaxFailures,
 		cfg.Security.LoginBan.WindowSeconds,
