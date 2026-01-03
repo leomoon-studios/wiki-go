@@ -119,7 +119,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Hash the password
-	hashedPassword, err := crypto.HashPassword(req.Password)
+	hashedPassword, err := crypto.HashPassword(req.Password, cfg.Security.PasswordStrength)
 	if err != nil {
 		sendJSONError(w, "Failed to hash password", http.StatusInternalServerError, err.Error())
 		return
@@ -201,7 +201,7 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 			updatedConfig.Users[i].Groups = req.Groups
 			// Update password if provided
 			if req.NewPassword != "" {
-				hashedPassword, err := crypto.HashPassword(req.NewPassword)
+				hashedPassword, err := crypto.HashPassword(req.NewPassword, updatedConfig.Security.PasswordStrength)
 				if err != nil {
 					sendJSONError(w, "Failed to hash password", http.StatusInternalServerError, err.Error())
 					return
