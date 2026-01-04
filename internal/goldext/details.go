@@ -15,20 +15,27 @@ func DetailsPreprocessor(markdown string, _ string) string {
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		trimmedLine := strings.TrimSpace(line)
+
+		// Strip blockquote prefix(es) to detect code blocks inside blockquotes
+		// e.g., "> ```" or "> > ```" should be detected as code block markers
+		contentLine := trimmedLine
+		for strings.HasPrefix(contentLine, ">") {
+			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
+		}
 		
 		// Track regular code blocks (not details blocks)
-		if (strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~")) &&
-			!strings.HasPrefix(trimmedLine, "```details") && !strings.HasPrefix(trimmedLine, "~~~details") {
+		if (strings.HasPrefix(contentLine, "```") || strings.HasPrefix(contentLine, "~~~")) &&
+			!strings.HasPrefix(contentLine, "```details") && !strings.HasPrefix(contentLine, "~~~details") {
 			
 			if !inCodeBlock {
 				// Starting a code block
 				inCodeBlock = true
-				if strings.HasPrefix(trimmedLine, "```") {
+				if strings.HasPrefix(contentLine, "```") {
 					codeBlockMarker = "```"
 				} else {
 					codeBlockMarker = "~~~"
 				}
-			} else if strings.TrimSpace(line) == codeBlockMarker {
+			} else if contentLine == codeBlockMarker {
 				// Ending a code block
 				inCodeBlock = false
 				codeBlockMarker = ""

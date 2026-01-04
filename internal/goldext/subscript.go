@@ -20,10 +20,17 @@ func SubscriptPreprocessor(markdown string, _ string) string {
 		// Check for code block markers
 		trimmedLine := strings.TrimSpace(line)
 
+		// Strip blockquote prefix(es) to detect code blocks inside blockquotes
+		// e.g., "> ```" or "> > ```" should be detected as code block markers
+		contentLine := trimmedLine
+		for strings.HasPrefix(contentLine, ">") {
+			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
+		}
+
 		// Check for math block markers ($$)
-		if strings.Contains(trimmedLine, "$$") {
+		if strings.Contains(contentLine, "$$") {
 			// Toggle math block state if we have an odd number of $$ markers
-			count := strings.Count(trimmedLine, "$$")
+			count := strings.Count(contentLine, "$$")
 			if count%2 != 0 {
 				inMathBlock = !inMathBlock
 			}
@@ -31,13 +38,13 @@ func SubscriptPreprocessor(markdown string, _ string) string {
 			continue
 		}
 
-		if strings.HasPrefix(trimmedLine, "```") {
+		if strings.HasPrefix(contentLine, "```") {
 			inBacktickBlock = !inBacktickBlock
 			processedLines = append(processedLines, line)
 			continue
 		}
 
-		if strings.HasPrefix(trimmedLine, "~~~") {
+		if strings.HasPrefix(contentLine, "~~~") {
 			inTildeBlock = !inTildeBlock
 			processedLines = append(processedLines, line)
 			continue

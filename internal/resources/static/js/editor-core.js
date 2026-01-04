@@ -14,8 +14,86 @@ if (typeof CodeMirror !== 'undefined') {
         // Improved regex that handles edge cases better
         const highlightRegex = /==(?:[^=]|=(?!=))+?==/;
 
+        // Helper function to check if a line number is inside a code block
+        function isInCodeBlock(cm, lineNo) {
+            let inCodeBlock = false;
+            for (let i = 0; i < lineNo; i++) {
+                let line = cm.getLine(i);
+                if (line !== undefined) {
+                    line = line.trim();
+                    // Strip blockquote prefix(es)
+                    while (line.startsWith('>')) {
+                        line = line.substring(1).trim();
+                    }
+                    if (line.startsWith('```') || line.startsWith('~~~')) {
+                        inCodeBlock = !inCodeBlock;
+                    }
+                }
+            }
+            return inCodeBlock;
+        }
+
         return {
             token: function(stream, state) {
+                // Get the CodeMirror instance from the stream
+                const cm = stream.lineOracle && stream.lineOracle.doc && stream.lineOracle.doc.cm;
+                
+                // Check if current line starts/is a code block marker
+                if (stream.sol()) {
+                    let line = stream.string.trim();
+                    // Strip blockquote prefix(es)
+                    while (line.startsWith('>')) {
+                        line = line.substring(1).trim();
+                    }
+                    
+                    if (line.startsWith('```') || line.startsWith('~~~')) {
+                        stream.skipToEnd();
+                        return null;
+                    }
+                }
+                
+                // Check if we're inside a code block by scanning previous lines
+                if (cm) {
+                    const lineNo = stream.lineOracle.line;
+                    let inCodeBlock = false;
+                    
+                    for (let i = 0; i <= lineNo; i++) {
+                        let line = cm.getLine(i);
+                        if (line !== undefined) {
+                            line = line.trim();
+                            // Strip blockquote prefix(es)
+                            while (line.startsWith('>')) {
+                                line = line.substring(1).trim();
+                            }
+                            if (line.startsWith('```') || line.startsWith('~~~')) {
+                                inCodeBlock = !inCodeBlock;
+                            }
+                        }
+                        // If we're on the current line and it's a code block marker, we're not "in" it yet
+                        if (i === lineNo && (line.startsWith('```') || line.startsWith('~~~'))) {
+                            break;
+                        }
+                    }
+                    
+                    if (inCodeBlock) {
+                        stream.skipToEnd();
+                        return null;
+                    }
+                }
+                
+                // Check if current position is inside inline code (backticks)
+                const lineUpToCursor = stream.string.substring(0, stream.pos);
+                const backtickCount = (lineUpToCursor.match(/`/g) || []).length;
+                const inInlineCode = backtickCount % 2 === 1;
+                
+                if (inInlineCode) {
+                    // Skip until closing backtick or end of line
+                    while (stream.next() != null) {
+                        if (stream.peek() === '`') break;
+                    }
+                    return null;
+                }
+                
                 // Look for the start of a highlight marker
                 if (stream.match(/==/)) {
                     // Check if we have a complete highlight pattern
@@ -33,8 +111,8 @@ if (typeof CodeMirror !== 'undefined') {
                     return null;
                 }
 
-                // Skip until we find a potential highlight marker
-                while (stream.next() != null && !stream.match(/==/, false)) {}
+                // Skip until we find a potential highlight marker or backtick
+                while (stream.next() != null && !stream.match(/==/, false) && stream.peek() !== '`') {}
                 return null;
             }
         };

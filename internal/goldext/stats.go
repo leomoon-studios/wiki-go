@@ -28,13 +28,20 @@ func StatsPreprocessor(markdown string, _ string) string {
 		// Check for code block markers
 		trimmedLine := strings.TrimSpace(line)
 
-		if strings.HasPrefix(trimmedLine, "```") {
+		// Strip blockquote prefix(es) to detect code blocks inside blockquotes
+		// e.g., "> ```" or "> > ```" should be detected as code block markers
+		contentLine := trimmedLine
+		for strings.HasPrefix(contentLine, ">") {
+			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
+		}
+
+		if strings.HasPrefix(contentLine, "```") {
 			inBacktickBlock = !inBacktickBlock
 			processedLines = append(processedLines, line)
 			continue
 		}
 
-		if strings.HasPrefix(trimmedLine, "~~~") {
+		if strings.HasPrefix(contentLine, "~~~") {
 			inTildeBlock = !inTildeBlock
 			processedLines = append(processedLines, line)
 			continue
