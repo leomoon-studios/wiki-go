@@ -4,35 +4,42 @@ about: Create a report to help us improve
 title: ''
 labels: ''
 assignees: ''
+---
+
+## ⚠️ SECURITY NOTICE (READ FIRST)
+
+**Do NOT report security vulnerabilities here.**
+
+Security issues **must** be reported privately via:
+https://github.com/leomoon-studios/wiki-go/security/policy
+
+Issues containing sensitive information (credentials, hostnames, IPs, logs, exploits)  
+**may be edited, closed, or removed without notice.**
+
+If you are unsure whether this is a security issue, **do not file this issue**.
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Bug description
+Describe the problem clearly and concisely.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Steps to reproduce
+1.  
+2.  
+3.  
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Expected behavior
+What you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Environment
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+- OS:
+- Browser (if applicable):
+- Wiki-Go version:
+- Install method (binary, Docker, source):
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+## Additional context
+Add any relevant context here (logs, screenshots, config snippets **without sensitive data**).
 
-**Additional context**
-Add any other context about the problem here.
+### Confirmation
+- [ ] I confirm this issue does **not** contain security-sensitive information

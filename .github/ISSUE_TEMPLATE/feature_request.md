@@ -4,17 +4,41 @@ about: Suggest an idea for this project
 title: ''
 labels: ''
 assignees: ''
+---
+
+## ⚠️ SECURITY NOTICE (READ FIRST)
+
+**Do NOT report security vulnerabilities here.**
+
+Security issues **must** be reported privately via:
+https://github.com/leomoon-studios/wiki-go/security/policy
+
+Issues containing sensitive information (credentials, hostnames, IPs, logs, exploits)  
+**may be edited, closed, or removed without notice.**
+
+If you are unsure whether this is a security issue, **do not file this issue**.
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Problem statement
+What problem does this feature solve?
+Why is the current behavior insufficient?
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## Proposed solution
+Describe the feature or change you are proposing.
+Focus on behavior, not implementation details.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## Alternatives considered
+Describe any alternative approaches or existing workarounds.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## Scope and compatibility
+- Does this align with Wiki-Go’s goal of staying **GFM-compatible**?
+- Does it avoid vendor or format lock-in?
+
+Explain briefly.
+
+## Additional context
+Screenshots, mockups, or examples (**without sensitive data**).
+
+### Confirmation
+- [ ] I confirm this issue does **not** contain security-sensitive information
