@@ -50,14 +50,8 @@ type SitemapPageEntry struct {
 
 // SitemapHandler handles requests for both XML and HTML sitemaps
 func SitemapHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
-	// Check if authentication is required for private wikis
-	if cfg.Wiki.Private {
-		session := auth.CheckAuth(r)
-		if session == nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-	}
+	// Get current session for access control filtering
+	session := auth.CheckAuth(r)
 
 	// Determine if XML format is requested
 	isXML := strings.HasSuffix(r.URL.Path, ".xml")
@@ -67,13 +61,12 @@ func SitemapHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) 
 
 	// Get current user role for conditional display in HTML sitemap
 	userRole := ""
-	session := auth.CheckAuth(r)
 	if session != nil {
 		userRole = session.Role
 	}
 
-	// Gather all pages
-	urls, pageEntries, err := gatherPages(baseURL, cfg)
+	// Gather all pages (filtered by access rules)
+	urls, pageEntries, err := gatherPages(baseURL, cfg, session)
 	if err != nil {
 		http.Error(w, "Error generating sitemap: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -168,29 +161,31 @@ func renderHTMLSitemap(w http.ResponseWriter, r *http.Request, pages []SitemapPa
 	}
 }
 
-// gatherPages collects all pages for the sitemap
-func gatherPages(baseURL string, cfg *config.Config) ([]SitemapURL, []SitemapPageEntry, error) {
+// gatherPages collects all pages for the sitemap, filtered by access rules
+func gatherPages(baseURL string, cfg *config.Config, session *auth.Session) ([]SitemapURL, []SitemapPageEntry, error) {
 	urls := []SitemapURL{}
 	pageEntries := []SitemapPageEntry{}
 
-	// Add homepage
-	homeURL := SitemapURL{
-		Location:   baseURL,
-		ChangeFreq: "weekly",
-		Priority:   "1.0",
-	}
-	urls = append(urls, homeURL)
+	// Add homepage only if user has access
+	if auth.CanAccessDocument("/", session, cfg) {
+		homeURL := SitemapURL{
+			Location:   baseURL,
+			ChangeFreq: "weekly",
+			Priority:   "1.0",
+		}
+		urls = append(urls, homeURL)
 
-	// Add homepage to page entries
-	homePage := SitemapPageEntry{
-		URL:      "/",
-		Title:    "Home",
-		Path:     "/",
-		Category: "",
-		LastMod:  time.Now(),
-		Depth:    0,
+		// Add homepage to page entries
+		homePage := SitemapPageEntry{
+			URL:      "/",
+			Title:    "Home",
+			Path:     "/",
+			Category: "",
+			LastMod:  time.Now(),
+			Depth:    0,
+		}
+		pageEntries = append(pageEntries, homePage)
 	}
-	pageEntries = append(pageEntries, homePage)
 
 	// Walk the documents directory
 	docsDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
@@ -218,14 +213,19 @@ func gatherPages(baseURL string, cfg *config.Config) ([]SitemapURL, []SitemapPag
 				return nil
 			}
 
-			// Format last modified time for XML
-			lastModStr := info.ModTime().Format(time.RFC3339)
-
 			// Add to XML sitemap URLs
 			urlPath := "/" + relDirPath
 			if urlPath == "//" {
 				urlPath = "/"
 			}
+
+			// Check access rules - skip documents the user can't access
+			if !auth.CanAccessDocument(urlPath, session, cfg) {
+				return nil
+			}
+
+			// Format last modified time for XML
+			lastModStr := info.ModTime().Format(time.RFC3339)
 
 			url := SitemapURL{
 				Location:   baseURL + urlPath,
