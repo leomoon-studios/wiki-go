@@ -12,12 +12,12 @@ server:
     ssl_cert:
     ssl_key:
 wiki:
-    root_dir: data
-    documents_dir: documents
+    root_dir: "data"
+    documents_dir: "documents"
     title: "📚 Wiki-Go Demo"
-    owner: wikigo.leomoon.com
-    notice: Copyright 2025 © All rights reserved.
-    timezone: America/Vancouver
+    owner: "wikigo.leomoon.com"
+    notice: "Copyright 2025 © All rights reserved."
+    timezone: "America/Vancouver"
     private: true
     disable_comments: false
     disable_file_upload_checking: false
@@ -28,8 +28,10 @@ wiki:
     # Maximum file upload size in MB
     max_upload_size: 1
     # Default language for the wiki interface (en, es, etc.)
-    language: en
+    language: "en"
 security:
+    # cost factor for bcrypt password hashing
+    passwordstrength: 14
     login_ban:
         # Enable protection against brute force login attacks
         enabled: true

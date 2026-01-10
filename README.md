@@ -300,6 +300,8 @@ wiki:
     # Default language for the wiki interface (en, es, etc.)
     language: en
 security:
+    # cost factor for bcrypt password hashing
+    passwordstrength: 14
     login_ban:
         # Enable protection against brute force login attacks
         enabled: true
