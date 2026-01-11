@@ -102,7 +102,7 @@ func LoadConfig(path string) (*Config, error) {
 	config.Wiki.DocumentsDir = "documents"
 	config.Wiki.Title = "📚 Wiki-Go"
 	config.Wiki.Owner = "wiki.example.com"
-	config.Wiki.Notice = "Copyright 2025 © All rights reserved."
+	config.Wiki.Notice = "Copyright :::year::: © All rights reserved."
 	config.Wiki.Timezone = "America/Vancouver"
 	config.Wiki.Private = false
 	config.Wiki.DisableComments = false

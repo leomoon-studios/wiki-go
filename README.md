@@ -286,7 +286,7 @@ wiki:
     documents_dir: "documents"
     title: "📚 Wiki-Go"
     owner: "wiki.example.com"
-    notice: "Copyright 2025 © All rights reserved."
+    notice: "Copyright :::year::: © All rights reserved."
     timezone: "America/Vancouver"
     private: false
     disable_comments: false

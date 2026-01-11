@@ -183,7 +183,7 @@ Content-Type: application/json
 {
   "title": "📚 Wiki-Go",
   "owner": "wikigo.leomoon.com",
-  "notice": "Copyright 2025 © All rights reserved.",
+  "notice": "Copyright :::year::: © All rights reserved.",
   "timezone": "America/Vancouver",
   "private": false,
   "disable_comments": false,

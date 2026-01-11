@@ -12,7 +12,7 @@ var (
 	_ = MP4Preprocessor
 	_ = YouTubePreprocessor
 	_ = VimeoPreprocessor
-	_ = StatsPreprocessor
+	_ = ShortcodesPreprocessor
 	_ = HighlightPreprocessor
 	_ = TypographyPreprocessor
 	_ = EmojiPreprocessor
@@ -42,8 +42,8 @@ func init() {
 	RegisterPreprocessor(DirectionPreprocessor) // Process RTL/LTR blocks
 	RegisterPreprocessor(MP4Preprocessor)       // Process MP4 video blocks
 	RegisterPreprocessor(YouTubePreprocessor)   // Process YouTube video blocks
-	RegisterPreprocessor(VimeoPreprocessor)     // Process Vimeo video blocks
-	RegisterPreprocessor(StatsPreprocessor)     // Process stats shortcodes
+	RegisterPreprocessor(VimeoPreprocessor)       // Process Vimeo video blocks
+	RegisterPreprocessor(ShortcodesPreprocessor)  // Process shortcodes (year, stats)
 	RegisterPreprocessor(DetailsPreprocessor)   // Process details blocks
 	RegisterPreprocessor(InfoBoxPreprocessor)   // Process GitHub-flavored alerts
 	// RegisterPreprocessor(TaskListPreprocessor)  // Process task lists before rendering

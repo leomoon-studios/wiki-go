@@ -22,7 +22,7 @@
     </div>
     <div class="sidebar-footer">
         <div class="owner">{{.Config.Wiki.Owner}}</div>
-        <div class="notice">{{.Config.Wiki.Notice}}</div>
+        <div class="notice">{{processShortcodes .Config.Wiki.Notice}}</div>
         <div class="sidebar-footer-buttons">
             <button class="sidebar-footer-btn" aria-label="Sitemap" title="Sitemap" onclick="window.open('/sitemap/', '_blank')">
                 <i class="fa fa-sitemap"></i>

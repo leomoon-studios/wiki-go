@@ -12,9 +12,10 @@ import (
 	"time"
 )
 
-// StatsPreprocessor processes stats shortcodes in markdown text
-// but avoids processing shortcodes inside code blocks
-func StatsPreprocessor(markdown string, _ string) string {
+// ShortcodesPreprocessor processes shortcodes in markdown text
+// Supports: :::year:::, :::stats count=*:::, :::stats recent=N:::
+// Avoids processing shortcodes inside code blocks
+func ShortcodesPreprocessor(markdown string, _ string) string {
 	// Split markdown into lines for processing
 	lines := strings.Split(markdown, "\n")
 	processedLines := make([]string, 0, len(lines))
@@ -53,8 +54,8 @@ func StatsPreprocessor(markdown string, _ string) string {
 			continue
 		}
 
-		// Process stats shortcodes with respect to inline code blocks
-		if strings.Contains(line, ":::stats") {
+		// Process shortcodes with respect to inline code blocks
+		if strings.Contains(line, ":::year:::") || strings.Contains(line, ":::stats") {
 			// Process each segment of the line, preserving inline code
 			var processedLine string
 			segments := strings.Split(line, "`")
@@ -62,7 +63,13 @@ func StatsPreprocessor(markdown string, _ string) string {
 			for i, segment := range segments {
 				// Even segments (0, 2, 4...) are outside inline code
 				if i%2 == 0 {
-					// Match exact stats shortcode pattern
+					// Process :::year::: shortcode
+					if strings.Contains(segment, ":::year:::") {
+						currentYear := strconv.Itoa(time.Now().Year())
+						segment = strings.ReplaceAll(segment, ":::year:::", currentYear)
+					}
+
+					// Match stats shortcode pattern
 					if strings.Contains(segment, ":::stats") {
 						statsRegex := regexp.MustCompile(`:::stats\s+(recent|count)=([^:]+):::`)
 						segment = statsRegex.ReplaceAllStringFunc(segment, func(match string) string {

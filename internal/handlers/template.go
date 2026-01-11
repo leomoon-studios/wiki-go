@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,6 +104,12 @@ func getTemplate() (*template.Template, error) {
 				}
 				// Regular translation without language override
 				return i18n.Translate(key)
+			},
+			"processShortcodes": func(text string) string {
+				// Process shortcodes like :::year::: in text
+				// This is a simplified version for non-markdown contexts (e.g., notice)
+				currentYear := strconv.Itoa(time.Now().Year())
+				return strings.ReplaceAll(text, ":::year:::", currentYear)
 			},
 		}
 

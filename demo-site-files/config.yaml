@@ -16,7 +16,7 @@ wiki:
     documents_dir: "documents"
     title: "📚 Wiki-Go Demo"
     owner: "wikigo.leomoon.com"
-    notice: "Copyright 2025 © All rights reserved."
+    notice: "Copyright :::year::: © All rights reserved."
     timezone: "America/Vancouver"
     private: true
     disable_comments: false
