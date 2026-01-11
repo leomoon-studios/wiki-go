@@ -9,6 +9,128 @@ document.addEventListener('DOMContentLoaded', function() {
     let maxFileUploadSizeBytes = maxFileUploadSizeMB * 1024 * 1024;
     let disableFileUploadChecking = false; // Default value, will be updated from settings
 
+    // Timezone data organized by region
+    const timezonesByRegion = {
+        'Africa': [
+            'Africa/Abidjan', 'Africa/Accra', 'Africa/Addis_Ababa', 'Africa/Algiers',
+            'Africa/Cairo', 'Africa/Casablanca', 'Africa/Johannesburg', 'Africa/Lagos',
+            'Africa/Nairobi', 'Africa/Tunis'
+        ],
+        'America': [
+            'America/Anchorage', 'America/Argentina/Buenos_Aires', 'America/Bogota',
+            'America/Chicago', 'America/Denver', 'America/Edmonton', 'America/Halifax',
+            'America/Lima', 'America/Los_Angeles', 'America/Mexico_City', 'America/New_York',
+            'America/Phoenix', 'America/Santiago', 'America/Sao_Paulo', 'America/St_Johns',
+            'America/Toronto', 'America/Vancouver', 'America/Winnipeg'
+        ],
+        'Asia': [
+            'Asia/Almaty', 'Asia/Baghdad', 'Asia/Baku', 'Asia/Bangkok', 'Asia/Beirut',
+            'Asia/Colombo', 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Ho_Chi_Minh',
+            'Asia/Istanbul', 'Asia/Jakarta', 'Asia/Jerusalem', 'Asia/Karachi', 'Asia/Kathmandu',
+            'Asia/Kolkata', 'Asia/Kuala_Lumpur', 'Asia/Kuwait', 'Asia/Manila', 'Asia/Riyadh',
+            'Asia/Seoul', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Taipei', 'Asia/Tehran',
+            'Asia/Tokyo', 'Asia/Yangon'
+        ],
+        'Atlantic': [
+            'Atlantic/Azores', 'Atlantic/Bermuda', 'Atlantic/Canary', 'Atlantic/Cape_Verde',
+            'Atlantic/Reykjavik'
+        ],
+        'Australia': [
+            'Australia/Adelaide', 'Australia/Brisbane', 'Australia/Darwin', 'Australia/Hobart',
+            'Australia/Melbourne', 'Australia/Perth', 'Australia/Sydney'
+        ],
+        'Europe': [
+            'Europe/Amsterdam', 'Europe/Athens', 'Europe/Belgrade', 'Europe/Berlin',
+            'Europe/Brussels', 'Europe/Bucharest', 'Europe/Budapest', 'Europe/Copenhagen',
+            'Europe/Dublin', 'Europe/Helsinki', 'Europe/Kiev', 'Europe/Lisbon', 'Europe/London',
+            'Europe/Madrid', 'Europe/Moscow', 'Europe/Oslo', 'Europe/Paris', 'Europe/Prague',
+            'Europe/Rome', 'Europe/Stockholm', 'Europe/Vienna', 'Europe/Warsaw', 'Europe/Zurich'
+        ],
+        'Pacific': [
+            'Pacific/Auckland', 'Pacific/Fiji', 'Pacific/Guam', 'Pacific/Honolulu',
+            'Pacific/Samoa', 'Pacific/Tahiti'
+        ],
+        'UTC': [
+            'UTC'
+        ]
+    };
+
+    // Initialize timezone dropdowns
+    function initTimezoneSelectors() {
+        const regionSelect = document.getElementById('timezoneRegion');
+        const timezoneSelect = document.getElementById('wikiTimezone');
+
+        if (!regionSelect || !timezoneSelect) return;
+
+        // Populate region dropdown
+        regionSelect.innerHTML = '<option value="">Select Region...</option>';
+        Object.keys(timezonesByRegion).sort().forEach(region => {
+            const option = document.createElement('option');
+            option.value = region;
+            option.textContent = region;
+            regionSelect.appendChild(option);
+        });
+
+        // Handle region change
+        regionSelect.addEventListener('change', function() {
+            const selectedRegion = this.value;
+            timezoneSelect.innerHTML = '<option value="">Select Timezone...</option>';
+
+            if (selectedRegion && timezonesByRegion[selectedRegion]) {
+                timezonesByRegion[selectedRegion].forEach(tz => {
+                    const option = document.createElement('option');
+                    option.value = tz;
+                    // Display friendly name (e.g., "Vancouver" from "America/Vancouver")
+                    const parts = tz.split('/');
+                    option.textContent = parts[parts.length - 1].replace(/_/g, ' ');
+                    timezoneSelect.appendChild(option);
+                });
+            }
+        });
+    }
+
+    // Set timezone value and update both dropdowns
+    function setTimezoneValue(timezone) {
+        const regionSelect = document.getElementById('timezoneRegion');
+        const timezoneSelect = document.getElementById('wikiTimezone');
+
+        if (!regionSelect || !timezoneSelect || !timezone) return;
+
+        // Find which region this timezone belongs to
+        for (const [region, timezones] of Object.entries(timezonesByRegion)) {
+            if (timezones.includes(timezone)) {
+                // Set region
+                regionSelect.value = region;
+                // Trigger change to populate timezone dropdown
+                regionSelect.dispatchEvent(new Event('change'));
+                // Set timezone
+                timezoneSelect.value = timezone;
+                return;
+            }
+        }
+
+        // If timezone not found in our list, try to extract region and add it
+        const parts = timezone.split('/');
+        if (parts.length >= 2) {
+            const region = parts[0];
+            if (timezonesByRegion[region]) {
+                regionSelect.value = region;
+                regionSelect.dispatchEvent(new Event('change'));
+                // Add the timezone as an option if not present
+                if (!timezoneSelect.querySelector(`option[value="${timezone}"]`)) {
+                    const option = document.createElement('option');
+                    option.value = timezone;
+                    option.textContent = parts[parts.length - 1].replace(/_/g, ' ');
+                    timezoneSelect.appendChild(option);
+                }
+                timezoneSelect.value = timezone;
+            }
+        }
+    }
+
+    // Initialize timezone selectors on page load
+    initTimezoneSelectors();
+
     // Settings elements
     const settingsButton = document.querySelector('.settings-button');
     const settingsDialog = document.querySelector('.settings-dialog');
@@ -263,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('wikiTitle').value = settings.title || '';
             document.getElementById('wikiOwner').value = settings.owner || '';
             document.getElementById('wikiNotice').value = settings.notice || '';
-            document.getElementById('wikiTimezone').value = settings.timezone || '';
+            setTimezoneValue(settings.timezone || '');
             document.getElementById('wikiLanguage').value = settings.language || 'en';
 
             // Populate content form fields

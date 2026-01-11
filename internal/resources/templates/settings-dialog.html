@@ -34,8 +34,15 @@
                         <input type="text" id="wikiNotice" name="wikiNotice" required>
                     </div>
                     <div class="form-group">
-                        <label for="wikiTimezone">{{t "settings.timezone"}}</label>
-                        <input type="text" id="wikiTimezone" name="wikiTimezone" required>
+                        <label>{{t "settings.timezone"}}</label>
+                        <div class="timezone-selector-wrapper">
+                            <select id="timezoneRegion" class="timezone-region-selector">
+                                <option value="">Select Region...</option>
+                            </select>
+                            <select id="wikiTimezone" name="wikiTimezone" class="timezone-selector" required>
+                                <option value="">Select Timezone...</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="wikiLanguage">{{t "settings.language"}}</label>
