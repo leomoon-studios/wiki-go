@@ -158,102 +158,6 @@ This task list shows that the press release has been fully completed, while the 
 
 Task lists also allows live editing if admin or editor user is logged in.
 
-#### Kanban Boards
-
-LeoMoon Wiki-Go supports interactive Kanban boards for project management. To create a kanban board, you need to:
-
-1. **Set the document layout** in frontmatter:
-   ```yaml
-   ---
-   layout: kanban
-   ---
-   ```
-
-2. **Structure your content** using H4 headers for board titles (optional) and H5 headers for columns:
-
-**Basic Kanban Structure:**
-```markdown
----
-layout: kanban
----
-
-# Project Management Board
-
-#### Sprint Planning
-
-##### To Do
-- [ ] Define project requirements
-- [ ] Create user stories
-- [ ] Set up development environment
-  - [ ] Install dependencies
-  - [ ] Configure database
-
-##### In Progress
-- [ ] Design user interface
-- [ ] Implement authentication
-  - [ ] User registration
-  - [ ] Login functionality
-
-##### Done
-- [x] Project kickoff meeting
-- [x] Team assignments
-- [x] Initial planning
-```
-
-**Multiple Boards in One Document:**
-```markdown
----
-layout: kanban
----
-
-# Development Project
-
-#### Backend Development
-
-##### To Do
-- [ ] API design
-- [ ] Database schema
-
-##### In Progress
-- [ ] User authentication
-
-##### Done
-- [x] Project setup
-
-#### Frontend Development
-
-##### To Do
-- [ ] Component design
-- [ ] Styling system
-
-##### In Progress
-- [ ] Login page
-
-##### Done
-- [x] Initial setup
-```
-
-**Key Features:**
-- **Drag & Drop**: Tasks can be moved between columns by dragging
-- **Live Editing**: Click on tasks to edit them inline
-- **Nested Tasks**: Use indentation to create sub-tasks
-- **Markdown Support**: Tasks support full markdown formatting
-- **Duplicate Columns**: Column names can be duplicated without data loss
-- **Multiple Boards**: Support for multiple kanban boards in one document
-
-**Column Management:**
-- H5 headers (`##### Column Name`) define kanban columns
-- Columns are automatically converted to interactive drag-and-drop areas
-- Empty columns can be deleted using the trash icon
-- New columns can be added using the "+" button or by adding H5 headers in edit mode
-
-**Task Management:**
-- Tasks use standard markdown task list syntax: `- [ ]` for incomplete, `- [x]` for complete
-- Tasks support all markdown formatting (bold, italic, links, code, etc.)
-- Nested tasks are created using indentation (2 spaces per level)
-- Tasks can be edited inline by clicking on them
-- New tasks can be added using the "+" button in column headers
-
 ## Extended Syntax
 These are extended markdown features in LeoMoon Wiki-Go.
 
@@ -372,6 +276,48 @@ You can force a specific direction for a section of text by adding the direction
 ```rtl
 Force RTL text.
 ```
+
+## Additional Features
+### Kanban Boards
+
+LeoMoon Wiki-Go supports interactive Kanban boards for project management.
+
+#### Creating a Kanban Board
+
+1. Click the **New** button to create a new document
+2. Select **Kanban: Visual task boards** from the layout dropdown
+3. Enter your document title and click **Create**
+
+That's it! Your kanban board is ready to use with default columns (To Do, In Progress, Done).
+
+#### Using the Kanban Board
+
+**Key Features:**
+- **Drag & Drop**: Move tasks between columns by dragging
+- **Live Editing**: Click on tasks to edit them inline
+- **Nested Tasks**: Use indentation to create sub-tasks
+- **Markdown Support**: Tasks support full markdown formatting (bold, italic, links, etc.)
+- **Multiple Boards**: Add multiple boards in one document using H4 headers
+
+**Column Management:**
+- Add new columns using the **+ Add Column** button
+- Delete empty columns using the trash icon
+- Columns are defined by H5 headers (`##### Column Name`) in the markdown
+
+**Task Management:**
+- Add tasks using the **+** button in column headers
+- Click on any task to edit it inline
+- Drag a task slightly to the right to nest it under the task above
+
+#### Technical Details (Optional)
+
+For those who want to understand the underlying structure, kanban boards use:
+
+- **Frontmatter**: `layout: kanban` in the document header
+- **H4 headers** (`####`): Define separate board sections
+- **H5 headers** (`#####`): Define column names
+- **Task lists**: Standard markdown checkboxes (`- [ ]` incomplete, `- [x]` complete)
+- **Nested tasks**: Indentation with 2 spaces per level
 
 ## Shortcodes
 
