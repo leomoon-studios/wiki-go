@@ -3,6 +3,7 @@ package goldext
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -146,6 +147,14 @@ func LinkPreprocessor(markdown string, docPath string) string {
 
 				if isLocalPath(path) {
 					path = resolveLocalPath(path, docPath)
+				}
+				// Only absolute paths now -- resolveLocalPath ought to have
+				// made this an absolute local path, if it was a local path at
+				// all.
+				if strings.HasPrefix(path, "/") {
+					if _, err := os.Stat("data/documents" + path); os.IsNotExist(err) {
+						return "<span class=\"notfound\">[" + text + "](" + path + ")</span>"
+					}
 				}
 
 				return "[" + text + "](" + path + ")"
