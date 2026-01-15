@@ -196,7 +196,7 @@ pre[class*="language-"] > code {
 }
 
 .markdown-content span.notfound a {
-    color: red;
+    color: var(--danger-color);
 }
 
 .markdown-content a:hover {
