@@ -195,7 +195,8 @@ pre[class*="language-"] > code {
     text-decoration: none;
 }
 
-.markdown-content span.notfound a {
+.markdown-content span.notfound a,
+.editor-preview span.notfound a {
     color: var(--danger-color);
 }
 

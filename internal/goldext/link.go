@@ -127,10 +127,19 @@ func LinkPreprocessor(markdown string, docPath string) string {
 				alt := parts[1]
 				path := parts[2]
 
+				// Check attachment exists BEFORE resolving to API path
+				notFound := false
 				if isLocalPath(path) {
+					fsPath := getAttachmentPath(path, docPath)
+					if _, err := os.Stat(fsPath); os.IsNotExist(err) {
+						notFound = true
+					}
 					path = resolveLocalPath(path, docPath)
 				}
 
+				if notFound {
+					return "<span class=\"notfound\">![" + alt + "](" + path + ")</span>"
+				}
 				return "![" + alt + "](" + path + ")"
 			})
 
@@ -145,18 +154,26 @@ func LinkPreprocessor(markdown string, docPath string) string {
 				text := parts[1]
 				path := parts[2]
 
+				// Check attachment exists BEFORE resolving to API path
+				notFound := false
 				if isLocalPath(path) {
+					fsPath := getAttachmentPath(path, docPath)
+					if _, err := os.Stat(fsPath); os.IsNotExist(err) {
+						notFound = true
+					}
 					path = resolveLocalPath(path, docPath)
 				}
-				// Only absolute paths now -- resolveLocalPath ought to have
-				// made this an absolute local path, if it was a local path at
-				// all.
-				if strings.HasPrefix(path, "/") {
+
+				// Check absolute doc paths (e.g., /hehe -> data/documents/hehe)
+				if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "/api/") {
 					if _, err := os.Stat("data/documents" + path); os.IsNotExist(err) {
-						return "<span class=\"notfound\">[" + text + "](" + path + ")</span>"
+						notFound = true
 					}
 				}
 
+				if notFound {
+					return "<span class=\"notfound\">[" + text + "](" + path + ")</span>"
+				}
 				return "[" + text + "](" + path + ")"
 			})
 		}
@@ -195,6 +212,15 @@ func isLocalPath(path string) bool {
 
 	// All other URLs are considered local file references
 	return true
+}
+
+// getAttachmentPath returns the filesystem path for an attachment
+func getAttachmentPath(path, docPath string) string {
+	docPath = strings.TrimLeft(docPath, "/")
+	if docPath == "" || docPath == "/" {
+		return "data/pages/home/" + path
+	}
+	return "data/documents/" + docPath + "/" + path
 }
 
 // resolveLocalPath resolves a local path relative to the document path
