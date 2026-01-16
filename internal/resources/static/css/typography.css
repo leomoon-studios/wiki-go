@@ -195,6 +195,10 @@ pre[class*="language-"] > code {
     text-decoration: none;
 }
 
+.markdown-content span.notfound a {
+    color: var(--danger-color);
+}
+
 .markdown-content a:hover {
     color: var(--primary-hover);
     text-decoration: underline;
