@@ -45,6 +45,26 @@ const defaultCustomCSS = `/*
 
 `
 
+// Default content for custom.js file
+const defaultCustomJS = `/*
+ * CUSTOM JAVASCRIPT
+ *
+ * This file is for adding custom JavaScript to your wiki.
+ * Add your scripts below to extend functionality.
+ *
+ * Example - Log page loads:
+ */
+
+/*
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Wiki page loaded:', window.location.pathname);
+});
+*/
+
+/* Your custom scripts below */
+
+`
+
 // EnsureStaticAssetsExist copies default static assets to data/static directory if they don't exist
 func EnsureStaticAssetsExist(dataDir string) error {
 	// Create the static directory path
@@ -58,6 +78,11 @@ func EnsureStaticAssetsExist(dataDir string) error {
 	// Ensure custom.css exists
 	if err := ensureCustomCSSExists(staticDir); err != nil {
 		return fmt.Errorf("failed to create custom.css: %w", err)
+	}
+
+	// Ensure custom.js exists
+	if err := ensureCustomJSExists(staticDir); err != nil {
+		return fmt.Errorf("failed to create custom.js: %w", err)
 	}
 
 	// Get the embedded filesystem
@@ -179,6 +204,23 @@ func ensureCustomCSSExists(staticDir string) error {
 			return err
 		}
 		log.Printf("Created default custom.css file at %s", customCSSPath)
+	}
+
+	return nil
+}
+
+// ensureCustomJSExists creates the custom.js file with default content if it doesn't exist
+func ensureCustomJSExists(staticDir string) error {
+	customJSPath := filepath.Join(staticDir, "custom.js")
+
+	// Check if the file already exists
+	if _, err := os.Stat(customJSPath); os.IsNotExist(err) {
+		// Create the file with default content
+		err := os.WriteFile(customJSPath, []byte(defaultCustomJS), 0644)
+		if err != nil {
+			return err
+		}
+		log.Printf("Created default custom.js file at %s", customJSPath)
 	}
 
 	return nil
