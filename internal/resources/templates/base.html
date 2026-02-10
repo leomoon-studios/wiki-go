@@ -15,6 +15,20 @@
     {{if hasFavicon .Config.Wiki.RootDir "svg"}}<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">{{end}}
     {{if hasFavicon .Config.Wiki.RootDir "png"}}<link rel="icon" href="/static/favicon.png" type="image/png">{{end}}
     <link rel="manifest" href="/manifest.json">
+    <!-- Open Graph properties -->
+    <meta property="og:title" content="{{.Config.Wiki.Title}}" />
+    {{if eq .CurrentDir.Path "/"}}
+        <meta property="og:description" content="{{.Config.Wiki.Notice}}" />
+        <meta property="og:type" content="website" />
+    {{else}}
+        <meta property="og:description" content="{{.CurrentDir.Title}}" />
+        <meta property="og:type" content="article" />
+        <meta property="og:article:modified_time" content="{{formatTime .LastModified .Config.Wiki.Timezone "2006-01-02T15:04:05-0700"}}" />
+    {{end}}
+    {{$logoPath := hasLogo .Config.Wiki.RootDir}}
+    {{if $logoPath}}
+        <meta property="og:image" content="{{$logoPath}}" />
+    {{end}}
     <!-- Resource Hints - Preload critical resources for faster page load -->
     <link rel="preload" href="/static/css/theme.css?={{getVersion}}" as="style">
     <link rel="preload" href="/static/css/layout.css?={{getVersion}}" as="style">
