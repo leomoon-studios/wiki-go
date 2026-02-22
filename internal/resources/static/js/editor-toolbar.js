@@ -174,6 +174,7 @@ function createToolbar(container) {
         { type: 'separator' },
         { icon: 'fa-text-width', action: 'toggle-wordwrap', title: `Toggle Word Wrap (${getShortcut('Option+Z', 'Alt+Z')})`, id: 'toggle-wordwrap' },
         { icon: 'fa-list-ol', action: 'toggle-linenumbers', title: `Show Line Numbers (${getShortcut('Option+N', 'Alt+N')})`, id: 'toggle-linenumbers' },
+        { icon: 'fa-columns', action: 'toggle-split', title: `Toggle Split View (${getShortcut('Cmd+Shift+S', 'Ctrl+Shift+S')})`, id: 'toggle-split' },
         { icon: 'fa-font', action: 'toggle-autocapitalize', title: `Enable Auto-Capitalize (${getShortcut('Option+C', 'Alt+C')})`, id: 'toggle-autocapitalize' },
         { type: 'separator' },
         { icon: 'fa-list-alt', action: 'insert-toc', title: 'Insert Table of Contents' },
@@ -445,19 +446,6 @@ function setupToolbarActions(toolbar) {
                 }
                 break;
             case 'preview':
-                // Update tooltip based on current state
-                const isPreviewActive = document.querySelector('.editor-preview')?.classList.contains('editor-preview-active');
-                const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
-                const shortcut = isMac ? 'Cmd+Shift+P' : 'Ctrl+Shift+P';
-
-                if (isPreviewActive) {
-                    // Currently in preview, going back to edit
-                    button.title = 'Back to Edit Mode';
-                } else {
-                    // Currently in edit, going to preview
-                    button.title = `Toggle Preview (${shortcut})`;
-                }
-
                 window.EditorPreview.togglePreview();
                 break;
             case 'emoji':
@@ -490,6 +478,9 @@ function setupToolbarActions(toolbar) {
                 break;
             case 'toggle-linenumbers':
                 window.EditorCore.toggleLineNumbers();
+                break;
+            case 'toggle-split':
+                window.EditorPreview.toggleSplit();
                 break;
             case 'toggle-autocapitalize':
                 window.EditorCore.toggleAutocapitalize();

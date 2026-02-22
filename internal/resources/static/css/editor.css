@@ -274,6 +274,35 @@
     display: block;
 }
 
+/* Full preview mode - preview takes full width */
+.editor-preview.editor-preview-full {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* Split view mode styles */
+.editor-area.split-mode {
+    display: flex;
+}
+
+.editor-area.split-mode .custom-editor-wrapper {
+    width: var(--split-width);
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.editor-area.split-mode .editor-preview {
+    width: var(--split-width);
+    position: relative;
+    display: block;
+    flex-shrink: 0;
+}
+
 /* Preview loading indicator */
 .preview-loading {
     color: var(--breadcrumb-color);
