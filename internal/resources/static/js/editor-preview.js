@@ -4,8 +4,32 @@
  */
 
 let previewElement = null;
+let editorMode = 'edit';
+let modeBeforePreview = 'edit';
+let splitDebounceTimer = null;
 
-// Function to create preview panel
+const PREVIEW_UPDATE_DELAY_MS = 300;
+
+function schedulePreviewUpdate(callback) {
+    clearTimeout(splitDebounceTimer);
+    splitDebounceTimer = setTimeout(callback, PREVIEW_UPDATE_DELAY_MS);
+}
+
+function clearPreviewUpdateTimer() {
+    if (splitDebounceTimer) {
+        clearTimeout(splitDebounceTimer);
+        splitDebounceTimer = null;
+    }
+}
+
+function setToolbarButtonsEnabled(toolbar, enabled, excludeSelector = null) {
+    if (!toolbar) return;
+    const selector = excludeSelector ? `button:not(${excludeSelector})` : 'button';
+    toolbar.querySelectorAll(selector).forEach(button => {
+        button.classList.toggle('disabled', !enabled);
+    });
+}
+
 function createPreview(container) {
     const preview = document.createElement('div');
     preview.className = 'editor-preview';
@@ -14,77 +38,94 @@ function createPreview(container) {
     return preview;
 }
 
-// Function to toggle preview
 async function togglePreview() {
     const editor = window.EditorCore.getEditor();
     if (!editor || !previewElement) return;
 
-    const isPreviewActive = previewElement.classList.contains('editor-preview-active');
+    if (editorMode === 'preview') {
+        editorMode = modeBeforePreview;
+    } else {
+        modeBeforePreview = editorMode;
+        editorMode = 'preview';
+    }
+
+    await applyMode(editor);
+    updateToolbarIcons(document.querySelector('.custom-toolbar'));
+}
+
+async function toggleSplit() {
+    const editor = window.EditorCore.getEditor();
+    if (!editor || !previewElement) return;
+
+    editorMode = (editorMode === 'split') ? 'edit' : 'split';
+
+    await applyMode(editor);
+    updateToolbarIcons(document.querySelector('.custom-toolbar'));
+}
+
+async function applyMode(editor) {
+    const mode = editorMode;
+    const editorArea = document.querySelector('.editor-area');
     const editorElement = document.querySelector('.CodeMirror');
     const toolbar = document.querySelector('.custom-toolbar');
 
-    if (isPreviewActive) {
-        // Switch back to edit mode
-        previewElement.classList.remove('editor-preview-active');
+    editorArea.classList.toggle('split-mode', mode === 'split');
+    previewElement.classList.toggle('editor-preview-active', mode !== 'edit');
+    previewElement.classList.toggle('editor-preview-full', mode === 'preview');
 
-        // CRITICAL: Clear the preview HTML to free memory and prevent slowdowns
-        previewElement.innerHTML = '';
+    if (editorElement) {
+        editorElement.style.display = mode === 'preview' ? 'none' : 'block';
+    }
 
-        // Show editor again
-        if (editorElement) {
-            editorElement.style.display = 'block';
-        }
-
-        // Re-enable all toolbar buttons except preview
-        if (toolbar) {
-            const buttons = toolbar.querySelectorAll('button:not(.preview-button)');
-            buttons.forEach(button => {
-                button.disabled = false;
-                button.classList.remove('disabled');
-            });
-        }
-
-        // Change preview button icon to indicate function
-        const previewButton = toolbar.querySelector('.preview-button i');
-        if (previewButton) {
-            previewButton.className = 'fa fa-eye';
-        }
-
-        // Make sure editor gets focus when returning from preview mode
-        // Using a small timeout to ensure DOM is updated first
-        setTimeout(() => {
-            if (editor) {
-                editor.refresh();
-                editor.focus();
-            }
-        }, 50);
+    if (mode !== 'edit') {
+        await updatePreview(editor.getValue());
     } else {
-        // Show preview
-        const content = editor.getValue();
-        await updatePreview(content);
+        previewElement.innerHTML = '';
+    }
 
-        // Hide editor
-        if (editorElement) {
-            editorElement.style.display = 'none';
-        }
+    if (mode === 'preview') {
+        setToolbarButtonsEnabled(toolbar, false, '#toggle-preview');
+    } else {
+        setToolbarButtonsEnabled(toolbar, true);
+    }
 
-        // Show preview
-        previewElement.classList.add('editor-preview-active');
+    if (mode !== 'preview') {
+        setTimeout(() => {
+            editor?.refresh();
+            editor?.focus();
+        }, 50);
+    }
+}
 
-        // Disable all toolbar buttons except preview
-        if (toolbar) {
-            const buttons = toolbar.querySelectorAll('button:not(.preview-button)');
-            buttons.forEach(button => {
-                button.disabled = true;
-                button.classList.add('disabled');
-            });
-        }
 
-        // Change preview button icon to indicate function
-        const previewButton = toolbar.querySelector('.preview-button i');
-        if (previewButton) {
+
+// Update toolbar button icons based on mode
+function updateToolbarIcons(toolbar) {
+    if (!toolbar) return;
+
+    const previewButton = toolbar.querySelector('.preview-button i');
+    const splitButton = toolbar.querySelector('#toggle-split');
+
+    if (previewButton) {
+        if (editorMode === 'edit' || editorMode === 'split') {
+            previewButton.className = 'fa fa-eye';
+            previewButton.parentElement.title = 'Toggle Preview (Ctrl+Shift+P)';
+        } else {
             previewButton.className = 'fa fa-edit';
             previewButton.parentElement.title = 'Back to Edit Mode';
+        }
+    }
+
+    if (splitButton) {
+        const icon = splitButton.querySelector('i');
+        if (editorMode === 'split') {
+            icon.className = 'fa fa-compress';
+            splitButton.title = 'Exit Split View (Ctrl+Shift+S)';
+            splitButton.classList.add('active');
+        } else {
+            icon.className = 'fa fa-columns';
+            splitButton.title = 'Toggle Split View (Ctrl+Shift+S)';
+            splitButton.classList.remove('active');
         }
     }
 }
@@ -190,21 +231,26 @@ async function updatePreview(content) {
     }
 }
 
-// Cleanup function
 function cleanup() {
     if (previewElement) {
         previewElement.remove();
         previewElement = null;
     }
+    editorMode = 'edit';
+    modeBeforePreview = 'edit';
+    clearPreviewUpdateTimer();
 }
 
-// Export the module
 window.EditorPreview = {
     createPreview,
     togglePreview,
+    toggleSplit,
     updatePreview,
     cleanup,
-    
-    // Getters
-    getPreviewElement: () => previewElement
+    getPreviewElement: () => previewElement,
+    getEditorMode: () => editorMode,
+    setEditorMode: (mode) => { editorMode = mode; },
+    setDebounceTimer: schedulePreviewUpdate,
+    clearDebounceTimer: clearPreviewUpdateTimer,
 };
+

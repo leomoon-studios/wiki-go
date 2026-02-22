@@ -339,9 +339,15 @@ async function loadEditor(mainContent, editorContainer, viewToolbar, editToolbar
             editor.on('change', () => {
                 updateStatusbar(statusbar);
 
-                // Update preview if active
-                if (previewElement.classList.contains('editor-preview-active')) {
-                    window.EditorPreview.updatePreview(editor.getValue());
+                // Update preview if in split or preview mode
+                const editorMode = window.EditorPreview.getEditorMode();
+                if (editorMode !== 'edit') {
+                    const update = () => window.EditorPreview.updatePreview(editor.getValue());
+                    if (editorMode === 'split') {
+                        window.EditorPreview.setDebounceTimer(update);
+                    } else {
+                        update();
+                    }
                 }
 
                 // Set up beforeunload handler when changes occur
@@ -444,6 +450,12 @@ function refreshEditor(statusbar) {
 function exitEditMode(mainContent, editorContainer, viewToolbar, editToolbar) {
     // Remove beforeunload handler first
     removeBeforeUnloadHandler();
+
+    // Clear any pending preview debounce timer and reset editor mode
+    if (window.EditorPreview) {
+        window.EditorPreview.clearDebounceTimer();
+        window.EditorPreview.setEditorMode('edit');
+    }
 
     // Make sure to update UI state classes first
     if (mainContent) mainContent.classList.remove('editing');
