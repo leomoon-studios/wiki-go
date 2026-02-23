@@ -65,6 +65,11 @@ const SHORTCUT_DEFINITIONS = {
         other: { ctrl: true, shift: true, key: 'p' },
         description: 'Preview Toggle'
     },
+    'toggleSplit': {
+        mac: { cmd: true, shift: true, key: 's' },
+        other: { ctrl: true, shift: true, key: 's' },
+        description: 'Toggle Split View'
+    },
     'toggleWordWrap': {
         mac: { option: true, key: 'z' },
         other: { alt: true, key: 'z' },
@@ -175,12 +180,16 @@ function matchesShortcut(event, shortcut) {
 
     const targetKey = platformShortcut.key.toLowerCase();
 
-    return (!platformShortcut.ctrl || event.ctrlKey) &&
-           (!platformShortcut.cmd || event.metaKey) &&
-           (!platformShortcut.meta || event.metaKey) &&
-           (!platformShortcut.alt || event.altKey) &&
-           (!platformShortcut.option || event.altKey) &&
-           (!platformShortcut.shift || event.shiftKey) &&
+    // Check that required modifiers are pressed AND that extra modifiers are NOT pressed
+    const requiresCtrl = !!(platformShortcut.ctrl);
+    const requiresMeta = !!(platformShortcut.cmd || platformShortcut.meta);
+    const requiresAlt = !!(platformShortcut.alt || platformShortcut.option);
+    const requiresShift = !!(platformShortcut.shift);
+
+    return (requiresCtrl === event.ctrlKey || (requiresMeta && isMac)) &&
+           (requiresMeta === event.metaKey || (!isMac && requiresCtrl)) &&
+           (requiresAlt === event.altKey) &&
+           (requiresShift === event.shiftKey) &&
            (eventKey === targetKey || eventKey === platformShortcut.key);
 }
 
@@ -230,6 +239,7 @@ function registerAllCodeMirrorShortcuts() {
         CodeMirror.keyMap.default['Cmd-K'] = 'formatQuote';
         CodeMirror.keyMap.default['Cmd-/'] = 'formatCode';
         CodeMirror.keyMap.default['Cmd-Shift-P'] = 'togglePreview';
+        CodeMirror.keyMap.default['Cmd-Shift-S'] = 'toggleSplit';
         CodeMirror.keyMap.default['Alt-Z'] = 'toggleWordWrap';
         CodeMirror.keyMap.default['Alt-N'] = 'toggleLineNumbers';
         CodeMirror.keyMap.default['Alt-C'] = 'toggleAutocapitalize';
@@ -256,6 +266,7 @@ function registerAllCodeMirrorShortcuts() {
         CodeMirror.keyMap.default['Ctrl-K'] = 'formatQuote';
         CodeMirror.keyMap.default['Ctrl-/'] = 'formatCode';
         CodeMirror.keyMap.default['Ctrl-Shift-P'] = 'togglePreview';
+        CodeMirror.keyMap.default['Ctrl-Shift-S'] = 'toggleSplit';
         CodeMirror.keyMap.default['Alt-Z'] = 'toggleWordWrap';
         CodeMirror.keyMap.default['Alt-N'] = 'toggleLineNumbers';
         CodeMirror.keyMap.default['Alt-C'] = 'toggleAutocapitalize';
@@ -475,6 +486,13 @@ function registerFormattingCommands() {
         }
     };
 
+    // Register toggle split view command
+    CodeMirror.commands.toggleSplit = function(cm) {
+        if (window.EditorPreview && typeof window.EditorPreview.toggleSplit === 'function') {
+            window.EditorPreview.toggleSplit();
+        }
+    };
+
     // Register toggle word wrap command
     CodeMirror.commands.toggleWordWrap = function(cm) {
         if (window.EditorCore && typeof window.EditorCore.toggleWordWrap === 'function') {
@@ -560,6 +578,15 @@ function handleKeyDown(e) {
                 if (mainContent && mainContent.classList.contains('editing')) {
                     if (window.EditorPreview && typeof window.EditorPreview.togglePreview === 'function') {
                         window.EditorPreview.togglePreview();
+                    }
+                }
+                return;
+
+            case 'toggleSplit':
+                e.preventDefault();
+                if (mainContent && mainContent.classList.contains('editing')) {
+                    if (window.EditorPreview && typeof window.EditorPreview.toggleSplit === 'function') {
+                        window.EditorPreview.toggleSplit();
                     }
                 }
                 return;
