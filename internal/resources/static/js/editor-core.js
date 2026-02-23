@@ -118,13 +118,99 @@ if (typeof CodeMirror !== 'undefined') {
         };
     });
 
+    // Define a custom overlay mode for strikethrough syntax (~~text~~)
+    // We use a custom overlay instead of CodeMirror's built-in strikethrough
+    // because the built-in one bleeds across lines and shows strikethrough
+    // even when the closing ~~ is missing.
+    CodeMirror.defineMode("markdown-strikethrough-overlay", function(config, parserConfig) {
+        const strikethroughRegex = /~~(?:[^~]|~(?!~))+?~~/;
+
+        return {
+            token: function(stream, state) {
+                // Get the CodeMirror instance from the stream
+                const cm = stream.lineOracle && stream.lineOracle.doc && stream.lineOracle.doc.cm;
+
+                // Check if current line starts/is a code block marker
+                if (stream.sol()) {
+                    let line = stream.string.trim();
+                    while (line.startsWith('>')) {
+                        line = line.substring(1).trim();
+                    }
+                    if (line.startsWith('```') || line.startsWith('~~~')) {
+                        stream.skipToEnd();
+                        return null;
+                    }
+                }
+
+                // Check if we're inside a code block by scanning previous lines
+                if (cm) {
+                    const lineNo = stream.lineOracle.line;
+                    let inCodeBlock = false;
+
+                    for (let i = 0; i <= lineNo; i++) {
+                        let line = cm.getLine(i);
+                        if (line !== undefined) {
+                            line = line.trim();
+                            while (line.startsWith('>')) {
+                                line = line.substring(1).trim();
+                            }
+                            if (line.startsWith('```') || line.startsWith('~~~')) {
+                                inCodeBlock = !inCodeBlock;
+                            }
+                        }
+                        if (i === lineNo && (line.startsWith('```') || line.startsWith('~~~'))) {
+                            break;
+                        }
+                    }
+
+                    if (inCodeBlock) {
+                        stream.skipToEnd();
+                        return null;
+                    }
+                }
+
+                // Check if current position is inside inline code (backticks)
+                const lineUpToCursor = stream.string.substring(0, stream.pos);
+                const backtickCount = (lineUpToCursor.match(/`/g) || []).length;
+                const inInlineCode = backtickCount % 2 === 1;
+
+                if (inInlineCode) {
+                    while (stream.next() != null) {
+                        if (stream.peek() === '`') break;
+                    }
+                    return null;
+                }
+
+                // Look for the start of a strikethrough marker
+                if (stream.match(/~~/)) {
+                    // Check if we have a complete strikethrough pattern on this line
+                    const line = stream.string.slice(stream.pos - 2);
+                    const match = line.match(strikethroughRegex);
+
+                    if (match && match.index === 0) {
+                        // We found a complete strikethrough pattern
+                        stream.pos += match[0].length - 2;
+                        return "strikethrough";
+                    }
+
+                    // No closing ~~ found, don't style it
+                    return null;
+                }
+
+                // Skip until we find a potential strikethrough marker or backtick
+                while (stream.next() != null && !stream.match(/~~/, false) && stream.peek() !== '`') {}
+                return null;
+            }
+        };
+    });
+
     // Create a custom markdown mode that properly handles frontmatter
     CodeMirror.defineMode("markdown-with-frontmatter", function(config) {
         // Create the base markdown mode
         const markdownMode = CodeMirror.getMode(config, {
             name: "markdown",
             highlightFormatting: true,
-            strikethrough: true,
+            strikethrough: false,
             fencedCodeBlockHighlighting: true,
             taskLists: true
         });
@@ -318,6 +404,7 @@ async function loadEditor(mainContent, editorContainer, viewToolbar, editToolbar
             // Apply our custom markdown mode with frontmatter support
             editor.setOption("mode", "markdown-with-frontmatter");
             editor.addOverlay("markdown-highlight-overlay");
+            editor.addOverlay("markdown-strikethrough-overlay");
 
             // Apply custom styling to the editor
             const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
