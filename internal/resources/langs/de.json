@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Link-Einbettung aus Zwischenablage aktivieren",
   "settings.hide_attachments": "Anhangsbereich in Dokumenten ausblenden",
   "settings.disable_content_max_width": "Volle Breite für Inhalte auf dem Desktop verwenden (900px-Begrenzung deaktivieren)",
+  "settings.always_open_children_in_sidebar": "Kinder-Elemente im Seitenpanel stets öffnen",
   "settings.security": "Sicherheit",
   "settings.login_ban_enabled": "Anmeldesperre aktivieren (Brute-Force-Schutz)",
   "settings.login_ban_max_failures": "Maximale Fehlversuche vor Sperre",

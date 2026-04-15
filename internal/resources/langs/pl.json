@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Włącz osadzanie linków ze schowka",
   "settings.hide_attachments": "Ukryj sekcję załączników w dokumentach",
   "settings.disable_content_max_width": "Użyj pełnej szerokości dla treści na komputerze (wyłącz limit 900px)",
+  "settings.always_open_children_in_sidebar": "Zawsze otwieraj elementy dzieci w panelu bocznym",
   "settings.security": "Bezpieczeństwo",
   "settings.login_ban_enabled": "Włącz blokadę logowania (ochrona przed atakami brute-force)",
   "settings.login_ban_max_failures": "Maksymalna liczba niepowodzeń przed blokadą",

@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "क्लिपबोर्ड से लिंक एम्बेडिंग सक्षम करें",
   "settings.hide_attachments": "दस्तावेज़ों में अनुलग्नक अनुभाग छिपाएं",
   "settings.disable_content_max_width": "डेस्कटॉप पर सामग्री के लिए पूरी चौड़ाई का उपयोग करें (900px सीमा अक्षम करें)",
+  "settings.always_open_children_in_sidebar": "हमेशा चाइल्ड एलिमेंट्स को साइडबार में खोलें",
   "settings.security": "सुरक्षा",
   "settings.login_ban_enabled": "लॉगिन प्रतिबंध सक्षम करें (ब्रूट-फोर्स सुरक्षा)",
   "settings.login_ban_max_failures": "प्रतिबंध से पहले अधिकतम असफलताएँ",

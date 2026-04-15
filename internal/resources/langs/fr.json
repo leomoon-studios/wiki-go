@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Activer l'intégration des liens depuis le presse-papiers",
   "settings.hide_attachments": "Masquer la section des pièces jointes dans les documents",
   "settings.disable_content_max_width": "Utiliser la pleine largeur pour le contenu sur ordinateur (désactiver la limite de 900px)",
+  "settings.always_open_children_in_sidebar": "Toujours ouvrir les éléments enfants dans la barre latérale",
   "settings.security": "Sécurité",
   "settings.login_ban_enabled": "Activer le blocage de connexion (protection contre les attaques par force brute)",
   "settings.login_ban_max_failures": "Nombre maximal d'échecs avant blocage",

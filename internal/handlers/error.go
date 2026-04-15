@@ -29,7 +29,7 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
     }
 
     // Navigation tree
-    nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
+    nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, cfg.Wiki.AlwaysOpenChildrenInSidebar)
     if err != nil {
         http.Error(w, "Error building navigation: "+err.Error(), http.StatusInternalServerError)
         return

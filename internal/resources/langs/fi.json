@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Ota käyttöön linkkien upottaminen leikepöydältä",
   "settings.hide_attachments": "Piilota liitetiedosto-osio dokumenteissa",
   "settings.disable_content_max_width": "Käytä täyttä leveyttä sisällölle työpöydällä (poista 900px rajoitus käytöstä)",
+  "settings.always_open_children_in_sidebar": "Aina avaa lapsielementit sivupalkissa",
   "settings.security": "Turvallisuus",
   "settings.login_ban_enabled": "Ota käyttöön kirjautumisesto (suojaus brute-force-hyökkäyksiltä)",
   "settings.login_ban_max_failures": "Epäonnistuneiden yritysten enimmäismäärä ennen estoa",

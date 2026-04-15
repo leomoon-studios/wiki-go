@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "تمكين تضمين الروابط من الحافظة",
   "settings.hide_attachments": "إخفاء قسم المرفقات في المستندات",
   "settings.disable_content_max_width": "استخدام العرض الكامل للمحتوى على سطح المكتب (تعطيل حد 900 بكسل)",
+  "settings.always_open_children_in_sidebar": "فتح عناصر الأبناء دائمًا في الشريط الجانبي",
   "settings.security": "الأمان",
   "settings.login_ban_enabled": "تفعيل حظر تسجيل الدخول (حماية من محاولات الاختراق)",
   "settings.login_ban_max_failures": "الحد الأقصى للمحاولات الفاشلة قبل الحظر",

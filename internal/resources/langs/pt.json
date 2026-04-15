@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Ativar incorporação de links da área de transferência",
   "settings.hide_attachments": "Ocultar seção de anexos nos documentos",
   "settings.disable_content_max_width": "Usar largura total para conteúdo no Desktop (desativar limite de 900px)",
+  "settings.always_open_children_in_sidebar": "Sempre abrir elementos filhos na barra lateral",
   "settings.security": "Segurança",
   "settings.login_ban_enabled": "Ativar Bloqueio de Login (proteção contra força bruta)",
   "settings.login_ban_max_failures": "Máximo de Falhas Antes do Bloqueio",

@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Panodan bağlantı gömmeyi etkinleştir",
   "settings.hide_attachments": "Belgelerde ek bölümünü gizle",
   "settings.disable_content_max_width": "Masaüstünde içerik için tam genişlik kullan (900px sınırını devre dışı bırak)",
+  "settings.always_open_children_in_sidebar": "Çocuk öğeleri her zaman kenar çubuğunda aç",
   "settings.security": "Güvenlik",
   "settings.login_ban_enabled": "Giriş Engellemesini Etkinleştir (brute-force koruması)",
   "settings.login_ban_max_failures": "Engellemeden Önce Maksimum Başarısız Deneme",

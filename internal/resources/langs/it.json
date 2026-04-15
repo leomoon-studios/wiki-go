@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Abilita incorporamento dei link dagli appunti",
   "settings.hide_attachments": "Nascondi sezione allegati nei documenti",
   "settings.disable_content_max_width": "Utilizza larghezza piena per il contenuto su Desktop (disabilita limite di 900px)",
+  "settings.always_open_children_in_sidebar": "Apri sempre gli elementi figli nella barra laterale",
   "settings.security": "Sicurezza",
   "settings.login_ban_enabled": "Abilita blocco di accesso (protezione contro attacchi brute-force)",
   "settings.login_ban_max_failures": "Numero massimo di tentativi falliti prima del blocco",

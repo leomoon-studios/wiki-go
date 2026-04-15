@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "فعال‌سازی درج پیوند از کلیپ‌بورد",
   "settings.hide_attachments": "پنهان کردن بخش پیوست‌ها در اسناد",
   "settings.disable_content_max_width": "استفاده از عرض کامل برای محتوا در دسکتاپ (غیرفعال‌سازی محدودیت ۹۰۰ پیکسل)",
+  "settings.always_open_children_in_sidebar": "همیشه عناصر فرزندان را در نوار کناری باز کن",
   "settings.security": "امنیت",
   "settings.login_ban_enabled": "فعال کردن مسدودسازی ورود (محافظت در برابر حملات بروت فورس)",
   "settings.login_ban_max_failures": "حداکثر تلاش‌های ناموفق قبل از مسدودسازی",

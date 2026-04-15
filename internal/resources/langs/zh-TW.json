@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "啟用從剪貼簿嵌入連結",
   "settings.hide_attachments": "在文件中隱藏附件部分",
   "settings.disable_content_max_width": "在桌面端使用全寬內容顯示（停用900px寬度限制）",
+  "settings.always_open_children_in_sidebar": "總是在側邊欄中開啟子元素",
   "settings.security": "安全",
   "settings.login_ban_enabled": "啟用登入禁止（防暴力破解保護）",
   "settings.login_ban_max_failures": "禁止前最大失敗次數",

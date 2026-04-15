@@ -526,7 +526,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Get navigation items
-	nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
+	nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, cfg.Wiki.AlwaysOpenChildrenInSidebar)
 	if err != nil {
 		log.Printf("Error building navigation: %v", err)
 		http.Error(w, "Failed to build navigation", http.StatusInternalServerError)

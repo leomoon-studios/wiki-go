@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Inbedden van links vanuit klembord inschakelen",
   "settings.hide_attachments": "Sectie met bijlagen in documenten verbergen",
   "settings.disable_content_max_width": "Volledige breedte gebruiken voor inhoud op desktop (900px limiet uitschakelen)",
+  "settings.always_open_children_in_sidebar": "Kind-elementen altijd in zijbalk openen",
   "settings.security": "Beveiliging",
   "settings.login_ban_enabled": "Inlogverbod inschakelen (brute-force bescherming)",
   "settings.login_ban_max_failures": "Max. mislukkingen voor verbod",

@@ -58,21 +58,22 @@ type Config struct {
 		SSLKey   string `yaml:"ssl_key"`
 	} `yaml:"server"`
 	Wiki struct {
-		RootDir                   string `yaml:"root_dir"`
-		DocumentsDir              string `yaml:"documents_dir"`
-		Title                     string `yaml:"title"`
-		Owner                     string `yaml:"owner"`
-		Notice                    string `yaml:"notice"`
-		Timezone                  string `yaml:"timezone"`
-		Private                   bool   `yaml:"private"`
-		DisableComments           bool   `yaml:"disable_comments"`              // Disable comments system-wide when true
-		DisableFileUploadChecking bool   `yaml:"disable_file_upload_checking"`  // Disable mimetype checking for file uploads when true
-		EnableLinkEmbedding       bool   `yaml:"enable_link_embedding"`         // Enable automatic link embedding from clipboard when true
-		HideAttachments           bool   `yaml:"hide_attachments"`              // Hide attachments section in documents when true
-		DisableContentMaxWidth    bool   `yaml:"disable_content_max_width"`     // Disable 900px content width limit when true
-		MaxVersions               int    `yaml:"max_versions"`
-		MaxUploadSize             int    `yaml:"max_upload_size"` // Maximum upload file size in MB
-		Language                  string `yaml:"language"`        // Default language for the wiki
+		RootDir                     string `yaml:"root_dir"`
+		DocumentsDir                string `yaml:"documents_dir"`
+		Title                       string `yaml:"title"`
+		Owner                       string `yaml:"owner"`
+		Notice                      string `yaml:"notice"`
+		Timezone                    string `yaml:"timezone"`
+		Private                     bool   `yaml:"private"`
+		DisableComments             bool   `yaml:"disable_comments"`                // Disable comments system-wide when true
+		DisableFileUploadChecking   bool   `yaml:"disable_file_upload_checking"`    // Disable mimetype checking for file uploads when true
+		EnableLinkEmbedding         bool   `yaml:"enable_link_embedding"`           // Enable automatic link embedding from clipboard when true
+		HideAttachments             bool   `yaml:"hide_attachments"`                // Hide attachments section in documents when true
+		DisableContentMaxWidth      bool   `yaml:"disable_content_max_width"`       // Disable 900px content width limit when true
+		AlwaysOpenChildrenInSidebar bool   `yaml:"always_open_children_in_sidebar"` // Always open children in sidebar
+		MaxVersions                 int    `yaml:"max_versions"`
+		MaxUploadSize               int    `yaml:"max_upload_size"` // Maximum upload file size in MB
+		Language                    string `yaml:"language"`        // Default language for the wiki
 	} `yaml:"wiki"`
 	Users       []User       `yaml:"users"`
 	AccessRules []AccessRule `yaml:"access_rules,omitempty"`
@@ -110,6 +111,7 @@ func LoadConfig(path string) (*Config, error) {
 	config.Wiki.EnableLinkEmbedding = false
 	config.Wiki.HideAttachments = false
 	config.Wiki.DisableContentMaxWidth = false
+	config.Wiki.AlwaysOpenChildrenInSidebar = false
 	config.Wiki.MaxVersions = 10   // Default value
 	config.Wiki.MaxUploadSize = 10 // Default value
 	config.Wiki.Language = "en"    // Default to English
@@ -185,6 +187,7 @@ func LoadConfig(path string) (*Config, error) {
 				config.Wiki.EnableLinkEmbedding,
 				config.Wiki.HideAttachments,
 				config.Wiki.DisableContentMaxWidth,
+				config.Wiki.AlwaysOpenChildrenInSidebar,
 				config.Wiki.MaxVersions,
 				config.Wiki.MaxUploadSize,
 				config.Wiki.Language,
@@ -256,6 +259,7 @@ wiki:
     enable_link_embedding: %t
     hide_attachments: %t
     disable_content_max_width: %t
+    always_open_children_in_sidebar: %t
     max_versions: %d
     # Maximum file upload size in MB
     max_upload_size: %d
@@ -348,6 +352,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		cfg.Wiki.EnableLinkEmbedding,
 		cfg.Wiki.HideAttachments,
 		cfg.Wiki.DisableContentMaxWidth,
+		cfg.Wiki.AlwaysOpenChildrenInSidebar,
 		cfg.Wiki.MaxVersions,
 		cfg.Wiki.MaxUploadSize,
 		cfg.Wiki.Language,

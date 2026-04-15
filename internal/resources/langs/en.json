@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Enable link embedding from clipboard",
   "settings.hide_attachments": "Hide attachments section in documents",
   "settings.disable_content_max_width": "Use full width for content on Desktop (disable 900px limit)",
+  "settings.always_open_children_in_sidebar": "Always open child elements in sidebar",
   "settings.security": "Security",
   "settings.login_ban_enabled": "Enable Login Ban (brute-force protection)",
   "settings.login_ban_max_failures": "Max Failures Before Ban",

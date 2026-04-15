@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "הפעל הטמעת קישורים מהלוח",
   "settings.hide_attachments": "הסתר את מקטע הקבצים המצורפים במסמכים",
   "settings.disable_content_max_width": "השתמש ברוחב מלא עבור תוכן בשולחן עבודה (בטל הגבלת 900 פיקסלים)",
+  "settings.always_open_children_in_sidebar": "תמיד פתח אלמנטים ילדים בצד",
   "settings.security": "אבטחה",
   "settings.login_ban_enabled": "הפעל חסימת התחברות (הגנה מפני התקפות כוח)",
   "settings.login_ban_max_failures": "מספר כישלונות מקסימלי לפני חסימה",

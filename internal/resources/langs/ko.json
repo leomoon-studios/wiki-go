@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "클립보드에서 링크 임베딩 활성화",
   "settings.hide_attachments": "문서에서 첨부 파일 섹션 숨기기",
   "settings.disable_content_max_width": "데스크톱에서 콘텐츠에 전체 너비 사용 (900px 제한 비활성화)",
+  "settings.always_open_children_in_sidebar": "항상 자식 요소를 사이드바에서 열기",
   "settings.security": "보안",
   "settings.login_ban_enabled": "로그인 차단 활성화 (무차별 대입 공격 방지)",
   "settings.login_ban_max_failures": "차단 전 최대 실패 횟수",

@@ -31,6 +31,7 @@ wiki:
     enable_link_embedding: true
     hide_attachments: false
     disable_content_max_width: false
+    always_open_children_in_sidebar: false
     max_versions: 10
     # Maximum file upload size in MB
     max_upload_size: 10

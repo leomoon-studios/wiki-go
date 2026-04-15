@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Включить встраивание ссылок из буфера обмена",
   "settings.hide_attachments": "Скрыть раздел вложений в документах",
   "settings.disable_content_max_width": "Использовать полную ширину для содержимого на компьютере (отключить ограничение 900px)",
+  "settings.always_open_children_in_sidebar": "Всегда открывать дочерние элементы в боковой панели",
   "settings.security": "Безопасность",
   "settings.login_ban_enabled": "Включить блокировку входа (защита от брутфорса)",
   "settings.login_ban_max_failures": "Максимальное количество неудачных попыток до блокировки",

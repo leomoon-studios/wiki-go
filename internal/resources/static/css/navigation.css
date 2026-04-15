@@ -220,7 +220,7 @@ html, body {
 }
 
 /* Rotate arrow down when directory is expanded (active) */
-.nav-item.active > a .nav-arrow {
+.nav-item.active > a .nav-arrow, .nav-item.open > a .nav-arrow {
     transform: rotate(45deg);
 }
 

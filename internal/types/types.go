@@ -14,6 +14,7 @@ type NavItem struct {
 	Title          string
 	Path           string
 	IsDir          bool
+	IsAlwaysOpen   bool
 	Children       []*NavItem
 	IsActive       bool
 	DocumentLayout string // Layout type from frontmatter

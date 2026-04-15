@@ -72,6 +72,7 @@
   "settings.enable_link_embedding": "Habilitar incrustación de enlaces desde el portapapeles",
   "settings.hide_attachments": "Ocultar sección de archivos adjuntos en documentos",
   "settings.disable_content_max_width": "Usar ancho completo para contenido en escritorio (desactivar límite de 900px)",
+  "settings.always_open_children_in_sidebar": "Siempre abrir elementos hijos en la barra lateral",
   "settings.security": "Seguridad",
   "settings.login_ban_enabled": "Habilitar Bloqueo de Inicios de Sesión (protección contra fuerza bruta)",
   "settings.login_ban_max_failures": "Máximo de Fallos Antes del Bloqueo",

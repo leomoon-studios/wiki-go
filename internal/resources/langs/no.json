@@ -72,6 +72,7 @@
   "settings.disable_comments": "Deaktiver kommentarer for hele systemet",
   "settings.hide_attachments": "Skjul vedleggsseksjonen i dokumenter",
   "settings.disable_content_max_width": "Bruk full bredde for innhold på desktop (deaktiver 900px grense)",
+  "settings.always_open_children_in_sidebar": "Alltid åpne barn-elementer i sidepanel",
   "settings.security": "Sikkerhet",
   "settings.login_ban_enabled": "Aktiver påloggingsbegrensning (beskyttelse mot brute-force)",
   "settings.login_ban_max_failures": "Maks. antall mislykkede forsøk før utestengelse",
