@@ -21,8 +21,8 @@ func addCacheControlHeaders(w http.ResponseWriter, filename string) {
 
 	// Check if filename contains a version identifier (hash or version number)
 	isVersioned := strings.Contains(filename, ".v") ||
-	               strings.Contains(filename, ".min.") ||
-	               strings.Contains(filename, "-bundle")
+		strings.Contains(filename, ".min.") ||
+		strings.Contains(filename, "-bundle")
 
 	// 1 year for versioned resources
 	if isVersioned {
@@ -332,6 +332,7 @@ func SetupRoutes(cfg *config.Config) {
 	mux.HandleFunc("/api/login", handlers.LoginHandler)
 	mux.HandleFunc("/api/check-auth", handlers.CheckAuthHandler)
 	mux.HandleFunc("/api/logout", handlers.LogoutHandler)
+	mux.HandleFunc("/api/password", handlers.PasswordHandler)
 	mux.HandleFunc("/api/check-default-password", handlers.CheckDefaultPasswordHandler)
 	mux.HandleFunc("/api/document/create", handlers.CreateDocumentHandler)
 	mux.HandleFunc("/api/document/", handlers.DocumentHandler)
