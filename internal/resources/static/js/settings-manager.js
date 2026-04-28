@@ -167,52 +167,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (authResponse.status === 401) {
                     // Show login dialog
                     window.Auth.showLoginDialog(() => {
-                        // After login, check if admin
-                        window.Auth.checkIfUserIsAdmin().then(isAdmin => {
-                            if (isAdmin) {
-                                loadSettings();
-                                // Update toolbar buttons after login
-                                window.Auth.updateToolbarButtons();
-                            } else {
-                                window.Auth.showAdminOnlyError();
+                        window.Auth.checkUserRole('viewer').then(isAuthenticated => {
+                            if (isAuthenticated) {
+                                window.Auth.checkIfUserIsAdmin().then(isAdmin => {
+                                    openSettingsDialog(isAdmin);
+                                    // Update toolbar buttons after login
+                                    window.Auth.updateToolbarButtons();
+                                });
                             }
                         });
                     });
                     return;
                 }
 
-                // User is authenticated, check if admin
                 const isAdmin = await window.Auth.checkIfUserIsAdmin();
-                if (isAdmin) {
-                    loadSettings();
-
-                    // Explicitly reset and activate the first tab when opening settings
-                    setTimeout(() => {
-                        const firstTabButton = document.querySelector('.settings-tabs .tab-button[data-tab="general-tab"]');
-                        const firstTabPane = document.getElementById('general-tab');
-
-                        if (firstTabButton && firstTabPane) {
-                            // Reset all tabs first
-                            document.querySelectorAll('.settings-tabs .tab-button').forEach(btn => {
-                                btn.classList.remove('active');
-                            });
-                            document.querySelectorAll('.tab-pane').forEach(pane => {
-                                pane.classList.remove('active');
-                            });
-
-                            // Activate the first tab
-                            firstTabButton.classList.add('active');
-                            firstTabPane.classList.add('active');
-                        }
-                    }, 50); // Small delay to ensure dialog is rendered
-                } else {
-                    window.Auth.showAdminOnlyError();
-                }
+                openSettingsDialog(isAdmin);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to check authentication status');
             }
         });
+    }
+
+    // Function to open settings dialog with role-appropriate tabs
+    function openSettingsDialog(isAdmin) {
+        // Reset all tabs
+        document.querySelectorAll('.settings-tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+        // Show/hide admin-only tabs
+        const adminTabElements = document.querySelectorAll('.admin-only-tab');
+        adminTabElements.forEach(element => {
+            var display;
+            if (isAdmin) {
+                display = '';
+            } else {
+                display = 'none';
+            }
+            element.style.display = display;
+        });
+
+        // Select the active tab based on role
+        var activeTabTag;
+        if (isAdmin) {
+            activeTabTag = 'general-tab';
+        } else {
+            activeTabTag = 'profile-tab';
+        }
+
+        const activeTabButton = document.querySelector(`.tab-button[data-tab="${activeTabTag}"]`);
+        const activeTabPane = document.getElementById(activeTabTag);
+
+        if (!activeTabButton || !activeTabPane) {
+            return
+        }
+
+        // Activate the selected tab
+        activeTabButton.classList.add('active');
+        activeTabPane.classList.add('active');
+
+        if (isAdmin) {
+            loadSettings();
+        } else {
+            // Show dialog
+            settingsDialog.classList.add('active');
+            settingsErrorMessage.style.display = 'none';
+        }
     }
 
     // Close dialog when clicking close button or cancel
@@ -420,24 +440,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show dialog
             settingsDialog.classList.add('active');
             settingsErrorMessage.style.display = 'none';
-
-            // Ensure the first tab is active by default
-            const firstTabButton = document.querySelector('.settings-tabs .tab-button[data-tab="general-tab"]');
-            const firstTabPane = document.getElementById('general-tab');
-
-            if (firstTabButton && firstTabPane) {
-                // Reset all tabs first
-                document.querySelectorAll('.settings-tabs .tab-button').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.querySelectorAll('.settings-dialog .tab-pane').forEach(pane => {
-                    pane.classList.remove('active');
-                });
-
-                // Activate the first tab
-                firstTabButton.classList.add('active');
-                firstTabPane.classList.add('active');
-            }
 
             // Another request for security
             try {
