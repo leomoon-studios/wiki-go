@@ -330,6 +330,15 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    // Handle profile form submission
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            await saveProfileSettings();
+        });
+    }
+
     // Save settings function
     async function saveSettings() {
         const result = collectAllSettings();
@@ -923,6 +932,65 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.error(e);
             settingsErrorMessage.textContent = 'Error saving security settings';
+            settingsErrorMessage.style.display = 'block';
+        }
+    }
+
+    // Function to save profile settings
+    async function saveProfileSettings() {
+        const currentPassword = document.getElementById('profileCurrentPassword').value;
+        const newPassword = document.getElementById('profileNewPassword').value;
+        const confirmPassword = document.getElementById('profileConfirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            var errorMessage = 'Passwords do not match';
+            if (window.i18n) {
+                errorMessage = window.i18n.t('settings.password_mismatch')
+            }
+            settingsErrorMessage.textContent = errorMessage;
+            settingsErrorMessage.style.display = 'block';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            });
+
+            if (response.ok) {
+                hideSettingsDialog();
+
+                var confirmationTitle = 'Profile';
+                var confirmationMessage = 'Password changed successfully';
+                if (window.i18n) {
+                    confirmationTitle = window.i18n.t('settings.profile');
+                    confirmationMessage = window.i18n.t('settings.password_changed');
+                }
+
+                window.DialogSystem.showMessageDialog(
+                    confirmationTitle,
+                    confirmationMessage,
+                );
+
+                profileForm.reset();
+            } else {
+                var errorMessage = 'Failed to change password';
+                if (window.i18n) {
+                    errorMessage = window.i18n.t('settings.password_change_failed');
+                }
+                settingsErrorMessage.textContent = errorMessage;
+                settingsErrorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            settingsErrorMessage.textContent = 'An error occurred while changing password';
             settingsErrorMessage.style.display = 'block';
         }
     }
