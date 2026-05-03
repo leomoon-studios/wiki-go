@@ -247,8 +247,8 @@
 
             if (authResponse.status === 401) {
                 // User is not authenticated
-                // Hide all admin-only buttons
-                document.querySelectorAll('.admin-only-button').forEach(btn => {
+                // Hide all admin-only and auth-only buttons
+                document.querySelectorAll('.admin-only-button, .auth-only-button').forEach(btn => {
                     btn.style.display = 'none';
                 });
 
@@ -301,6 +301,11 @@
                     btn.style.display = 'none';
                 });
             }
+
+            // Show auth-only buttons for all authenticated users
+            document.querySelectorAll('.auth-only-button').forEach(btn => {
+                btn.style.cssText = 'display: inline-flex !important';
+            });
 
             // Show logout button, hide login button for all authenticated users
             document.querySelector('.toolbar-button.auth-button.primary').style.cssText = 'display: none !important';

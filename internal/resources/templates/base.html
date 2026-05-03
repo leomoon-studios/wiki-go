@@ -153,13 +153,15 @@
                             <span class="button-text">{{t "common.edit"}}</span>
                         </button>
 
-                        <!-- Admin-only buttons -->
-                        <button class="toolbar-button admin-only-button settings-button" title="{{t "common.settings"}}" {{if eq .UserRole "admin"}}style="display: inline-flex !important"{{else}}style="display: none !important"{{end}}>
+                        <!-- Always visible buttons -->
+
+                        <!-- Settings button -->
+                        <button class="toolbar-button auth-only-button settings-button" title="{{t "common.settings"}}" {{if .IsAuthenticated}}style="display: inline-flex !important"{{else}}style="display: none !important"{{end}}>
                             <i class="fa fa-cog"></i>
                             <span class="button-text">{{t "common.settings"}}</span>
                         </button>
 
-                        <!-- Always visible buttons -->
+                        <!-- Print button -->
                         <button class="toolbar-button" onclick="window.print()" title="{{t "tooltip.print"}}">
                             <i class="fa fa-print"></i>
                             <span class="button-text">{{t "common.print"}}</span>

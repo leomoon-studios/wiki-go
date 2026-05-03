@@ -32,6 +32,12 @@ type UserUpdateRequest struct {
 	Groups      []string `json:"groups,omitempty"` // Optional groups
 }
 
+// UserUpdatePasswordRequest represents the request body for updating a user password
+type UserUpdatePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 // UsersHandler handles user management endpoints
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if user is authenticated and has admin role
@@ -71,7 +77,7 @@ func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 		if role == "" {
 			role = config.RoleViewer // Default to viewer if role not set
 		}
-		
+
 		users = append(users, UserResponse{
 			Username: user.Username,
 			Role:     role,
@@ -83,7 +89,7 @@ func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"users": users,
+		"users":   users,
 	})
 }
 
@@ -308,6 +314,88 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "User deleted successfully",
+	})
+}
+
+// PasswordHandler handles user password update
+func PasswordHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session := auth.GetSession(r)
+	if session == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	// Parse the request body
+	var req UserUpdatePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sendJSONError(w, "Invalid request payload", http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	// Validate request
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		sendJSONError(w, "Current and new password are required", http.StatusBadRequest, "")
+		return
+	}
+
+	// Hash the new password
+	hashedNewPassword, err := crypto.HashPassword(req.NewPassword, cfg.Security.PasswordStrength)
+	if err != nil {
+		sendJSONError(w, "Failed to hash new password", http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Create a copy of the current config
+	updatedConfig := *cfg
+
+	// Find and update the password of the user
+	userFound := false
+	for i, user := range updatedConfig.Users {
+		if user.Username == session.Username {
+			// Check whether current password matches
+			if !crypto.CheckPasswordHash(req.CurrentPassword, user.Password) {
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"success": false,
+					"message": "Current password did not match",
+				})
+				return
+			}
+
+			// Update password
+			updatedConfig.Users[i].Password = hashedNewPassword
+
+			userFound = true
+		}
+	}
+
+	if !userFound {
+		sendJSONError(w, "User not found", http.StatusNotFound, "")
+		return
+	}
+
+	// Save the updated config
+	configPath := config.ConfigFilePath
+	if err := saveConfig(configPath, &updatedConfig); err != nil {
+		sendJSONError(w, "Failed to save configuration", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Update the global config
+	*cfg = updatedConfig
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User password updated successfully",
 	})
 }
 
