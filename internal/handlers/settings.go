@@ -8,6 +8,7 @@ import (
 	"time"
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/goldext"
 	"wiki-go/internal/i18n"
 )
 
@@ -149,6 +150,10 @@ func UpdateWikiSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update the global config
 	*cfg = updatedConfig
+
+	// Apply updated timezone to shortcode rendering so :::stats recent:::
+	// reflects the new setting without requiring a restart.
+	goldext.SetWikiTimezone(updatedConfig.Wiki.Timezone)
 
 	// Send success response
 	w.Header().Set("Content-Type", "application/json")

@@ -10,13 +10,11 @@ import (
 
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/goldext"
 	"wiki-go/internal/handlers"
 	"wiki-go/internal/migration"
 	"wiki-go/internal/routes"
 	"wiki-go/internal/static"
-
-	// Import goldext package for its initialization side effects
-	_ "wiki-go/internal/goldext"
 )
 
 func main() {
@@ -42,6 +40,11 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading config:", err)
 	}
+
+	// Propagate wiki timezone to the goldext shortcode renderer so that
+	// :::stats recent=N::: formats edit times in the configured zone
+	// (consistent with formatTime used elsewhere in templates).
+	goldext.SetWikiTimezone(cfg.Wiki.Timezone)
 
 	// Initialize session store for persistent logins
 	sessionPath := filepath.Join(cfg.Wiki.RootDir, "temp", "sessions.json")
