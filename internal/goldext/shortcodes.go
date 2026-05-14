@@ -14,37 +14,44 @@ import (
 	"time"
 )
 
-// wikiTimezone is the configured wiki timezone used when formatting
-// timestamps inside shortcodes (e.g. :::stats recent=N:::). It is
-// guarded by tzMu so callers in main can set it at startup while
-// requests format times concurrently.
+// wikiLocation is the resolved *time.Location for the configured wiki
+// timezone. It is guarded by tzMu so callers in main can set it at
+// startup while requests format times concurrently.
 var (
 	tzMu         sync.RWMutex
 	wikiTimezone string
+	wikiLocation *time.Location // nil means UTC
 )
 
 // SetWikiTimezone configures the timezone used by shortcodes that render
 // timestamps. It should be called once at startup, after config is loaded.
+// Invalid timezone strings are logged once here and fall back to UTC.
 func SetWikiTimezone(tz string) {
 	tzMu.Lock()
 	defer tzMu.Unlock()
 	wikiTimezone = tz
-}
-
-// formatModTime formats t using the configured wiki timezone. If no
-// timezone is configured or the configured value is invalid, it falls
-// back to UTC.
-func formatModTime(t time.Time, format string) string {
-	tzMu.RLock()
-	tz := wikiTimezone
-	tzMu.RUnlock()
-
 	if tz == "" {
-		return t.UTC().Format(format)
+		wikiLocation = nil
+		return
 	}
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		log.Printf("goldext: invalid wiki timezone %q: %v, falling back to UTC", tz, err)
+		wikiLocation = nil
+		return
+	}
+	wikiLocation = loc
+}
+
+// formatModTime formats t using the configured wiki timezone. If no
+// timezone is configured or the configured value was invalid, it falls
+// back to UTC.
+func formatModTime(t time.Time, format string) string {
+	tzMu.RLock()
+	loc := wikiLocation
+	tzMu.RUnlock()
+
+	if loc == nil {
 		return t.UTC().Format(format)
 	}
 	return t.In(loc).Format(format)

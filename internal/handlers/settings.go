@@ -122,6 +122,17 @@ func UpdateWikiSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate the timezone string before persisting it
+	if _, err := time.LoadLocation(req.Timezone); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Invalid timezone: " + req.Timezone,
+		})
+		return
+	}
+
 	// Create a copy of the current config
 	updatedConfig := *cfg
 
