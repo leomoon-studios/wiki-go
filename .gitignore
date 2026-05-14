@@ -48,3 +48,6 @@ cmd
 
 # emacs backup files
 *~
+
+# go air
+tmp

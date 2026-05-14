@@ -9,13 +9,14 @@
         <div class="error-message"></div>
 
         <div class="settings-tabs">
-            <button class="tab-button active" data-tab="general-tab">{{t "settings.general"}}</button>
-            <button class="tab-button" data-tab="security-tab">{{t "settings.security"}}</button>
-            <button class="tab-button" data-tab="content-tab">{{t "settings.content"}}</button>
-            <button class="tab-button" data-tab="users-tab">{{t "settings.users"}}</button>
-            <button class="tab-button" data-tab="access-control-tab">{{t "settings.access"}}</button>
-            <button class="tab-button" data-tab="import-tab">{{t "settings.import"}}</button>
-            <button class="tab-button" data-tab="backup-tab">{{t "settings.backup"}}</button>
+            <button class="tab-button active admin-only-tab" data-tab="general-tab">{{t "settings.general"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="security-tab">{{t "settings.security"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="content-tab">{{t "settings.content"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="users-tab">{{t "settings.users"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="access-control-tab">{{t "settings.access"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="import-tab">{{t "settings.import"}}</button>
+            <button class="tab-button admin-only-tab" data-tab="backup-tab">{{t "settings.backup"}}</button>
+            <button class="tab-button" data-tab="profile-tab">{{t "settings.profile"}}</button>
         </div>
 
         <div class="tab-content">
@@ -279,6 +280,26 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div id="profile-tab" class="tab-pane">
+                <form class="settings-form" id="profileForm">
+                    <div class="form-group">
+                        <label for="profileCurrentPassword">{{t "settings.current_password"}}</label>
+                        <input type="password" id="profileCurrentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileNewPassword">{{t "settings.new_password"}}</label>
+                        <input type="password" id="profileNewPassword" name="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileConfirmPassword">{{t "settings.confirm_password"}}</label>
+                        <input type="password" id="profileConfirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="dialog-button primary">{{t "common.save"}}</button>
+                        <button type="button" class="dialog-button cancel-settings">{{t "common.cancel"}}</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
