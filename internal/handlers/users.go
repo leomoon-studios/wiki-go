@@ -321,6 +321,15 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Method not allowed",
+		})
+		return
+	}
+
 	session := auth.GetSession(r)
 	if session == nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -333,22 +342,15 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the request body
 	var req UserUpdatePasswordRequest
+	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		sendJSONError(w, "Invalid request payload", http.StatusBadRequest, err.Error())
 		return
 	}
-	defer r.Body.Close()
 
 	// Validate request
 	if req.CurrentPassword == "" || req.NewPassword == "" {
 		sendJSONError(w, "Current and new password are required", http.StatusBadRequest, "")
-		return
-	}
-
-	// Hash the new password
-	hashedNewPassword, err := crypto.HashPassword(req.NewPassword, cfg.Security.PasswordStrength)
-	if err != nil {
-		sendJSONError(w, "Failed to hash new password", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -359,7 +361,7 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 	userFound := false
 	for i, user := range updatedConfig.Users {
 		if user.Username == session.Username {
-			// Check whether current password matches
+			// Check whether current password matches first (before any expensive hashing)
 			if !crypto.CheckPasswordHash(req.CurrentPassword, user.Password) {
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(map[string]interface{}{
@@ -369,10 +371,18 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			// Hash the new password only after verifying the current one
+			hashedNewPassword, err := crypto.HashPassword(req.NewPassword, cfg.Security.PasswordStrength)
+			if err != nil {
+				sendJSONError(w, "Failed to hash new password", http.StatusBadRequest, err.Error())
+				return
+			}
+
 			// Update password
 			updatedConfig.Users[i].Password = hashedNewPassword
 
 			userFound = true
+			break
 		}
 	}
 

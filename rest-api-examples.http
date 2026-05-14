@@ -38,6 +38,32 @@ POST {{ base_url }}/api/logout
 Cookie: session={{ session }}
 Content-Type: application/json
 
+### Profile
+
+#### Change password (wrong current password — expect 401)
+POST {{ base_url }}/api/password
+Cookie: session={{ session }}
+Content-Type: application/json
+
+{
+  "current_password": "wrongpass",
+  "new_password": "newpass123"
+}
+
+#### Change password (correct — expect 200)
+POST {{ base_url }}/api/password
+Cookie: session={{ session }}
+Content-Type: application/json
+
+{
+  "current_password": "{{ password }}",
+  "new_password": "{{ password }}"
+}
+
+#### Change password via GET (expect 405)
+GET {{ base_url }}/api/password
+Cookie: session={{ session }}
+
 ### Documents
 
 #### Create document

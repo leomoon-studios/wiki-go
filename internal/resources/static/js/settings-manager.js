@@ -167,20 +167,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (authResponse.status === 401) {
                     // Show login dialog
                     window.Auth.showLoginDialog(() => {
-                        window.Auth.checkUserRole('viewer').then(isAuthenticated => {
-                            if (isAuthenticated) {
-                                window.Auth.checkIfUserIsAdmin().then(isAdmin => {
-                                    openSettingsDialog(isAdmin);
-                                    // Update toolbar buttons after login
-                                    window.Auth.updateToolbarButtons();
-                                });
-                            }
+                        fetch('/api/check-auth').then(resp => {
+                            if (!resp.ok) return;
+                            resp.json().then(data => {
+                                const isAdmin = data.role === 'admin';
+                                openSettingsDialog(isAdmin);
+                                // Update toolbar buttons after login
+                                window.Auth.updateToolbarButtons();
+                            });
                         });
                     });
                     return;
                 }
 
-                const isAdmin = await window.Auth.checkIfUserIsAdmin();
+                const authData = await authResponse.json();
+                const isAdmin = authData.role === 'admin';
                 openSettingsDialog(isAdmin);
             } catch (error) {
                 console.error('Error:', error);
@@ -198,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show/hide admin-only tabs
         const adminTabElements = document.querySelectorAll('.admin-only-tab');
         adminTabElements.forEach(element => {
-            var display;
+            let display;
             if (isAdmin) {
                 display = '';
             } else {
@@ -208,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Select the active tab based on role
-        var activeTabTag;
+        let activeTabTag;
         if (isAdmin) {
             activeTabTag = 'general-tab';
         } else {
@@ -966,6 +967,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok) {
                 hideSettingsDialog();
+
+                // Refresh the default password banner in case admin changed away from "admin"
+                window.Auth.checkDefaultPassword();
 
                 var confirmationTitle = 'Profile';
                 var confirmationMessage = 'Password changed successfully';

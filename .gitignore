@@ -46,6 +46,9 @@ cmd
 # for quick python tests
 /.venv
 
+# curl cookie files
+cookies.txt
+
 # emacs backup files
 *~
 
