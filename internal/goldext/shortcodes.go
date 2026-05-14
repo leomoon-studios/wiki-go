@@ -3,14 +3,52 @@ package goldext
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+// wikiTimezone is the configured wiki timezone used when formatting
+// timestamps inside shortcodes (e.g. :::stats recent=N:::). It is
+// guarded by tzMu so callers in main can set it at startup while
+// requests format times concurrently.
+var (
+	tzMu         sync.RWMutex
+	wikiTimezone string
+)
+
+// SetWikiTimezone configures the timezone used by shortcodes that render
+// timestamps. It should be called once at startup, after config is loaded.
+func SetWikiTimezone(tz string) {
+	tzMu.Lock()
+	defer tzMu.Unlock()
+	wikiTimezone = tz
+}
+
+// formatModTime formats t using the configured wiki timezone. If no
+// timezone is configured or the configured value is invalid, it falls
+// back to UTC.
+func formatModTime(t time.Time, format string) string {
+	tzMu.RLock()
+	tz := wikiTimezone
+	tzMu.RUnlock()
+
+	if tz == "" {
+		return t.UTC().Format(format)
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		log.Printf("goldext: invalid wiki timezone %q: %v, falling back to UTC", tz, err)
+		return t.UTC().Format(format)
+	}
+	return t.In(loc).Format(format)
+}
 
 // ShortcodesPreprocessor processes shortcodes in markdown text
 // Supports: :::year:::, :::stats count=*:::, :::stats recent=N:::
@@ -155,10 +193,14 @@ func renderDocumentCount(w *strings.Builder, countParam string) {
 
 // renderRecentEdits renders the recent edits HTML
 func renderRecentEdits(w *strings.Builder, count int) {
-	// Get recent documents
-	docs := getRecentDocuments("data/documents", count)
+	renderRecentEditsFromDir(w, "data/documents", count)
+}
 
-	// Generate HTML for the recent edits
+// renderRecentEditsFromDir is the testable core of renderRecentEdits and
+// renders the list of recent edits from a given documents directory.
+func renderRecentEditsFromDir(w *strings.Builder, dirPath string, count int) {
+	docs := getRecentDocuments(dirPath, count)
+
 	w.WriteString("<div class=\"wiki-stats recent-edits\">\n")
 	w.WriteString("<h4>Recently Edited Documents</h4>\n")
 
@@ -168,16 +210,14 @@ func renderRecentEdits(w *strings.Builder, count int) {
 		w.WriteString("<ul>\n")
 
 		for _, doc := range docs {
-			// Create link to the document's folder
 			folderPath := "/" + doc.Path
 
-			// Structure with elements on one line
 			w.WriteString("<li>\n")
 			w.WriteString("  <div class=\"doc-info\">\n")
 			w.WriteString(fmt.Sprintf("    <a href=\"%s\">%s</a>\n", folderPath, doc.Title))
 			w.WriteString(fmt.Sprintf("    <span class=\"doc-path\">%s</span>\n", folderPath))
 			w.WriteString("  </div>\n")
-			w.WriteString(fmt.Sprintf("  <span class=\"edit-date\">%s</span>\n", doc.ModTime.Format("2006-01-02 15:04")))
+			w.WriteString(fmt.Sprintf("  <span class=\"edit-date\">%s</span>\n", formatModTime(doc.ModTime, "2006-01-02 15:04")))
 			w.WriteString("</li>\n")
 		}
 
