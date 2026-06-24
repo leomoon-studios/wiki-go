@@ -6,6 +6,7 @@ package goldext
 // These variables ensure the preprocessors are available for registration
 // We don't actually use them directly, but they're needed for the compiler to include the preprocessors
 var (
+	_ = WikiLinkPreprocessor
 	_ = LinkPreprocessor
 	_ = MermaidPreprocessor
 	_ = DirectionPreprocessor
@@ -38,6 +39,7 @@ func init() {
 	RegisterPreprocessor(MermaidPreprocessor) // Process mermaid diagrams first
 
 	// Step 3: Register preprocessors that handle code blocks
+	RegisterPreprocessor(WikiLinkPreprocessor) // Convert [[wikilinks]] to Markdown links (before LinkPreprocessor so missing pages get .notfound styling)
 	RegisterPreprocessor(LinkPreprocessor)      // Process links and images
 	RegisterPreprocessor(DirectionPreprocessor) // Process RTL/LTR blocks
 	RegisterPreprocessor(MP4Preprocessor)       // Process MP4 video blocks
