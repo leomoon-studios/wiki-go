@@ -5,15 +5,12 @@
 {{if and .IsAuthenticated (or (eq .UserRole "admin") (eq .UserRole "editor"))}}
 <div class="create-missing-page">
     <p>{{t "notfound.create_prompt"}}</p>
-    <button class="dialog-button primary" id="create-missing-page">
+    <button class="dialog-button primary" id="create-missing-page" data-current-path="{{.CurrentDir.Path}}">
         <!-- <i class="fa fa-plus"></i> -->
         <span class="button-text">{{t "notfound.create_button"}}</span>
     </button>
 </div>
 
-<script>
-    window.NotFound = { currentPath: "{{.CurrentDir.Path}}" };
-</script>
 <script src="/static/js/404.js?={{getVersion}}" defer></script>
 {{end}}
 {{end}}

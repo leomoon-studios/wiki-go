@@ -40,6 +40,7 @@
         initClickOutside();
         initSidebarLinks();
         initNavExpandCollapse();
+        initSitemapButton();
         hydrateNavState();
         initTouchGestures();
         scrollActiveIntoView();
@@ -47,6 +48,18 @@
         // Persist state before the page unloads (handles all navigation paths)
         window.addEventListener('pagehide', saveNavState);
     });
+
+    function initSitemapButton() {
+        const sitemapButton = document.querySelector('.open-sitemap');
+        if (!sitemapButton) return;
+
+        sitemapButton.addEventListener('click', function() {
+            const sitemapURL = sitemapButton.dataset.sitemapUrl;
+            if (sitemapURL) {
+                window.open(sitemapURL, '_blank');
+            }
+        });
+    }
 
     // ========== NAV EXPAND/COLLAPSE ==========
 

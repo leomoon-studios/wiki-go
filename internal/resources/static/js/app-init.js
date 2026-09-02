@@ -12,6 +12,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
+    const printButton = document.querySelector('.print-page');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+
     // Initialize Wiki configuration
     window.WikiConfig = {
         // Get config values from meta tags

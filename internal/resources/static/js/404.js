@@ -1,5 +1,4 @@
-// JavaScript dedicated to the custom 404 page
-// It relies on a global window.NotFound object injected by the 404 template.
+// JavaScript dedicated to the custom 404 page.
 
 (function () {
     // Ensure we are actually on a 404 page by checking for the create button
@@ -7,7 +6,7 @@
         const btn = document.getElementById('create-missing-page');
         if (!btn) return;
 
-        const fullPath = (window.NotFound && window.NotFound.currentPath) || window.location.pathname;
+        const fullPath = btn.dataset.currentPath || window.location.pathname;
 
         btn.addEventListener('click', () => {
             const cleaned = fullPath.replace(/^\/+|\/+$/g, '');
