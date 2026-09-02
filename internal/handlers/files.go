@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
@@ -217,8 +217,8 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	// Create safe filename - remove any potentially unsafe characters
 	filename := sanitizeFilename(fileHeader.Filename)
 
-	// Special handling for SVG files to prevent XSS attacks
-	if strings.ToLower(filepath.Ext(filename)) == ".svg" && !cfg.Wiki.DisableFileUploadChecking {
+	// SVG safety is mandatory even when general upload MIME checking is disabled.
+	if strings.ToLower(filepath.Ext(filename)) == ".svg" {
 		// Read the entire file content
 		svgContent, err := io.ReadAll(file)
 		if err != nil {
@@ -571,7 +571,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	// We need to determine the document path from the file path
 	// The path is like "pages/home/image.png" or "finance/doc/image.png"
 	docPath := filepath.Dir(path)
-	
+
 	// Determine logical path for access check
 	logicalPath := "/" + docPath
 	if docPath == "pages/home" {
@@ -671,17 +671,27 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		}
 	}
 
-	// Set content type and other headers
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
-
 	// For SVG files, add security headers to prevent script execution
 	if ext == ".svg" {
-		// Add Content-Security-Policy header to prevent script execution in SVG
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'")
-		// Add X-Content-Type-Options to prevent MIME type sniffing
-		w.Header().Set("X-Content-Type-Options", "nosniff")
+		svgContent, err := os.ReadFile(filePath)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		sanitizedSVG, err := sanitizeSVG(svgContent)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		setSVGResponseHeaders(w, filepath.Base(filePath))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(sanitizedSVG)))
+		http.ServeContent(w, r, filepath.Base(filePath), fileInfo.ModTime(), bytes.NewReader(sanitizedSVG))
+		return
 	}
+
+	// Set content type and other headers for non-SVG attachments.
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 	// For binary files, set content disposition header for download
 	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/gif" && contentType != "text/plain" {
@@ -690,6 +700,13 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 
 	// Serve the file
 	http.ServeFile(w, r, filePath)
+}
+
+func setSVGResponseHeaders(w http.ResponseWriter, filename string) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'none'; style-src 'none'; img-src 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; sandbox")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
 }
 
 // Helper function to sanitize filenames
@@ -786,43 +803,6 @@ func isContentTypeCompatible(detected, expected string, fileContent []byte, file
 
 	// For unknown types, be conservative
 	return false
-}
-
-// sanitizeSVG removes potentially harmful elements and attributes from SVG files
-func sanitizeSVG(content []byte) ([]byte, error) {
-	// Convert to string for easier manipulation
-	svgStr := string(content)
-
-	// Remove script tags and their content
-	scriptRegex := regexp.MustCompile(`(?i)<script\b[^>]*>.*?</script>`)
-	svgStr = scriptRegex.ReplaceAllString(svgStr, "")
-
-	// Remove event handlers (attributes starting with "on")
-	eventHandlerRegex := regexp.MustCompile(`(?i)\s+on\w+\s*=\s*["'][^"']*["']`)
-	svgStr = eventHandlerRegex.ReplaceAllString(svgStr, "")
-
-	// Remove javascript: URLs
-	jsUrlRegex := regexp.MustCompile(`(?i)(href|xlink:href)\s*=\s*["']javascript:[^"']*["']`)
-	svgStr = jsUrlRegex.ReplaceAllString(svgStr, `$1=""`)
-
-	// Remove data: URLs
-	dataUrlRegex := regexp.MustCompile(`(?i)(href|xlink:href)\s*=\s*["']data:[^"']*["']`)
-	svgStr = dataUrlRegex.ReplaceAllString(svgStr, `$1=""`)
-
-	// Remove external references (can be used for data exfiltration)
-	externalRefRegex := regexp.MustCompile(`(?i)(href|xlink:href)\s*=\s*["']https?:[^"']*["']`)
-	svgStr = externalRefRegex.ReplaceAllString(svgStr, `$1=""`)
-
-	// Remove potentially dangerous tags
-	dangerousTags := []string{"foreignObject", "use", "embed", "object", "iframe"}
-	for _, tag := range dangerousTags {
-		openTagRegex := regexp.MustCompile(`(?i)<` + tag + `\b[^>]*>`)
-		closeTagRegex := regexp.MustCompile(`(?i)<\/` + tag + `\s*>`)
-		svgStr = openTagRegex.ReplaceAllString(svgStr, "")
-		svgStr = closeTagRegex.ReplaceAllString(svgStr, "")
-	}
-
-	return []byte(svgStr), nil
 }
 
 // isTextContent checks if content is primarily text-based by sampling bytes
@@ -1225,7 +1205,7 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		possibleNewPathInPages := filepath.Join(cfg.Wiki.RootDir, newPath)
 
 		if fileExists(possibleNewPathInDocuments) ||
-		   (strings.HasPrefix(newPath, "pages/") && fileExists(possibleNewPathInPages)) {
+			(strings.HasPrefix(newPath, "pages/") && fileExists(possibleNewPathInPages)) {
 			// The file with the new name already exists, likely was already renamed
 			logger.Debug("File already appears to have been renamed to: %s", newPath)
 			w.WriteHeader(http.StatusOK)
