@@ -8,9 +8,6 @@ package goldext
 var (
 	_ = WikiLinkPreprocessor
 	_ = LinkPreprocessor
-	_ = MP4Preprocessor
-	_ = YouTubePreprocessor
-	_ = VimeoPreprocessor
 	_ = ShortcodesPreprocessor
 	_ = HighlightPreprocessor
 	_ = TypographyPreprocessor
@@ -36,9 +33,6 @@ func init() {
 	// Step 3: Register preprocessors that handle code blocks
 	RegisterPreprocessor(WikiLinkPreprocessor)   // Convert [[wikilinks]] to Markdown links (before LinkPreprocessor so missing pages get .notfound styling)
 	RegisterPreprocessor(LinkPreprocessor)       // Process links and images
-	RegisterPreprocessor(MP4Preprocessor)        // Process MP4 video blocks
-	RegisterPreprocessor(YouTubePreprocessor)    // Process YouTube video blocks
-	RegisterPreprocessor(VimeoPreprocessor)      // Process Vimeo video blocks
 	RegisterPreprocessor(ShortcodesPreprocessor) // Process shortcodes (year, stats)
 	RegisterPreprocessor(DetailsPreprocessor)    // Process details blocks
 	RegisterPreprocessor(InfoBoxPreprocessor)    // Process GitHub-flavored alerts

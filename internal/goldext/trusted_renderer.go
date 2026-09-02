@@ -10,16 +10,25 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// TrustedNodes registers renderers for Wiki-Go's typed, generated nodes. It
-// deliberately registers no Markdown parser, so user input cannot create one.
+// TrustedNodes registers renderers for Wiki-Go's typed, generated nodes and a
+// narrow transformer for exact, supported fence names. Arbitrary Markdown
+// cannot name elements or attributes emitted by the trusted renderers.
 var TrustedNodes = &trustedNodesExtension{}
 
-type trustedNodesExtension struct{}
+type trustedNodesExtension struct {
+	documentPath string
+}
+
+// TrustedNodesForDocument returns the trusted-node extension with a fallback
+// document path for renderers that cannot pass a Goldmark parser context.
+func TrustedNodesForDocument(documentPath string) goldmark.Extender {
+	return &trustedNodesExtension{documentPath: documentPath}
+}
 
 func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
 	markdown.Parser().AddOptions(
 		parser.WithASTTransformers(
-			util.Prioritized(&trustedFenceTransformer{}, 100),
+			util.Prioritized(&trustedFenceTransformer{documentPath: e.documentPath}, 100),
 		),
 	)
 	markdown.Renderer().AddOptions(
@@ -36,6 +45,8 @@ func (r *trustedNodeRenderer) RegisterFuncs(registerer renderer.NodeRendererFunc
 	registerer.Register(KindTrustedInline, r.renderInline)
 	registerer.Register(KindDirectionBlock, r.renderDirectionBlock)
 	registerer.Register(KindMermaidBlock, r.renderMermaidBlock)
+	registerer.Register(KindLocalVideoBlock, r.renderLocalVideoBlock)
+	registerer.Register(KindVideoEmbedBlock, r.renderVideoEmbedBlock)
 }
 
 func (r *trustedNodeRenderer) renderBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {

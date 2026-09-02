@@ -73,7 +73,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			contentWithoutFrontmatter,
 			preprocessors,
 			nil,
-			goldext.TrustedNodes,
+			goldext.TrustedNodesForDocument(docPath),
 		)
 		return []byte(kanbanHTML)
 	}

@@ -1,223 +1,157 @@
 package goldext
 
 import (
-	"fmt"
 	"net/url"
-	"path/filepath"
+	"path"
 	"strings"
+	"unicode"
+
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/util"
 )
 
-// TransformMP4Path transforms a local video file path to a proper API URL
-// It prepends "/api/files/" to the document path and filename
-func TransformMP4Path(videoPath string, docPath string) string {
-	// Skip transformation if it already looks like a URL
-	if strings.HasPrefix(videoPath, "http://") ||
-		strings.HasPrefix(videoPath, "https://") ||
-		strings.HasPrefix(videoPath, "/") {
-		return videoPath
-	}
-
-	// URL encode the filename to handle spaces and special characters
-	escapedPath := url.PathEscape(videoPath)
-
-	// Handle the homepage special case
-	if docPath == "" || docPath == "/" {
-		// Homepage files are stored in "pages/home"
-		return "/api/files/pages/home/" + escapedPath
-	}
-
-	// Regular document files
-	return "/api/files/" + docPath + "/" + escapedPath
+// LocalVideoBlock represents an MP4 attachment resolved relative to the
+// document being rendered. SourceURL must remain under /api/files/.
+type LocalVideoBlock struct {
+	ast.BaseBlock
+	SourceURL string
+	Filename  string
 }
 
-// MP4Preprocessor transforms MP4 code blocks into HTML video elements
-// and avoids processing nested MP4 blocks inside other code blocks
-func MP4Preprocessor(markdown string, docPath string) string {
-	// Scan fenced blocks consistently with the other media preprocessors.
-	lines := strings.Split(markdown, "\n")
-	processedLines := make([]string, len(lines))
-	copy(processedLines, lines)
+// KindLocalVideoBlock is the Goldmark kind for LocalVideoBlock.
+var KindLocalVideoBlock = ast.NewNodeKind("WikiGoLocalVideoBlock")
 
-	// Maps to store replacements
-	replacements := make(map[int]string) // Line index -> replacement HTML
-	linesToRemove := make(map[int]bool)  // Lines to be removed
+// Kind implements ast.Node.
+func (n *LocalVideoBlock) Kind() ast.NodeKind {
+	return KindLocalVideoBlock
+}
 
-	// State tracking
-	backtickStack := 0       // Track nesting of ``` blocks
-	tildeStack := 0          // Track nesting of ~~~ blocks
-	inMP4Block := false      // Are we in an MP4 block?
-	mp4Start := -1           // Start line of current MP4 block
-	mp4Content := []string{} // Content of current MP4 block
-	mp4BlockType := ""       // Type of block: "backtick" or "tilde"
+// Dump implements ast.Node.
+func (n *LocalVideoBlock) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, map[string]string{"SourceURL": n.SourceURL}, nil)
+}
 
-	// Scan through all lines
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
+func newLocalVideoBlock(sourceURL, filename string) *LocalVideoBlock {
+	return &LocalVideoBlock{SourceURL: sourceURL, Filename: filename}
+}
 
-		// Check for code block markers
-		if strings.HasPrefix(trimmed, "```") {
-			if backtickStack == 0 {
-				// Opening a backtick block
-				backtickStack++
+// TransformMP4Path resolves an attachment filename to its local API URL. An
+// empty result means the input was not a valid local MP4 attachment filename.
+func TransformMP4Path(videoPath string, docPath string) string {
+	resolved, _, ok := ResolveLocalMP4URL(videoPath, docPath)
+	if !ok {
+		return ""
+	}
+	return resolved
+}
 
-				// Check if it's an MP4 block and we're not inside any other block
-				if tildeStack == 0 && strings.Contains(trimmed, "mp4") {
-					inMP4Block = true
-					mp4Start = i
-					mp4Content = []string{}
-					mp4BlockType = "backtick"
-					// Mark this line for removal
-					linesToRemove[i] = true
-				}
-			} else {
-				// Closing a backtick block
-				backtickStack--
+// ResolveLocalMP4URL converts one local MP4 attachment filename into a URL for
+// the current document. External URLs, absolute paths, traversal, and nested
+// paths are deliberately rejected.
+func ResolveLocalMP4URL(videoPath, docPath string) (sourceURL, filename string, ok bool) {
+	filename = strings.TrimSpace(videoPath)
+	if !validMP4Filename(filename) {
+		return "", "", false
+	}
 
-				// If we're closing an MP4 block
-				if inMP4Block && mp4BlockType == "backtick" && backtickStack == 0 && tildeStack == 0 {
-					// Get video path from content
-					videoPath := strings.TrimSpace(strings.Join(mp4Content, "\n"))
+	documentURLPath, ok := attachmentDocumentURLPath(docPath)
+	if !ok {
+		return "", "", false
+	}
 
-					if videoPath != "" {
-						// Transform the path to proper API URL
-						videoPath = TransformMP4Path(videoPath, docPath)
+	sourceURL = "/api/files/" + documentURLPath + "/" + url.PathEscape(filename)
+	if _, ok := validateResolvedLocalMP4URL(sourceURL); !ok {
+		return "", "", false
+	}
+	return sourceURL, filename, true
+}
 
-						// Get filename for display in print placeholder
-						filename := filepath.Base(videoPath)
+func validMP4Filename(filename string) bool {
+	if filename == "" || filename == "." || filename == ".." ||
+		strings.ContainsAny(filename, `/\\?#:`) || !strings.EqualFold(path.Ext(filename), ".mp4") {
+		return false
+	}
+	for _, character := range filename {
+		if unicode.IsControl(character) {
+			return false
+		}
+	}
+	return true
+}
 
-						// Create replacement HTML
-						replacement := fmt.Sprintf(`<div class="video-container">
-<video class="local-video-player" style="max-width: 100%%; height: auto;" controls>
-<source src="%s" type="video/mp4">
-Your browser does not support the video tag.
-</video>
-</div>
-<div class="video-print-placeholder">
-<p><strong>Video Content</strong></p>
-<p>This embedded video (%s) is not available in print.</p>
-<p>To view this video, access this document at your wiki URL.</p>
-</div>`, videoPath, filename)
+func attachmentDocumentURLPath(docPath string) (string, bool) {
+	docPath = strings.Trim(docPath, "/")
+	if docPath == "" {
+		return "pages/home", true
+	}
+	if strings.Contains(docPath, "\\") {
+		return "", false
+	}
 
-						replacements[mp4Start] = replacement
-					}
-
-					// Mark this line for removal
-					linesToRemove[i] = true
-
-					// Reset state
-					inMP4Block = false
-					mp4Start = -1
-					mp4Content = []string{}
-					mp4BlockType = ""
-				}
+	segments := strings.Split(docPath, "/")
+	for index, segment := range segments {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", false
+		}
+		for _, character := range segment {
+			if unicode.IsControl(character) {
+				return "", false
 			}
-		} else if strings.HasPrefix(trimmed, "~~~") {
-			if tildeStack == 0 {
-				// Opening a tilde block
-				tildeStack++
-
-				// Check if it's an MP4 block and we're not inside any other block
-				if backtickStack == 0 && strings.Contains(trimmed, "mp4") {
-					inMP4Block = true
-					mp4Start = i
-					mp4Content = []string{}
-					mp4BlockType = "tilde"
-					// Mark this line for removal
-					linesToRemove[i] = true
-				}
-			} else {
-				// Closing a tilde block
-				tildeStack--
-
-				// If we're closing an MP4 block
-				if inMP4Block && mp4BlockType == "tilde" && tildeStack == 0 && backtickStack == 0 {
-					// Get video path from content
-					videoPath := strings.TrimSpace(strings.Join(mp4Content, "\n"))
-
-					if videoPath != "" {
-						// Transform the path to proper API URL
-						videoPath = TransformMP4Path(videoPath, docPath)
-
-						// Get filename for display in print placeholder
-						filename := filepath.Base(videoPath)
-
-						// Create replacement HTML
-						replacement := fmt.Sprintf(`<div class="video-container">
-<video class="local-video-player" style="max-width: 100%%; height: auto;" controls>
-<source src="%s" type="video/mp4">
-Your browser does not support the video tag.
-</video>
-</div>
-<div class="video-print-placeholder">
-<p><strong>Video Content</strong></p>
-<p>This embedded video (%s) is not available in print.</p>
-<p>To view this video, access this document at your wiki URL.</p>
-</div>`, videoPath, filename)
-
-						replacements[mp4Start] = replacement
-					}
-
-					// Mark this line for removal
-					linesToRemove[i] = true
-
-					// Reset state
-					inMP4Block = false
-					mp4Start = -1
-					mp4Content = []string{}
-					mp4BlockType = ""
-				}
-			}
-		} else if inMP4Block && ((mp4BlockType == "backtick" && backtickStack > 0 && tildeStack == 0) ||
-			(mp4BlockType == "tilde" && tildeStack > 0 && backtickStack == 0)) {
-			// We're inside an MP4 block, collect the content
-			mp4Content = append(mp4Content, line)
-			// Mark this line for removal
-			linesToRemove[i] = true
 		}
+		segments[index] = url.PathEscape(segment)
+	}
+	return strings.Join(segments, "/"), true
+}
+
+func validateResolvedLocalMP4URL(value string) (string, bool) {
+	validated, ok := ValidateTrustedURL(value)
+	if !ok || !strings.HasPrefix(validated, "/api/files/") {
+		return "", false
 	}
 
-	// Handle unclosed blocks at end of document
-	if inMP4Block && mp4Start >= 0 {
-		// Get video path from content
-		videoPath := strings.TrimSpace(strings.Join(mp4Content, "\n"))
-
-		if videoPath != "" {
-			// Transform the path to proper API URL
-			videoPath = TransformMP4Path(videoPath, docPath)
-
-			// Get filename for display in print placeholder
-			filename := filepath.Base(videoPath)
-
-			// Create replacement HTML
-			replacement := fmt.Sprintf(`<div class="video-container">
-<video class="local-video-player" style="max-width: 100%%; height: auto;" controls>
-<source src="%s" type="video/mp4">
-Your browser does not support the video tag.
-</video>
-</div>
-<div class="video-print-placeholder">
-<p><strong>Video Content</strong></p>
-<p>This embedded video (%s) is not available in print.</p>
-<p>To view this video, access this document at your wiki URL.</p>
-</div>`, videoPath, filename)
-
-			replacements[mp4Start] = replacement
-		}
+	parsed, err := url.Parse(validated)
+	if err != nil || parsed.Scheme != "" || parsed.Host != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return "", false
+	}
+	decodedPath, err := url.PathUnescape(parsed.EscapedPath())
+	if err != nil || strings.Contains(decodedPath, "\\") || !strings.HasPrefix(decodedPath, "/api/files/") {
+		return "", false
 	}
 
-	// Process the lines, applying replacements and removing marked lines
-	result := []string{}
-
-	for i, line := range processedLines {
-		if replacement, ok := replacements[i]; ok {
-			// This line has a replacement
-			result = append(result, replacement)
-		} else if !linesToRemove[i] {
-			// This line should not be removed
-			result = append(result, line)
+	segments := strings.Split(strings.TrimPrefix(decodedPath, "/api/files/"), "/")
+	if len(segments) < 2 {
+		return "", false
+	}
+	for _, segment := range segments {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", false
 		}
-		// Lines marked for removal are skipped
+	}
+	if !strings.EqualFold(path.Ext(segments[len(segments)-1]), ".mp4") {
+		return "", false
+	}
+	return validated, true
+}
+
+func (r *trustedNodeRenderer) renderLocalVideoBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
 	}
 
-	return strings.Join(result, "\n")
+	video := node.(*LocalVideoBlock)
+	sourceURL, ok := validateResolvedLocalMP4URL(video.SourceURL)
+	if !ok {
+		return ast.WalkSkipChildren, nil
+	}
+
+	_, _ = writer.WriteString("<div class=\"video-container\">\n")
+	_, _ = writer.WriteString("<video class=\"local-video-player\" style=\"max-width: 100%; height: auto;\" controls>\n")
+	_, _ = writer.WriteString("<source")
+	writeAttribute(writer, "src", sourceURL)
+	_, _ = writer.WriteString(" type=\"video/mp4\">\n")
+	_, _ = writer.WriteString("Your browser does not support the video tag.\n</video>\n</div>\n")
+	_, _ = writer.WriteString("<div class=\"video-print-placeholder\">\n<p><strong>Video Content</strong></p>\n<p>This embedded video (")
+	_, _ = writer.Write(util.EscapeHTML([]byte(video.Filename)))
+	_, _ = writer.WriteString(") is not available in print.</p>\n<p>To view this video, access this document at your wiki URL.</p>\n</div>\n")
+	return ast.WalkSkipChildren, nil
 }
