@@ -9,7 +9,6 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
-	goldhtml "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -188,6 +187,5 @@ func TestMediaNodeRenderersFailClosedAndEscapeFilename(t *testing.T) {
 func newTrustedMediaTestMarkdown() goldmark.Markdown {
 	return goldmark.New(
 		goldmark.WithExtensions(TrustedNodes),
-		goldmark.WithRendererOptions(goldhtml.WithUnsafe()),
 	)
 }

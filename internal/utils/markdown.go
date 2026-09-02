@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,7 +14,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
+	goldhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // RenderMarkdownFile reads a markdown file and returns its HTML representation
@@ -44,6 +45,18 @@ func RenderMarkdownFile(filePath string) ([]byte, error) {
 // RenderMarkdown converts markdown text to HTML
 func RenderMarkdown(md string) []byte {
 	return RenderMarkdownWithPath(md, "")
+}
+
+// RenderMarkdownHTML returns document HTML produced exclusively by Wiki-Go's
+// safe Markdown renderer. Callers may insert this value into html/template.
+func RenderMarkdownHTML(md string) template.HTML {
+	return template.HTML(RenderMarkdown(md))
+}
+
+// RenderMarkdownWithPathHTML is the path-aware template-safe rendering entry
+// point used by document pages.
+func RenderMarkdownWithPathHTML(md string, docPath string) template.HTML {
+	return template.HTML(RenderMarkdownWithPath(md, docPath))
 }
 
 // RenderMarkdownWithPath converts markdown text to HTML with the current document path
@@ -118,10 +131,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			parser.WithAttribute(),     // Enable attributes
 		),
 		// Renderer options
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(), // Allow raw HTML in the markdown
-			html.WithHardWraps(),
-		),
+		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
 	)
 
 	// Create a buffer to store the rendered HTML
@@ -130,7 +140,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 	// Convert markdown to HTML
 	if err := markdown.Convert([]byte(md), &buf, parser.WithContext(goldext.NewRenderContext(docPath))); err != nil {
 		// If there's an error, return an error message
-		errMsg := []byte("<p>Error rendering markdown with Goldmark: " + err.Error() + "</p>")
+		errMsg := []byte("<p>Error rendering Markdown with Goldmark: " + template.HTMLEscapeString(err.Error()) + "</p>")
 		return errMsg
 	}
 

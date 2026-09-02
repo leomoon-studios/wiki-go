@@ -12,7 +12,6 @@ var (
 	_ = TypographyPreprocessor
 	_ = EmojiPreprocessor
 	// _ = TaskListPreprocessor
-	_ = ScriptSanitizePreprocessor
 	_ = FrontmatterPreprocessor
 )
 
@@ -33,6 +32,4 @@ func init() {
 	RegisterPreprocessor(TypographyPreprocessor) // Process typography replacements
 	RegisterPreprocessor(EmojiPreprocessor)      // Process emoji shortcodes
 
-	// Security-related preprocessing runs last while raw HTML remains enabled.
-	RegisterPreprocessor(ScriptSanitizePreprocessor) // Sanitize script tags
 }

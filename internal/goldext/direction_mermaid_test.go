@@ -12,7 +12,6 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
-	goldhtml "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -157,9 +156,6 @@ func TestDirectionAndMermaidRendersDoNotShareState(t *testing.T) {
 func newTrustedFenceTestMarkdown() goldmark.Markdown {
 	return goldmark.New(
 		goldmark.WithExtensions(TrustedNodes),
-		// Match the current outer document renderer. Direction content remains
-		// safe because its nested renderer never enables raw HTML.
-		goldmark.WithRendererOptions(goldhtml.WithUnsafe()),
 	)
 }
 

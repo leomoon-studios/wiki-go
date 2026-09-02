@@ -141,7 +141,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		}
 
 		// Use the document path for rendering to handle local file references
-		content = template.HTML(utils.RenderMarkdownWithPath(string(mdContent), decodedPath))
+		content = utils.RenderMarkdownWithPathHTML(string(mdContent), decodedPath)
 
 		// If content is empty but document exists, ensure we have something truthy for template conditions
 		if strings.TrimSpace(string(content)) == "" {

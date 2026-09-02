@@ -107,13 +107,13 @@ func TestAlertEscapesRawHTMLBlocks(t *testing.T) {
 	}
 }
 
-func TestScriptSanitizerPreservesBlockquotedFences(t *testing.T) {
+func TestTextPreprocessorsPreserveBlockquotedFences(t *testing.T) {
 	for _, input := range []string{
 		"> ```go\n> fmt.Println(\"<script>code</script>\")\n> ```\n",
 		"> > ~~~html\n> > <script>code</script>\n> > ~~~\n",
 	} {
-		if got := ScriptSanitizePreprocessor(input, ""); got != input {
-			t.Fatalf("script sanitizer changed a blockquoted code fence:\nwant: %q\n got: %q", input, got)
+		if got := ProcessMarkdown(input, ""); got != input {
+			t.Fatalf("text preprocessors changed a blockquoted code fence:\nwant: %q\n got: %q", input, got)
 		}
 	}
 }
@@ -230,7 +230,7 @@ func renderStep5Markdown(t *testing.T, input string) string {
 			TrustedNodes,
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
-		goldmark.WithRendererOptions(goldhtml.WithUnsafe(), goldhtml.WithHardWraps()),
+		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
 	)
 	var output bytes.Buffer
 	if err := markdown.Convert([]byte(input), &output, parser.WithContext(NewRenderContext("test/document"))); err != nil {
