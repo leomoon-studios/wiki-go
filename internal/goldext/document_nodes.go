@@ -1,7 +1,6 @@
 package goldext
 
 import (
-	"bytes"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -164,59 +163,66 @@ func alertFromBlockquote(blockquote *ast.Blockquote, source []byte) (*AlertBlock
 		return nil, false
 	}
 
-	start := bytes.LastIndexByte(source[:markerSegment.Start], '\n') + 1
-	stop := maximumSourceStop(blockquote)
-	if stop < start {
-		return nil, false
-	}
-	for stop < len(source) && source[stop] != '\n' {
-		stop++
-	}
-	if stop < len(source) {
-		stop++
+	removeAlertMarker(paragraph, markerSegment)
+	if paragraph.Lines().Len() == 0 {
+		blockquote.RemoveChild(blockquote, paragraph)
 	}
 
-	physicalLines := strings.Split(string(source[start:stop]), "\n")
-	contentLines := make([]string, 0, len(physicalLines))
-	for index, line := range physicalLines {
-		if index == 0 || index == len(physicalLines)-1 && line == "" {
-			continue
-		}
-		contentLines = append(contentLines, stripOneBlockquoteMarker(line))
+	alert := newAlertBlock(alertType)
+	for child := blockquote.FirstChild(); child != nil; {
+		next := child.NextSibling()
+		blockquote.RemoveChild(blockquote, child)
+		alert.AppendChild(alert, child)
+		child = next
 	}
-	return newAlertBlock(alertType, []byte(strings.Join(contentLines, "\n"))), true
+	escapeRawHTMLBlocksAndInlines(alert, source)
+	return alert, true
 }
 
-func maximumSourceStop(root ast.Node) int {
-	stop := 0
+func removeAlertMarker(paragraph *ast.Paragraph, markerSegment text.Segment) {
+	for child := paragraph.FirstChild(); child != nil; {
+		next := child.NextSibling()
+		if child.Pos() >= markerSegment.Stop {
+			break
+		}
+		paragraph.RemoveChild(paragraph, child)
+		child = next
+	}
+
+	remainingLines := text.NewSegments()
+	for index := 1; index < paragraph.Lines().Len(); index++ {
+		remainingLines.Append(paragraph.Lines().At(index))
+	}
+	paragraph.SetLines(remainingLines)
+}
+
+func escapeRawHTMLBlocksAndInlines(root ast.Node, source []byte) {
+	type replacement struct {
+		old ast.Node
+		new ast.Node
+	}
+	replacements := make([]replacement, 0)
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
-		if node.Type() != ast.TypeInline {
-			for index := range node.Lines().Len() {
-				if segmentStop := node.Lines().At(index).Stop; segmentStop > stop {
-					stop = segmentStop
-				}
-			}
-		}
-		if textNode, ok := node.(*ast.Text); ok && textNode.Segment.Stop > stop {
-			stop = textNode.Segment.Stop
+		switch typed := node.(type) {
+		case *ast.RawHTML:
+			replacements = append(replacements, replacement{
+				old: typed,
+				new: ast.NewString(append([]byte(nil), typed.Text(source)...)),
+			})
+		case *ast.HTMLBlock:
+			paragraph := ast.NewParagraph()
+			paragraph.AppendChild(paragraph, ast.NewString(append([]byte(nil), typed.Text(source)...)))
+			replacements = append(replacements, replacement{old: typed, new: paragraph})
+			return ast.WalkSkipChildren, nil
 		}
 		return ast.WalkContinue, nil
 	})
-	return stop
-}
-
-func stripOneBlockquoteMarker(line string) string {
-	leadingLength := len(line) - len(strings.TrimLeft(line, " \t"))
-	content := line[leadingLength:]
-	if !strings.HasPrefix(content, ">") {
-		return line
+	for _, item := range replacements {
+		if parent := item.old.Parent(); parent != nil {
+			parent.ReplaceChild(parent, item.old, item.new)
+		}
 	}
-	content = strings.TrimPrefix(content, ">")
-	if strings.HasPrefix(content, " ") {
-		content = content[1:]
-	}
-	return content
 }

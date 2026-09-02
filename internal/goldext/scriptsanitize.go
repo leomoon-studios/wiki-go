@@ -18,7 +18,11 @@ func ScriptSanitizePreprocessor(markdown string, _ string) string {
 	for _, line := range lines {
 		// Check if this line starts or ends a code block (either ``` or ~~~)
 		trimmedLine := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~") {
+		contentLine := trimmedLine
+		for strings.HasPrefix(contentLine, ">") {
+			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
+		}
+		if strings.HasPrefix(contentLine, "```") || strings.HasPrefix(contentLine, "~~~") {
 			inCodeBlock = !inCodeBlock
 			result = append(result, line)
 			continue

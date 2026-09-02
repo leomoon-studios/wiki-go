@@ -1,7 +1,6 @@
 package goldext
 
 import (
-	"bytes"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -20,11 +19,10 @@ const (
 	AlertCaution
 )
 
-// AlertBlock contains Markdown copied from a recognized alert blockquote.
+// AlertBlock contains the parsed children of a recognized alert blockquote.
 type AlertBlock struct {
 	ast.BaseBlock
-	Alert   AlertType
-	Content []byte
+	Alert AlertType
 }
 
 // KindAlertBlock is the Goldmark kind for AlertBlock.
@@ -58,33 +56,27 @@ func parseAlertType(marker string) AlertType {
 	}
 }
 
-func newAlertBlock(alertType AlertType, content []byte) *AlertBlock {
-	return &AlertBlock{Alert: alertType, Content: append([]byte(nil), content...)}
+func newAlertBlock(alertType AlertType) *AlertBlock {
+	return &AlertBlock{Alert: alertType}
 }
 
 func (r *trustedNodeRenderer) renderAlertBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	if !entering {
-		return ast.WalkContinue, nil
-	}
-
 	alert := node.(*AlertBlock)
 	classSuffix, title, iconClass := alertPresentation(alert.Alert)
 	if classSuffix == "" {
 		return ast.WalkSkipChildren, nil
 	}
 
-	var rendered bytes.Buffer
-	if err := newSafeNestedMarkdown().Convert(alert.Content, &rendered); err != nil {
-		return ast.WalkSkipChildren, err
+	if !entering {
+		_, _ = writer.WriteString("</div></div>\n")
+		return ast.WalkContinue, nil
 	}
 
 	_, _ = writer.WriteString(`<div class="markdown-alert markdown-alert-` + classSuffix + `">`)
 	_, _ = writer.WriteString(`<p class="markdown-alert-title"><i class="fa ` + iconClass + `" aria-hidden="true"></i> `)
 	_, _ = writer.WriteString(title)
 	_, _ = writer.WriteString(`</p><div class="markdown-alert-content">`)
-	_, _ = writer.Write(rendered.Bytes())
-	_, _ = writer.WriteString("</div></div>\n")
-	return ast.WalkSkipChildren, nil
+	return ast.WalkContinue, nil
 }
 
 func alertPresentation(alertType AlertType) (classSuffix, title, iconClass string) {

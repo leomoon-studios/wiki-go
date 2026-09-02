@@ -65,6 +65,59 @@ func TestDetailsAndAlertsRenderNestedMarkdownSafely(t *testing.T) {
 	}
 }
 
+func TestAlertPreservesFencedCodeBlocks(t *testing.T) {
+	input := `> [!IMPORTANT]
+> Remember to include error handling in your code:
+>
+> ` + "```go" + `
+> func processFile(filename string) error {
+>     data, err := ioutil.ReadFile(filename)
+>     if err != nil {
+>         return fmt.Errorf("failed to read file: %w", err)
+>     }
+>     // Process data...
+>     return nil
+> }
+> ` + "```" + `
+`
+	got := renderStep5Markdown(t, input)
+
+	for _, want := range []string{
+		`<div class="markdown-alert markdown-alert-important">`,
+		`<p>Remember to include error handling in your code:</p>`,
+		`<pre><code class="language-go">`,
+		`func processFile(filename string) error {`,
+		`return fmt.Errorf(&quot;failed to read file: %w&quot;, err)`,
+		`</code></pre>`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("alert output omitted %q: %s", want, got)
+		}
+	}
+	if strings.Contains(got, "```go") || strings.Contains(got, "func processFile(filename string) error {<br>") {
+		t.Fatalf("alert flattened its fenced code block into paragraph text: %s", got)
+	}
+}
+
+func TestAlertEscapesRawHTMLBlocks(t *testing.T) {
+	input := "> [!CAUTION]\n>\n> <script>\n> alert(1)\n> </script>\n"
+	got := renderStep5Markdown(t, input)
+	if strings.Contains(strings.ToLower(got), "<script") || !strings.Contains(got, "&lt;script&gt;") {
+		t.Fatalf("alert did not escape a raw HTML block: %s", got)
+	}
+}
+
+func TestScriptSanitizerPreservesBlockquotedFences(t *testing.T) {
+	for _, input := range []string{
+		"> ```go\n> fmt.Println(\"<script>code</script>\")\n> ```\n",
+		"> > ~~~html\n> > <script>code</script>\n> > ~~~\n",
+	} {
+		if got := ScriptSanitizePreprocessor(input, ""); got != input {
+			t.Fatalf("script sanitizer changed a blockquoted code fence:\nwant: %q\n got: %q", input, got)
+		}
+	}
+}
+
 func TestTOCAndHeadingAnchorsNormalizeAndEscapeValues(t *testing.T) {
 	input := "[toc]\n\n# Hello <img src=x onerror=alert(1)>\n\n## Custom {#Mixed_CASE}\n\n## Custom Again {#mixed_case}\n"
 	got := renderStep5Markdown(t, input)
