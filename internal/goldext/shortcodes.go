@@ -12,6 +12,9 @@ import (
 	"sync"
 	"time"
 	"wiki-go/internal/logger"
+
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/util"
 )
 
 // wikiLocation is the resolved *time.Location for the configured wiki
@@ -57,106 +60,17 @@ func formatModTime(t time.Time, format string) string {
 	return t.In(loc).Format(format)
 }
 
-// ShortcodesPreprocessor processes shortcodes in markdown text
-// Supports: :::year:::, :::stats count=*:::, :::stats recent=N:::
-// Avoids processing shortcodes inside code blocks
+// ShortcodesPreprocessor replaces the text-only year shortcode outside code.
+// Stats shortcodes are converted to trusted AST nodes after Markdown parsing.
 func ShortcodesPreprocessor(markdown string, _ string) string {
-	// Split markdown into lines for processing
-	lines := strings.Split(markdown, "\n")
-	processedLines := make([]string, 0, len(lines))
-
-	// State tracking for code blocks
-	inBacktickBlock := false
-	inTildeBlock := false
-
-	// Process each line
-	for _, line := range lines {
-		// Check for code block markers
-		trimmedLine := strings.TrimSpace(line)
-
-		// Strip blockquote prefix(es) to detect code blocks inside blockquotes
-		// e.g., "> ```" or "> > ```" should be detected as code block markers
-		contentLine := trimmedLine
-		for strings.HasPrefix(contentLine, ">") {
-			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
-		}
-
-		if strings.HasPrefix(contentLine, "```") {
-			inBacktickBlock = !inBacktickBlock
-			processedLines = append(processedLines, line)
-			continue
-		}
-
-		if strings.HasPrefix(contentLine, "~~~") {
-			inTildeBlock = !inTildeBlock
-			processedLines = append(processedLines, line)
-			continue
-		}
-
-		// Skip processing if in a code block
-		if inBacktickBlock || inTildeBlock {
-			processedLines = append(processedLines, line)
-			continue
-		}
-
-		// Process shortcodes with respect to inline code blocks
-		if strings.Contains(line, ":::year:::") || strings.Contains(line, ":::stats") {
-			// Process each segment of the line, preserving inline code
-			var processedLine string
-			segments := strings.Split(line, "`")
-
-			for i, segment := range segments {
-				// Even segments (0, 2, 4...) are outside inline code
-				if i%2 == 0 {
-					// Process :::year::: shortcode
-					if strings.Contains(segment, ":::year:::") {
-						currentYear := strconv.Itoa(time.Now().Year())
-						segment = strings.ReplaceAll(segment, ":::year:::", currentYear)
-					}
-
-					// Match stats shortcode pattern
-					if strings.Contains(segment, ":::stats") {
-						statsRegex := regexp.MustCompile(`:::stats\s+(recent|count)=([^:]+):::`)
-						segment = statsRegex.ReplaceAllStringFunc(segment, func(match string) string {
-							params := statsRegex.FindStringSubmatch(match)
-							if len(params) < 3 {
-								return match
-							}
-
-							shortcodeType := params[1]
-							shortcodeValue := params[2]
-
-							if shortcodeType == "count" {
-								var buf strings.Builder
-								renderDocumentCount(&buf, shortcodeValue)
-								return buf.String()
-							} else if shortcodeType == "recent" {
-								count, err := strconv.Atoi(shortcodeValue)
-								if err != nil || count <= 0 {
-									count = 5 // Default to 5 if invalid
-								}
-								var buf strings.Builder
-								renderRecentEdits(&buf, count)
-								return buf.String()
-							}
-
-							return match
-						})
-					}
-					processedLine += segment
-				} else {
-					// Odd segments (1, 3, 5...) are inside inline code - preserve them
-					processedLine += "`" + segment + "`"
-				}
-			}
-
-			processedLines = append(processedLines, processedLine)
-		} else {
-			processedLines = append(processedLines, line)
+	sections := splitCodeSections(markdown)
+	year := strconv.Itoa(time.Now().Year())
+	for index := range sections {
+		if !sections[index].isCode {
+			sections[index].content = strings.ReplaceAll(sections[index].content, ":::year:::", year)
 		}
 	}
-
-	return strings.Join(processedLines, "\n")
+	return joinSections(sections)
 }
 
 // Document represents a document in the wiki
@@ -164,6 +78,107 @@ type Document struct {
 	Title   string    // Document title
 	Path    string    // Document path
 	ModTime time.Time // Last modified time
+}
+
+// StatsMode is a fixed stats shortcode operation.
+type StatsMode uint8
+
+const (
+	StatsInvalid StatsMode = iota
+	StatsDocumentCount
+	StatsRecentEdits
+)
+
+// StatsBlock is produced from a standalone, validated stats shortcode.
+type StatsBlock struct {
+	ast.BaseBlock
+	Mode        StatsMode
+	Folder      string
+	RecentCount int
+	Original    string
+}
+
+// KindStatsBlock is the Goldmark kind for StatsBlock.
+var KindStatsBlock = ast.NewNodeKind("WikiGoStatsBlock")
+
+// Kind implements ast.Node.
+func (n *StatsBlock) Kind() ast.NodeKind { return KindStatsBlock }
+
+// Dump implements ast.Node.
+func (n *StatsBlock) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, map[string]string{"Original": n.Original}, nil)
+}
+
+var statsShortcodePattern = regexp.MustCompile(`^:::stats\s+(count|recent)=([^:\r\n]+):::$`)
+var statsFolderPattern = regexp.MustCompile(`^[A-Za-z0-9_.\-/]+$`)
+
+func parseStatsBlock(value string) (*StatsBlock, bool) {
+	value = strings.TrimSpace(value)
+	if !strings.HasPrefix(value, ":::stats") {
+		return nil, false
+	}
+
+	node := &StatsBlock{Original: value}
+	match := statsShortcodePattern.FindStringSubmatch(value)
+	if len(match) != 3 {
+		return node, true
+	}
+	parameter := strings.TrimSpace(match[2])
+	switch match[1] {
+	case "count":
+		if parameter != "*" && parameter != "all" && !validStatsFolder(parameter) {
+			return node, true
+		}
+		node.Mode = StatsDocumentCount
+		node.Folder = parameter
+	case "recent":
+		count, err := strconv.Atoi(parameter)
+		if err != nil || count < 1 || count > 100 {
+			return node, true
+		}
+		node.Mode = StatsRecentEdits
+		node.RecentCount = count
+	}
+	return node, true
+}
+
+func validStatsFolder(folder string) bool {
+	if folder == "" || strings.HasPrefix(folder, "/") || strings.Contains(folder, "\\") || !statsFolderPattern.MatchString(folder) {
+		return false
+	}
+	for _, segment := range strings.Split(folder, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *trustedNodeRenderer) renderStatsBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	stats := node.(*StatsBlock)
+	var output strings.Builder
+	switch stats.Mode {
+	case StatsDocumentCount:
+		if stats.Folder != "*" && stats.Folder != "all" && !validStatsFolder(stats.Folder) {
+			return ast.WalkSkipChildren, nil
+		}
+		renderDocumentCount(&output, stats.Folder)
+	case StatsRecentEdits:
+		if stats.RecentCount < 1 || stats.RecentCount > 100 {
+			return ast.WalkSkipChildren, nil
+		}
+		renderRecentEdits(&output, stats.RecentCount)
+	default:
+		_, _ = writer.WriteString("<p>")
+		_, _ = writer.Write(util.EscapeHTML([]byte(stats.Original)))
+		_, _ = writer.WriteString("</p>\n")
+		return ast.WalkSkipChildren, nil
+	}
+	_, _ = writer.WriteString(output.String())
+	return ast.WalkSkipChildren, nil
 }
 
 // renderDocumentCount renders the document count HTML
@@ -190,10 +205,10 @@ func renderDocumentCount(w *strings.Builder, countParam string) {
 
 	// Generate HTML for the document count
 	w.WriteString("<div class=\"wiki-stats doc-count\">\n")
-	w.WriteString("<h4>" + title + "</h4>\n")
+	w.WriteString("<h4>" + EscapeHTMLText(title) + "</h4>\n")
 	w.WriteString("<div class=\"count-container\">\n")
 	w.WriteString("<div class=\"count-number\">" + strconv.Itoa(count) + "</div>\n")
-	w.WriteString("<div class=\"count-description\">" + description + "</div>\n")
+	w.WriteString("<div class=\"count-description\">" + EscapeHTMLText(description) + "</div>\n")
 	w.WriteString("</div>\n")
 	w.WriteString("</div>\n")
 }
@@ -221,8 +236,12 @@ func renderRecentEditsFromDir(w *strings.Builder, dirPath string, count int) {
 
 			w.WriteString("<li>\n")
 			w.WriteString("  <div class=\"doc-info\">\n")
-			w.WriteString(fmt.Sprintf("    <a href=\"%s\">%s</a>\n", folderPath, doc.Title))
-			w.WriteString(fmt.Sprintf("    <span class=\"doc-path\">%s</span>\n", folderPath))
+			if href, ok := ValidateTrustedURL(folderPath); ok {
+				w.WriteString(fmt.Sprintf("    <a href=\"%s\">%s</a>\n", EscapeHTMLText(href), EscapeHTMLText(doc.Title)))
+			} else {
+				w.WriteString("    <span>" + EscapeHTMLText(doc.Title) + "</span>\n")
+			}
+			w.WriteString(fmt.Sprintf("    <span class=\"doc-path\">%s</span>\n", EscapeHTMLText(folderPath)))
 			w.WriteString("  </div>\n")
 			w.WriteString(fmt.Sprintf("  <span class=\"edit-date\">%s</span>\n", formatModTime(doc.ModTime, "2006-01-02 15:04")))
 			w.WriteString("</li>\n")

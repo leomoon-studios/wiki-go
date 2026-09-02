@@ -3,10 +3,9 @@ package goldext
 import (
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // Preprocessor defines a function that transforms markdown before rendering
@@ -35,20 +34,19 @@ type Section struct {
 	isCode  bool
 }
 
-// splitCodeSections splits markdown into regular text and code/math/mermaid sections
+// splitCodeSections splits Markdown into regular text and code/math sections.
 func splitCodeSections(markdown string) []Section {
 	var sections []Section
 
-	// Define regex patterns to match code blocks, inline code, math, and mermaid divs
-	codeBlockPattern := "```[\\s\\S]*?```"
+	// Protect both supported fence styles plus inline code and math.
+	codeBlockPattern := "(?:```[\\s\\S]*?```|~~~[\\s\\S]*?~~~)"
 	inlineCodePattern := "`[^`]*?`"
 	inlineMathPattern := "\\$[^\\$\\n]+?\\$"
 	blockMathPattern := "\\$\\$[\\s\\S]*?\\$\\$"
-	mermaidDivPattern := "<div class=\"mermaid\">[\\s\\S]*?</div>"
 
 	// Combine patterns to find all protected sections
-	combinedPattern := fmt.Sprintf("(?s)(%s|%s|%s|%s|%s)",
-		codeBlockPattern, inlineCodePattern, inlineMathPattern, blockMathPattern, mermaidDivPattern)
+	combinedPattern := fmt.Sprintf("(?s)(%s|%s|%s|%s)",
+		codeBlockPattern, inlineCodePattern, inlineMathPattern, blockMathPattern)
 
 	// Use (?s) flag to make . match newlines and compile with DOTALL flag for better performance with large inputs
 	re := regexp.MustCompile(combinedPattern)
@@ -111,167 +109,115 @@ var (
 	regularLinkRe = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`)
 )
 
-// LinkPreprocessor resolves local file references
+// LinkPreprocessor resolves local attachment references while returning only
+// Markdown. It never emits HTML wrappers for missing files.
 func LinkPreprocessor(markdown string, docPath string) string {
-	// This is a simplified implementation
-	// A more robust version would use a proper Markdown parser
-
-	// Use the splitCodeSections function to break the markdown into regular text and code sections
 	sections := splitCodeSections(markdown)
-
-	// Process only regular text sections
 	for i := range sections {
-		if !sections[i].isCode {
-			// Process image links: ![alt](local-path)
-			sections[i].content = imgLinkRe.ReplaceAllStringFunc(sections[i].content, func(match string) string {
-				parts := imgLinkRe.FindStringSubmatch(match)
-				if len(parts) < 3 {
-					return match
-				}
-
-				alt := parts[1]
-				rawPath := parts[2]
-
-				// Strip optional title from path (e.g. `image.png "title"` or `image.png 'title'`)
-				path := rawPath
-				title := ""
-				if idx := strings.Index(rawPath, " \""); idx != -1 {
-					path = rawPath[:idx]
-					title = rawPath[idx:]
-				} else if idx := strings.Index(rawPath, " '"); idx != -1 {
-					path = rawPath[:idx]
-					title = rawPath[idx:]
-				}
-
-				// Check attachment exists BEFORE resolving to API path
-				notFound := false
-				if isLocalPath(path) {
-					// Strip anchor fragment for filesystem check only
-					checkPath := path
-					if idx := strings.Index(checkPath, "#"); idx != -1 {
-						checkPath = checkPath[:idx]
-					}
-					fsPath := getAttachmentPath(checkPath, docPath)
-					if _, err := os.Stat(fsPath); os.IsNotExist(err) {
-						notFound = true
-					}
-					path = resolveLocalPath(path, docPath)
-				}
-
-				if notFound {
-					return "<span class=\"notfound\">![" + alt + "](" + path + title + ")</span>"
-				}
-				return "![" + alt + "](" + path + title + ")"
-			})
-
-			// Process regular links: [text](local-path)
-			sections[i].content = regularLinkRe.ReplaceAllStringFunc(sections[i].content, func(match string) string {
-				parts := regularLinkRe.FindStringSubmatch(match)
-				if len(parts) < 3 {
-					return match
-				}
-
-				text := parts[1]
-				path := parts[2]
-
-				// Check attachment exists BEFORE resolving to API path
-				notFound := false
-				if isLocalPath(path) {
-					// Strip anchor fragment for filesystem check only
-					checkPath := path
-					if idx := strings.Index(checkPath, "#"); idx != -1 {
-						checkPath = checkPath[:idx]
-					}
-					fsPath := getAttachmentPath(checkPath, docPath)
-					if _, err := os.Stat(fsPath); os.IsNotExist(err) {
-						notFound = true
-					}
-					path = resolveLocalPath(path, docPath)
-				}
-
-				// Check absolute doc paths (e.g., /hehe -> configured documents root/hehe)
-				if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "/api/") {
-					// Strip anchor fragment for filesystem check only
-					checkPath := path
-					if idx := strings.Index(checkPath, "#"); idx != -1 {
-						checkPath = checkPath[:idx]
-					}
-					fsPath := filepath.Join(DocumentsRoot(), strings.TrimLeft(checkPath, "/"))
-					if _, err := os.Stat(fsPath); os.IsNotExist(err) {
-						notFound = true
-					}
-				}
-
-				if notFound {
-					return "<span class=\"notfound\">[" + text + "](" + path + ")</span>"
-				}
-				return "[" + text + "](" + path + ")"
-			})
+		if sections[i].isCode {
+			continue
 		}
+		sections[i].content = imgLinkRe.ReplaceAllStringFunc(sections[i].content, func(match string) string {
+			parts := imgLinkRe.FindStringSubmatch(match)
+			if len(parts) < 3 {
+				return match
+			}
+			path, title := splitMarkdownLinkTitle(parts[2])
+			if destination, ok := safeMarkdownDestination(path, docPath); ok {
+				path = destination
+			} else {
+				path = "#"
+			}
+			return "![" + escapeMarkdownHTML(parts[1]) + "](" + path + title + ")"
+		})
+		sections[i].content = regularLinkRe.ReplaceAllStringFunc(sections[i].content, func(match string) string {
+			parts := regularLinkRe.FindStringSubmatch(match)
+			if len(parts) < 3 {
+				return match
+			}
+			path, title := splitMarkdownLinkTitle(parts[2])
+			if destination, ok := safeMarkdownDestination(path, docPath); ok {
+				path = destination
+			} else {
+				path = "#"
+			}
+			return "[" + escapeMarkdownHTML(parts[1]) + "](" + path + title + ")"
+		})
 	}
-
-	// Rejoin all sections
 	return joinSections(sections)
+}
+
+func escapeMarkdownHTML(value string) string {
+	return strings.NewReplacer("<", "&lt;", ">", "&gt;").Replace(value)
+}
+
+func safeMarkdownDestination(value, docPath string) (string, bool) {
+	if resolved, ok := resolveLocalAttachmentReference(value, docPath); ok {
+		return resolved, true
+	}
+	return ValidateTrustedURL(value)
+}
+
+func splitMarkdownLinkTitle(rawPath string) (path, title string) {
+	path = rawPath
+	if index := strings.Index(rawPath, " \""); index != -1 {
+		return rawPath[:index], rawPath[index:]
+	}
+	if index := strings.Index(rawPath, " '"); index != -1 {
+		return rawPath[:index], rawPath[index:]
+	}
+	return path, ""
 }
 
 // isLocalPath returns true if the path is a local file reference
 func isLocalPath(path string) bool {
-	// Skip URLs with schemes (http://, https://, ftp://, etc)
-	if strings.Contains(path, "://") {
-		return false
-	}
-
-	// Skip fragment URLs that start with #
-	if strings.HasPrefix(path, "#") {
-		return false
-	}
-
-	// Skip absolute URLs that start with /
-	if strings.HasPrefix(path, "/") {
-		return false
-	}
-
-	// Skip data: URLs
-	if strings.HasPrefix(path, "data:") {
-		return false
-	}
-
-	// Skip mailto: links
-	if strings.HasPrefix(path, "mailto:") {
-		return false
-	}
-
-	// All other URLs are considered local file references
-	return true
-}
-
-// getAttachmentPath returns the filesystem path for an attachment
-func getAttachmentPath(path, docPath string) string {
-	docPath = strings.TrimLeft(docPath, "/")
-	if docPath == "" || docPath == "/" {
-		return filepath.Join(homepageRoot(), path)
-	}
-	return filepath.Join(DocumentsRoot(), docPath, path)
+	_, ok := localAttachmentParts(path)
+	return ok
 }
 
 // resolveLocalPath resolves a local path relative to the document path
 func resolveLocalPath(path, docPath string) string {
-	// Remove any leading slashes from docPath
-	docPath = strings.TrimLeft(docPath, "/")
-
-	// URL encode the filename to handle spaces and special characters
-	escapedPath := url.PathEscape(path)
-
-	// Handle the homepage special case
-	if docPath == "" || docPath == "/" {
-		// Homepage files are stored in "pages/home"
-		result := "/api/files/pages/home/" + escapedPath
-		// fmt.Printf("[resolveLocalPath] docPath: '%s', path: '%s', result: '%s' (homepage)\n", docPath, path, result)
-		return result
+	if resolved, ok := resolveLocalAttachmentReference(path, docPath); ok {
+		return resolved
 	}
+	return path
+}
 
-	// Regular document files
-	result := "/api/files/" + docPath + "/" + escapedPath
-	// fmt.Printf("[resolveLocalPath] docPath: '%s', path: '%s', result: '%s'\n", docPath, path, result)
-	return result
+func resolveLocalAttachmentReference(value, docPath string) (string, bool) {
+	parts, ok := localAttachmentParts(value)
+	if !ok {
+		return "", false
+	}
+	documentPath, ok := attachmentDocumentURLPath(docPath)
+	if !ok {
+		return "", false
+	}
+	result := "/api/files/" + documentPath + "/" + url.PathEscape(parts[0])
+	if parts[1] != "" {
+		result += "#" + url.PathEscape(parts[1])
+	}
+	return result, true
+}
+
+func localAttachmentParts(value string) ([2]string, bool) {
+	var result [2]string
+	value = strings.TrimSpace(value)
+	if value == "" || strings.HasPrefix(value, "/") || strings.HasPrefix(value, "#") ||
+		strings.ContainsAny(value, `\\?:`) {
+		return result, false
+	}
+	for _, character := range value {
+		if unicode.IsControl(character) {
+			return result, false
+		}
+	}
+	path := value
+	if index := strings.IndexByte(value, '#'); index != -1 {
+		path, result[1] = value[:index], value[index+1:]
+	}
+	if path == "" || strings.Contains(path, "/") || path == "." || path == ".." {
+		return result, false
+	}
+	result[0] = path
+	return result, true
 }

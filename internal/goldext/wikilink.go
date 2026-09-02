@@ -2,6 +2,7 @@ package goldext
 
 import (
 	"io/fs"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -67,9 +68,8 @@ func cachedSlugIndex() map[string]string {
 // root. A bare target (no slash) is resolved by name against the whole document
 // tree, wherever the page is filed (shortest path wins on duplicates), mirroring
 // Obsidian-style linking; if no page by that name exists it falls back to a
-// root-level path so the link still red-links via LinkPreprocessor. Display text
-// defaults to the last path segment. Content inside code spans/blocks and the
-// ![[...]] embed form are left untouched.
+// root-level path. Display text defaults to the last path segment. Content
+// inside code spans/blocks and the ![[...]] embed form are left untouched.
 //
 // Note: docPath is accepted to satisfy the Preprocessor interface but is not
 // currently used — bare-name resolution is always wiki-root-relative. It is a
@@ -120,7 +120,7 @@ func WikiLinkPreprocessor(markdown string, docPath string) string {
 			target = strings.TrimSpace(target)
 			label = strings.TrimSpace(label)
 			if target == "" {
-				sb.WriteString(content[m[0]:m[1]])
+				sb.WriteString(escapeMarkdownText(content[m[0]:m[1]]))
 				continue
 			}
 
@@ -149,21 +149,69 @@ func WikiLinkPreprocessor(markdown string, docPath string) string {
 				}
 			}
 
-			// Build the URL. A bare "#anchor" stays an in-page link; everything
-			// else resolves to an absolute wiki path.
-			url := pagePath
-			if url != "" && !strings.HasPrefix(url, "/") {
-				url = "/" + url
+			urlValue, ok := safeWikiTarget(pagePath, anchor)
+			if !ok {
+				sb.WriteString(escapeMarkdownText(content[m[0]:m[1]]))
+				continue
 			}
-			url += anchor
-
-			sb.WriteString("[" + label + "](" + url + ")")
+			sb.WriteString("[" + escapeMarkdownText(label) + "](" + urlValue + ")")
 		}
 		sb.WriteString(content[last:])
 		sections[i].content = sb.String()
 	}
 
 	return joinSections(sections)
+}
+
+func safeWikiTarget(pagePath, anchor string) (string, bool) {
+	pagePath = strings.TrimSpace(pagePath)
+	anchor = strings.TrimSpace(strings.TrimPrefix(anchor, "#"))
+	if strings.ContainsAny(pagePath, `\\?:#<>`) {
+		return "", false
+	}
+	for _, character := range pagePath {
+		if character < ' ' || character == 0x7f {
+			return "", false
+		}
+	}
+
+	pagePath = strings.Trim(pagePath, "/")
+	encodedSegments := make([]string, 0)
+	if pagePath != "" {
+		for _, segment := range strings.Split(pagePath, "/") {
+			if segment == "" || segment == "." || segment == ".." {
+				return "", false
+			}
+			encodedSegments = append(encodedSegments, url.PathEscape(segment))
+		}
+	}
+
+	result := ""
+	if len(encodedSegments) > 0 {
+		result = "/" + strings.Join(encodedSegments, "/")
+	}
+	if anchor != "" {
+		normalizedAnchor := NormalizeIdentifier(anchor)
+		if normalizedAnchor == "" {
+			return "", false
+		}
+		result += "#" + normalizedAnchor
+	}
+	return result, result != ""
+}
+
+func escapeMarkdownText(value string) string {
+	replacer := strings.NewReplacer(
+		`\`, `\\`,
+		"[", `\[`,
+		"]", `\]`,
+		"(", `\(`,
+		")", `\)`,
+		"`", "\\`",
+		"<", "&lt;",
+		">", "&gt;",
+	)
+	return replacer.Replace(value)
 }
 
 // buildSlugIndex walks the documents tree and maps each page's slug (its

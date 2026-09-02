@@ -1,110 +1,54 @@
 package goldext
 
 import (
-	"strings"
+	"bytes"
+
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/util"
 )
 
-// DetailsPreprocessor adds support for ```details and ~~~details blocks
-func DetailsPreprocessor(markdown string, _ string) string {
-	lines := strings.Split(markdown, "\n")
-	var result []string
-	
-	var inCodeBlock bool
-	var codeBlockMarker string
-	
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		trimmedLine := strings.TrimSpace(line)
-
-		// Strip blockquote prefix(es) to detect code blocks inside blockquotes
-		// e.g., "> ```" or "> > ```" should be detected as code block markers
-		contentLine := trimmedLine
-		for strings.HasPrefix(contentLine, ">") {
-			contentLine = strings.TrimSpace(strings.TrimPrefix(contentLine, ">"))
-		}
-		
-		// Track regular code blocks (not details blocks)
-		if (strings.HasPrefix(contentLine, "```") || strings.HasPrefix(contentLine, "~~~")) &&
-			!strings.HasPrefix(contentLine, "```details") && !strings.HasPrefix(contentLine, "~~~details") {
-			
-			if !inCodeBlock {
-				// Starting a code block
-				inCodeBlock = true
-				if strings.HasPrefix(contentLine, "```") {
-					codeBlockMarker = "```"
-				} else {
-					codeBlockMarker = "~~~"
-				}
-			} else if contentLine == codeBlockMarker {
-				// Ending a code block
-				inCodeBlock = false
-				codeBlockMarker = ""
-			}
-			result = append(result, line)
-			continue
-		}
-		
-		// If we're inside a regular code block, don't process details
-		if inCodeBlock {
-			result = append(result, line)
-			continue
-		}
-		
-		// Check for details block start
-		if strings.HasPrefix(trimmedLine, "```details") || strings.HasPrefix(trimmedLine, "~~~details") {
-			var detailsMarker string
-			if strings.HasPrefix(trimmedLine, "```details") {
-				detailsMarker = "```"
-			} else {
-				detailsMarker = "~~~"
-			}
-			
-			// Extract the title (everything after "```details" or "~~~details")
-			detailsTitle := strings.TrimSpace(strings.TrimPrefix(
-				strings.TrimPrefix(trimmedLine, "```details"), "~~~details"))
-			
-			// Find the end of the details block
-			var detailsContent []string
-			j := i + 1
-			
-			for ; j < len(lines); j++ {
-				if strings.TrimSpace(lines[j]) == detailsMarker {
-					break
-				}
-				detailsContent = append(detailsContent, lines[j])
-			}
-			
-			// Generate the details HTML with proper markdown content
-			detailsHTML := "<details class=\"markdown-details\">"
-			if detailsTitle != "" {
-				detailsHTML += "<summary>" + detailsTitle + "</summary>"
-			} else {
-				detailsHTML += "<summary>Details</summary>"
-			}
-			detailsHTML += "<div class=\"details-content\">"
-			
-			// Add the content as-is so it can be processed by markdown renderer
-			if len(detailsContent) > 0 {
-				detailsHTML += "\n\n" + strings.Join(detailsContent, "\n") + "\n\n"
-			}
-			
-			detailsHTML += "</div></details>"
-			
-			result = append(result, detailsHTML)
-			
-			// Skip to the end of the details block
-			if j < len(lines) {
-				i = j
-			}
-			continue
-		}
-		
-		// Regular line
-		result = append(result, line)
-	}
-	
-	return strings.Join(result, "\n")
+// DetailsBlock is produced from a details fence. Its title is plain text and
+// its body is rendered through the nested safe Markdown renderer.
+type DetailsBlock struct {
+	ast.BaseBlock
+	Title string
 }
 
-// Register Details preprocessor in the list of known processors
-var _ = DetailsPreprocessor
+// KindDetailsBlock is the Goldmark kind for DetailsBlock.
+var KindDetailsBlock = ast.NewNodeKind("WikiGoDetailsBlock")
+
+// Kind implements ast.Node.
+func (n *DetailsBlock) Kind() ast.NodeKind {
+	return KindDetailsBlock
+}
+
+// Dump implements ast.Node.
+func (n *DetailsBlock) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, map[string]string{"Title": n.Title}, nil)
+}
+
+func newDetailsBlock(title string) *DetailsBlock {
+	if title == "" {
+		title = "Details"
+	}
+	return &DetailsBlock{Title: title}
+}
+
+func (r *trustedNodeRenderer) renderDetailsBlock(writer util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+
+	details := node.(*DetailsBlock)
+	var rendered bytes.Buffer
+	if err := newSafeNestedMarkdown().Convert(node.Lines().Value(source), &rendered); err != nil {
+		return ast.WalkSkipChildren, err
+	}
+
+	_, _ = writer.WriteString("<details class=\"markdown-details\"><summary>")
+	_, _ = writer.Write(util.EscapeHTML([]byte(details.Title)))
+	_, _ = writer.WriteString("</summary><div class=\"details-content\">")
+	_, _ = writer.Write(rendered.Bytes())
+	_, _ = writer.WriteString("</div></details>\n")
+	return ast.WalkSkipChildren, nil
+}

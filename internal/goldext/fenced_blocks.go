@@ -33,7 +33,8 @@ func (t *trustedFenceTransformer) Transform(document *ast.Document, reader text.
 	for _, fence := range fences {
 		var replacement ast.Node
 		content := strings.TrimSpace(string(fence.Lines().Value(source)))
-		switch strings.TrimSpace(string(fence.Info.Text(source))) {
+		info := strings.TrimSpace(string(fence.Info.Text(source)))
+		switch info {
 		case "ltr":
 			replacement = newDirectionBlock(DirectionLTR)
 		case "rtl":
@@ -59,7 +60,11 @@ func (t *trustedFenceTransformer) Transform(document *ast.Document, reader text.
 			}
 			replacement = newVideoEmbedBlock(VideoProviderVimeo, videoID)
 		default:
-			continue
+			if info == "details" || strings.HasPrefix(info, "details ") || strings.HasPrefix(info, "details\t") {
+				replacement = newDetailsBlock(strings.TrimSpace(strings.TrimPrefix(info, "details")))
+			} else {
+				continue
+			}
 		}
 
 		replacement.SetLines(fence.Lines())

@@ -69,7 +69,7 @@ func (r *trustedNodeRenderer) renderDirectionBlock(writer util.BufWriter, source
 
 	content := node.Lines().Value(source)
 	var rendered bytes.Buffer
-	if err := newSafeDirectionMarkdown().Convert(content, &rendered); err != nil {
+	if err := newSafeNestedMarkdown().Convert(content, &rendered); err != nil {
 		return ast.WalkSkipChildren, err
 	}
 
@@ -79,7 +79,7 @@ func (r *trustedNodeRenderer) renderDirectionBlock(writer util.BufWriter, source
 	return ast.WalkSkipChildren, nil
 }
 
-func newSafeDirectionMarkdown() goldmark.Markdown {
+func newSafeNestedMarkdown() goldmark.Markdown {
 	return goldmark.New(
 		goldmark.WithExtensions(
 			extension.Table,
@@ -88,6 +88,7 @@ func newSafeDirectionMarkdown() goldmark.Markdown {
 			extension.Footnote,
 			extension.DefinitionList,
 			extension.GFM,
+			&safeInlineFormattingExtension{},
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),

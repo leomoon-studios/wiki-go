@@ -27,8 +27,12 @@ func TrustedNodesForDocument(documentPath string) goldmark.Extender {
 
 func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
 	markdown.Parser().AddOptions(
+		parser.WithInlineParsers(
+			util.Prioritized(&trustedInlineSyntaxParser{}, 250),
+		),
 		parser.WithASTTransformers(
 			util.Prioritized(&trustedFenceTransformer{documentPath: e.documentPath}, 100),
+			util.Prioritized(&documentNodeTransformer{}, 200),
 		),
 	)
 	markdown.Renderer().AddOptions(
@@ -47,6 +51,10 @@ func (r *trustedNodeRenderer) RegisterFuncs(registerer renderer.NodeRendererFunc
 	registerer.Register(KindMermaidBlock, r.renderMermaidBlock)
 	registerer.Register(KindLocalVideoBlock, r.renderLocalVideoBlock)
 	registerer.Register(KindVideoEmbedBlock, r.renderVideoEmbedBlock)
+	registerer.Register(KindDetailsBlock, r.renderDetailsBlock)
+	registerer.Register(KindAlertBlock, r.renderAlertBlock)
+	registerer.Register(KindTOCBlock, r.renderTOCBlock)
+	registerer.Register(KindStatsBlock, r.renderStatsBlock)
 }
 
 func (r *trustedNodeRenderer) renderBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
