@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -160,8 +159,7 @@ func GetCommentsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Process comments for rendering
 	for i := range commentsList {
-		// Render markdown content with template.HTML
-		commentsList[i].RenderedHTML = template.HTML(utils.RenderMarkdown(commentsList[i].Content))
+		commentsList[i].RenderedHTML = utils.RenderCommentMarkdown(commentsList[i].Content)
 		// Format timestamp
 		commentsList[i].FormattedTime = comments.FormatCommentTime(commentsList[i].Timestamp)
 	}

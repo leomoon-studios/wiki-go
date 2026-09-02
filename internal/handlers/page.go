@@ -142,12 +142,12 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 		// Use the document path for rendering to handle local file references
 		content = template.HTML(utils.RenderMarkdownWithPath(string(mdContent), decodedPath))
-		
+
 		// If content is empty but document exists, ensure we have something truthy for template conditions
 		if strings.TrimSpace(string(content)) == "" {
 			content = template.HTML(" ") // Single space to make it truthy but effectively empty
 		}
-		
+
 		lastModified = docInfo.ModTime()
 
 		// Update the document layout in the page data
@@ -239,8 +239,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 				// Process comments (render markdown, format timestamps)
 				for i := range commentsList {
-					// Use template.HTML to properly render the HTML without escaping
-					commentsList[i].RenderedHTML = template.HTML(utils.RenderMarkdown(commentsList[i].Content))
+					commentsList[i].RenderedHTML = utils.RenderCommentMarkdown(commentsList[i].Content)
 					commentsList[i].FormattedTime = comments.FormatCommentTime(commentsList[i].Timestamp)
 				}
 			}
