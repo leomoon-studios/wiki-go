@@ -5,6 +5,7 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
@@ -16,6 +17,11 @@ var TrustedNodes = &trustedNodesExtension{}
 type trustedNodesExtension struct{}
 
 func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
+	markdown.Parser().AddOptions(
+		parser.WithASTTransformers(
+			util.Prioritized(&trustedFenceTransformer{}, 100),
+		),
+	)
 	markdown.Renderer().AddOptions(
 		renderer.WithNodeRenderers(
 			util.Prioritized(&trustedNodeRenderer{}, 100),
@@ -28,6 +34,8 @@ type trustedNodeRenderer struct{}
 func (r *trustedNodeRenderer) RegisterFuncs(registerer renderer.NodeRendererFuncRegisterer) {
 	registerer.Register(KindTrustedBlock, r.renderBlock)
 	registerer.Register(KindTrustedInline, r.renderInline)
+	registerer.Register(KindDirectionBlock, r.renderDirectionBlock)
+	registerer.Register(KindMermaidBlock, r.renderMermaidBlock)
 }
 
 func (r *trustedNodeRenderer) renderBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {

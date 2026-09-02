@@ -33,7 +33,7 @@ func TransformMP4Path(videoPath string, docPath string) string {
 // MP4Preprocessor transforms MP4 code blocks into HTML video elements
 // and avoids processing nested MP4 blocks inside other code blocks
 func MP4Preprocessor(markdown string, docPath string) string {
-	// Use same approach as MermaidPreprocessor for consistent code block handling
+	// Scan fenced blocks consistently with the other media preprocessors.
 	lines := strings.Split(markdown, "\n")
 	processedLines := make([]string, len(lines))
 	copy(processedLines, lines)

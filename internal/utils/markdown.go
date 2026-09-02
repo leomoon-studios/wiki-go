@@ -55,7 +55,6 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 	if hasFrontmatter && metadata.Layout == "kanban" {
 		// Create preprocessor functions (excluding frontmatter since it's already processed)
 		var preprocessors []frontmatter.PreprocessorFunc
-		var postProcessors []frontmatter.PostProcessorFunc
 
 		// Add all goldext preprocessors (frontmatter will be a no-op since it's already processed)
 		for _, preprocessor := range goldext.RegisteredPreprocessors {
@@ -70,14 +69,12 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			}
 		}
 
-		// Add post-processors for mermaid and direction blocks
-		postProcessors = append(postProcessors, func(html string) string {
-			result := goldext.RestoreMermaidBlocks(html)
-			result = goldext.RestoreDirectionBlocks(result)
-			return result
-		})
-
-		kanbanHTML := frontmatter.RenderKanbanWithProcessors(contentWithoutFrontmatter, preprocessors, postProcessors)
+		kanbanHTML := frontmatter.RenderKanbanWithProcessors(
+			contentWithoutFrontmatter,
+			preprocessors,
+			nil,
+			goldext.TrustedNodes,
+		)
 		return []byte(kanbanHTML)
 	}
 
@@ -137,15 +134,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 		return errMsg
 	}
 
-	// Post-process: Restore Mermaid blocks that were replaced with placeholders
-	htmlResult := goldext.RestoreMermaidBlocks(buf.String())
-
-	// Post-process: Restore Direction blocks that were replaced with placeholders
-	// This ensures RTL/LTR content is properly rendered with Markdown formatting
-	htmlResult = goldext.RestoreDirectionBlocks(htmlResult)
-
-	// Return the post-processed HTML
-	return []byte(htmlResult)
+	return buf.Bytes()
 }
 
 // blockLineRe matches the start of a fenced code block, ATX heading, or paragraph
@@ -167,7 +156,7 @@ func RenderMarkdownWithSourceLines(md string, docPath string) []byte {
 func injectSourceLines(htmlStr string, md string) string {
 	lines := strings.Split(md, "\n")
 
-	// Special code fences that goldext preprocesses into <div> elements (not <pre>).
+	// Special code fences that goldext renders as <div> elements (not <pre>).
 	// These must NOT be recorded in blockLines because they produce no matching HTML tag.
 	specialFences := map[string]bool{
 		"mermaid": true, "youtube": true, "vimeo": true,

@@ -63,8 +63,8 @@ func RenderKanban(content string) string {
 }
 
 // RenderKanbanWithProcessors converts markdown content to a kanban board HTML with full goldext support
-// This function accepts preprocessor and postprocessor functions to avoid circular dependencies
-func RenderKanbanWithProcessors(content string, preprocessors []PreprocessorFunc, postProcessors []PostProcessorFunc) string {
+// This function accepts processors and Goldmark extensions to avoid circular dependencies.
+func RenderKanbanWithProcessors(content string, preprocessors []PreprocessorFunc, postProcessors []PostProcessorFunc, extraExtensions ...goldmark.Extender) string {
 	// Apply kanban-aware preprocessing to protect kanban structure while allowing goldext processing
 	processedContent := kanbanAwarePreprocess(content)
 
@@ -76,7 +76,7 @@ func RenderKanbanWithProcessors(content string, preprocessors []PreprocessorFunc
 	}
 
 	// Render the processed content with goldmark
-	renderedHTML := renderWithGoldmark(processedContent)
+	renderedHTML := renderWithGoldmark(processedContent, extraExtensions...)
 
 	// Apply post-processors
 	for _, postProcessor := range postProcessors {
@@ -86,7 +86,7 @@ func RenderKanbanWithProcessors(content string, preprocessors []PreprocessorFunc
 	}
 
 	// Restore kanban boards and build final kanban HTML
-	return restoreKanbanBoards(renderedHTML, preprocessors)
+	return restoreKanbanBoards(renderedHTML, preprocessors, extraExtensions...)
 }
 
 // RenderKanbanBasic provides basic kanban rendering without full goldext support (fallback)
@@ -328,17 +328,20 @@ func saveKanbanBoard(board KanbanBoard, result *[]string) {
 }
 
 // renderWithGoldmark renders the processed content using goldmark
-func renderWithGoldmark(content string) string {
+func renderWithGoldmark(content string, extraExtensions ...goldmark.Extender) string {
+	extensions := []goldmark.Extender{
+		extension.Table,
+		extension.Strikethrough,
+		extension.Linkify,
+		extension.Footnote,
+		extension.DefinitionList,
+		extension.GFM,
+	}
+	extensions = append(extensions, extraExtensions...)
+
 	// Configure Goldmark with all needed extensions (same as regular markdown processing)
 	markdown := goldmark.New(
-		goldmark.WithExtensions(
-			extension.Table,
-			extension.Strikethrough,
-			extension.Linkify,
-			extension.Footnote,
-			extension.DefinitionList,
-			extension.GFM,
-		),
+		goldmark.WithExtensions(extensions...),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 			parser.WithAttribute(),
@@ -358,7 +361,7 @@ func renderWithGoldmark(content string) string {
 }
 
 // restoreKanbanBoards replaces placeholders with kanban HTML and builds the final result
-func restoreKanbanBoards(htmlContent string, preprocessors []PreprocessorFunc) string {
+func restoreKanbanBoards(htmlContent string, preprocessors []PreprocessorFunc, extraExtensions ...goldmark.Extender) string {
 	kanbanMutex.Lock()
 	defer kanbanMutex.Unlock()
 
@@ -388,7 +391,7 @@ func restoreKanbanBoards(htmlContent string, preprocessors []PreprocessorFunc) s
 					for _, column := range board.Columns {
 						var processedTasks []KanbanTask
 						for _, task := range column.Tasks {
-							processedHTML := applyProcessorsToTaskText(task.Text, preprocessors)
+							processedHTML := applyProcessorsToTaskText(task.Text, preprocessors, extraExtensions...)
 							processedTasks = append(processedTasks, KanbanTask{
 								Text:        task.Text,
 								Checked:     task.Checked,
@@ -471,7 +474,7 @@ func restoreKanbanBoards(htmlContent string, preprocessors []PreprocessorFunc) s
 }
 
 // applyProcessorsToTaskText applies preprocessors to individual task text
-func applyProcessorsToTaskText(taskText string, preprocessors []PreprocessorFunc) string {
+func applyProcessorsToTaskText(taskText string, preprocessors []PreprocessorFunc, extraExtensions ...goldmark.Extender) string {
 	// Apply preprocessors to task text
 	processed := taskText
 	for _, preprocessor := range preprocessors {
@@ -481,12 +484,14 @@ func applyProcessorsToTaskText(taskText string, preprocessors []PreprocessorFunc
 	}
 
 	// Render with goldmark for inline processing
+	extensions := []goldmark.Extender{
+		extension.Strikethrough,
+		extension.Linkify,
+		extension.GFM,
+	}
+	extensions = append(extensions, extraExtensions...)
 	markdown := goldmark.New(
-		goldmark.WithExtensions(
-			extension.Strikethrough,
-			extension.Linkify,
-			extension.GFM,
-		),
+		goldmark.WithExtensions(extensions...),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
 		),

@@ -33,7 +33,7 @@ func ExtractYouTubeID(input string) string {
 // YouTubePreprocessor transforms youtube code blocks into HTML embeds
 // and avoids processing nested youtube blocks inside other code blocks
 func YouTubePreprocessor(markdown string, _ string) string {
-	// Use same approach as MermaidPreprocessor for consistent code block handling
+	// Scan fenced blocks consistently with the other media preprocessors.
 	lines := strings.Split(markdown, "\n")
 	processedLines := make([]string, len(lines))
 	copy(processedLines, lines)
