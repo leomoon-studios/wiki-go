@@ -41,8 +41,11 @@ func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.
 			parent.ReplaceChild(parent, paragraph, newTOCBlock(tocHeadings))
 			continue
 		}
-		if stats, matched := parseStatsBlock(paragraphSource); matched {
-			parent.ReplaceChild(parent, paragraph, stats)
+		if statsBlocks, matched := parseStatsBlocks(paragraphSource); matched {
+			for _, stats := range statsBlocks {
+				parent.InsertBefore(parent, paragraph, stats)
+			}
+			parent.RemoveChild(parent, paragraph)
 		}
 	}
 

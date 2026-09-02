@@ -143,6 +143,14 @@ func TestRawHTMLIsHandledByGoldmarkWithoutRegexSanitizing(t *testing.T) {
 	}
 }
 
+func TestAdjacentStatsShortcodesRenderThroughSafeDocumentBoundary(t *testing.T) {
+	got := string(RenderMarkdownWithPath(":::stats recent=5::: :::stats count=*:::", "dashboard"))
+	if strings.Count(got, `class="wiki-stats recent-edits"`) != 1 || strings.Count(got, `class="wiki-stats doc-count"`) != 1 {
+		t.Fatalf("adjacent stats shortcodes did not render through the document boundary: %s", got)
+	}
+	assertNoActiveRawHTML(t, got)
+}
+
 func assertNoActiveRawHTML(t *testing.T, rendered string) {
 	t.Helper()
 	lower := strings.ToLower(rendered)

@@ -154,10 +154,10 @@ func TestStatsShortcodesEscapeFilesystemDataAndMalformedArguments(t *testing.T) 
 		t.Fatal(err)
 	}
 
-	input := ":::stats recent=5:::\n\n:::stats count=*:::\n\n:::stats count=../private:::\n\n:::stats count=<img src=x onerror=alert(3)>:::\n\nYear :::year:::"
+	input := ":::stats recent=5:::\n\n:::stats count=*:::\n\n:::stats recent=5::: :::stats count=*:::\n\n:::stats count=../private:::\n\n:::stats count=<img src=x onerror=alert(3)>:::\n\nYear :::year:::"
 	got := renderStep5Markdown(t, ShortcodesPreprocessor(input, ""))
 
-	if !strings.Contains(got, `class="wiki-stats recent-edits"`) || !strings.Contains(got, `class="wiki-stats doc-count"`) {
+	if strings.Count(got, `class="wiki-stats recent-edits"`) != 2 || strings.Count(got, `class="wiki-stats doc-count"`) != 2 {
 		t.Fatalf("valid stats shortcodes did not render: %s", got)
 	}
 	if !strings.Contains(got, strconv.Itoa(time.Now().Year())) {
@@ -168,6 +168,18 @@ func TestStatsShortcodesEscapeFilesystemDataAndMalformedArguments(t *testing.T) 
 	}
 	if strings.Contains(strings.ToLower(got), "<img") || strings.Contains(strings.ToLower(got), ` onerror="`) {
 		t.Fatalf("stats shortcode emitted active filesystem or argument HTML: %s", got)
+	}
+}
+
+func TestAdjacentStatsShortcodesRequireWhitespaceOnly(t *testing.T) {
+	valid := renderStep5Markdown(t, ":::stats recent=5::: :::stats count=*:::")
+	if strings.Count(valid, `class="wiki-stats recent-edits"`) != 1 || strings.Count(valid, `class="wiki-stats doc-count"`) != 1 {
+		t.Fatalf("adjacent stats shortcodes did not produce two trusted nodes: %s", valid)
+	}
+
+	mixed := renderStep5Markdown(t, "before :::stats recent=5::: :::stats count=*::: after")
+	if strings.Contains(mixed, `class="wiki-stats`) || !strings.Contains(mixed, "before :::stats") {
+		t.Fatalf("stats shortcodes embedded in prose should remain inert text: %s", mixed)
 	}
 }
 

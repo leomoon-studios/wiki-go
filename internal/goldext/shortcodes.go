@@ -110,7 +110,41 @@ func (n *StatsBlock) Dump(source []byte, level int) {
 }
 
 var statsShortcodePattern = regexp.MustCompile(`^:::stats\s+(count|recent)=([^:\r\n]+):::$`)
+var statsShortcodeTokenPattern = regexp.MustCompile(`:::stats\s+(?:count|recent)=[^:\r\n]+:::`)
 var statsFolderPattern = regexp.MustCompile(`^[A-Za-z0-9_.\-/]+$`)
+
+// parseStatsBlocks accepts one or more complete stats shortcodes separated
+// only by whitespace. This preserves the historical adjacent-shortcode syntax
+// without treating stats-like text embedded in prose as trusted output.
+func parseStatsBlocks(value string) ([]*StatsBlock, bool) {
+	value = strings.TrimSpace(value)
+	matches := statsShortcodeTokenPattern.FindAllStringIndex(value, -1)
+	if len(matches) == 0 {
+		node, matched := parseStatsBlock(value)
+		if !matched {
+			return nil, false
+		}
+		return []*StatsBlock{node}, true
+	}
+
+	blocks := make([]*StatsBlock, 0, len(matches))
+	previousEnd := 0
+	for _, match := range matches {
+		if strings.TrimSpace(value[previousEnd:match[0]]) != "" {
+			return nil, false
+		}
+		node, matched := parseStatsBlock(value[match[0]:match[1]])
+		if !matched {
+			return nil, false
+		}
+		blocks = append(blocks, node)
+		previousEnd = match[1]
+	}
+	if strings.TrimSpace(value[previousEnd:]) != "" {
+		return nil, false
+	}
+	return blocks, true
+}
 
 func parseStatsBlock(value string) (*StatsBlock, bool) {
 	value = strings.TrimSpace(value)
