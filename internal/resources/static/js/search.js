@@ -85,7 +85,7 @@ const WikiSearch = (function() {
             displaySearchResults(resultsArray, query);
         } catch (error) {
             console.error('Search error:', error);
-            searchResultsContent.innerHTML = '<div class="empty-message">An error occurred while searching. Please try again.</div>';
+            WikiDOM.message(searchResultsContent, 'empty-message', 'An error occurred while searching. Please try again.');
         }
     }
 
@@ -99,7 +99,7 @@ const WikiSearch = (function() {
 
         // Make sure results is an array and check if it's empty
         if (!Array.isArray(results) || results.length === 0) {
-            searchResultsContent.innerHTML = '<div class="empty-message">' + (window.i18n ? window.i18n.t('search.no_results') : 'No results found.') + '</div>';
+            WikiDOM.message(searchResultsContent, 'empty-message', window.i18n ? window.i18n.t('search.no_results') : 'No results found.');
             return;
         }
 
@@ -119,23 +119,25 @@ const WikiSearch = (function() {
         terms.push(...remainingTerms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
         // Create pattern that matches whole phrases and individual terms
-        const pattern = new RegExp(`(${terms.join('|')})`, 'gi');
+        const pattern = terms.length > 0 ? new RegExp(`(${terms.join('|')})`, 'gi') : null;
+        const fragment = document.createDocumentFragment();
 
-        const html = results.map(result => {
-            // Highlight matches in title and excerpt
-            const highlightedTitle = result.title.replace(pattern, '<span class="search-result-highlight">$1</span>');
-            const highlightedExcerpt = result.excerpt.replace(pattern, '<span class="search-result-highlight">$1</span>');
+        results.forEach(result => {
+            const item = WikiDOM.element('div', 'search-result-item');
+            const title = WikiDOM.element('a', 'search-result-title');
+            const resultPath = String(result?.path ?? '');
+            title.href = WikiDOM.localURL(resultPath);
+            WikiDOM.appendHighlightedText(title, result?.title, pattern);
 
-            return `
-                <div class="search-result-item">
-                    <a href="${result.path}" class="search-result-title">${highlightedTitle}</a>
-                    <div class="search-result-path">${result.path}</div>
-                    <div class="search-result-excerpt">${highlightedExcerpt}</div>
-                </div>
-            `;
-        }).join('');
+            const pathElement = WikiDOM.element('div', 'search-result-path', resultPath);
+            const excerpt = WikiDOM.element('div', 'search-result-excerpt');
+            WikiDOM.appendHighlightedText(excerpt, result?.excerpt, pattern);
 
-        searchResultsContent.innerHTML = html;
+            item.append(title, pathElement, excerpt);
+            fragment.appendChild(item);
+        });
+
+        searchResultsContent.replaceChildren(fragment);
     }
 
     // Hide search results function for keyboard shortcuts

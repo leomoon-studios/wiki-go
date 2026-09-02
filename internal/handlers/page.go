@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -15,9 +14,21 @@ import (
 	"wiki-go/internal/config"
 	"wiki-go/internal/frontmatter"
 	"wiki-go/internal/i18n"
+	"wiki-go/internal/safehtml"
 	"wiki-go/internal/types"
 	"wiki-go/internal/utils"
 )
+
+var directoryListingTemplate = template.Must(template.New("directory-listing").Parse(
+	`{{range .}}<div class="directory-item is-dir"><a href="{{.Path}}">{{.Title}}</a></div>{{end}}`,
+))
+
+var directoryTitleTemplate = template.Must(template.New("directory-title").Parse(`<h1>{{.}}</h1>`))
+
+type directoryListingItem struct {
+	Path  string
+	Title string
+}
 
 // PageHandler handles requests for pages
 func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
@@ -145,7 +156,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 		// If content is empty but document exists, ensure we have something truthy for template conditions
 		if strings.TrimSpace(string(content)) == "" {
-			content = template.HTML(" ") // Single space to make it truthy but effectively empty
+			content = safehtml.NonEmptyPlaceholder // Make an existing empty document truthy to templates.
 		}
 
 		lastModified = docInfo.ModTime()
@@ -162,7 +173,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Build directory listing HTML
-	var dirItems []string
+	var dirItems []directoryListingItem
 	for _, f := range files {
 		if !f.IsDir() || strings.HasPrefix(f.Name(), ".") || f.Name() == "document.md" {
 			continue // Skip non-directories, hidden files, and document.md
@@ -183,24 +194,30 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		if _, err := os.Stat(subDocPath); err == nil {
 			// Use the GetDocumentTitle function which includes emoji processing
 			dirTitle := utils.GetDocumentTitle(filepath.Join(fsPath, dirName))
-			dirItems = append(dirItems, fmt.Sprintf(`<div class="directory-item is-dir"><a href="%s">%s</a></div>`,
-				urlPath, dirTitle))
+			dirItems = append(dirItems, directoryListingItem{Path: urlPath, Title: dirTitle})
 			continue
 		}
 
 		// Fallback to formatted directory name if no document.md or no title found
 		dirTitle := utils.FormatDirName(dirName)
-		dirItems = append(dirItems, fmt.Sprintf(`<div class="directory-item is-dir"><a href="%s">%s</a></div>`,
-			urlPath, dirTitle))
+		dirItems = append(dirItems, directoryListingItem{Path: urlPath, Title: dirTitle})
 	}
 
 	if len(dirItems) > 0 {
-		dirContent = template.HTML(strings.Join(dirItems, "\n"))
+		dirContent, err = safehtml.Execute(directoryListingTemplate, dirItems)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// If no document.md exists, show directory title and listing
 	if docInfo == nil {
-		content = template.HTML(fmt.Sprintf("<h1>%s</h1>", navItem.Title))
+		content, err = safehtml.Execute(directoryTitleTemplate, navItem.Title)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		lastModified = info.ModTime()
 	}
 

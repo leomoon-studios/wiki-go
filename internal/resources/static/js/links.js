@@ -1285,7 +1285,8 @@
                 const links = linksByCategory[categoryName];
                 
                 // Find the category element
-                const categoryElement = document.querySelector(`[data-category="${categoryName}"]`);
+                const categoryElement = Array.from(document.querySelectorAll('[data-category]'))
+                    .find(element => element.dataset.category === categoryName);
                 if (categoryElement) {
                     categoryElement.classList.remove('hidden');
                     

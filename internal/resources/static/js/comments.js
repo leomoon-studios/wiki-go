@@ -29,10 +29,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             document.querySelectorAll('.login-prompt').forEach(el => {
-                if (el.innerHTML.includes('comments.login_required')) {
-                    el.innerHTML = window.i18n.t('comments.login_required') +
-                                  ' <a href="javascript:void(0)" class="open-login">' +
-                                  window.i18n.t('comments.login') + '</a>';
+                if (el.textContent.includes('comments.login_required')) {
+                    const loginLink = WikiDOM.element('a', 'open-login', window.i18n.t('comments.login'));
+                    loginLink.href = '#';
+                    loginLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        showLoginDialog();
+                    });
+                    el.replaceChildren(
+                        document.createTextNode(window.i18n.t('comments.login_required') + ' '),
+                        loginLink
+                    );
                 }
             });
 
@@ -143,7 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (response.ok) {
                                 console.log('Delete successful, removing comment from page');
                                 // Remove the comment from the page
-                                const comment = document.querySelector(`.user-comment[data-id="${commentId}"]`);
+                                const comment = Array.from(document.querySelectorAll('.user-comment'))
+                                    .find(element => element.dataset.id === String(commentId));
                                 if (comment) {
                                     comment.remove();
 
@@ -195,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .then(response => {
                         if (response.ok) {
-                            const comment = document.querySelector(`.user-comment[data-id="${commentId}"]`);
+                            const comment = Array.from(document.querySelectorAll('.user-comment'))
+                                .find(element => element.dataset.id === String(commentId));
                             if (comment) {
                                 comment.remove();
 

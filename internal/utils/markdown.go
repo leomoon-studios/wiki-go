@@ -10,6 +10,7 @@ import (
 	"strings"
 	"wiki-go/internal/frontmatter"
 	"wiki-go/internal/goldext"
+	"wiki-go/internal/safehtml"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -50,13 +51,13 @@ func RenderMarkdown(md string) []byte {
 // RenderMarkdownHTML returns document HTML produced exclusively by Wiki-Go's
 // safe Markdown renderer. Callers may insert this value into html/template.
 func RenderMarkdownHTML(md string) template.HTML {
-	return template.HTML(RenderMarkdown(md))
+	return safehtml.FromRenderer(RenderMarkdown(md))
 }
 
 // RenderMarkdownWithPathHTML is the path-aware template-safe rendering entry
 // point used by document pages.
 func RenderMarkdownWithPathHTML(md string, docPath string) template.HTML {
-	return template.HTML(RenderMarkdownWithPath(md, docPath))
+	return safehtml.FromRenderer(RenderMarkdownWithPath(md, docPath))
 }
 
 // RenderMarkdownWithPath converts markdown text to HTML with the current document path

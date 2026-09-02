@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"wiki-go/internal/i18n"
+	"wiki-go/internal/safehtml"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -281,7 +282,7 @@ func renderKanbanBoard(board KanbanBoard, boardIndex int, preprocessors []Prepro
 		tasks := make([]kanbanTemplateTask, 0, len(column.Tasks))
 		for _, task := range column.Tasks {
 			tasks = append(tasks, kanbanTemplateTask{
-				HTML:        template.HTML(applyProcessorsToTaskText(task.Text, preprocessors, extraExtensions...)),
+				HTML:        safehtml.FromRenderer([]byte(applyProcessorsToTaskText(task.Text, preprocessors, extraExtensions...))),
 				Checked:     task.Checked,
 				IndentLevel: task.IndentLevel,
 			})

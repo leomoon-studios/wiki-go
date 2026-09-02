@@ -91,10 +91,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderRulesList() {
         if (!accessRulesList || !ruleTemplate) return;
         
-        accessRulesList.innerHTML = '';
+        WikiDOM.clear(accessRulesList);
         
         if (currentRules.length === 0) {
-            accessRulesList.innerHTML = `<div class="empty-message" data-i18n="access.no_rules">${window.i18n ? window.i18n.t('access.no_rules') : 'No access rules defined'}</div>`;
+            const empty = WikiDOM.message(accessRulesList, 'empty-message', window.i18n ? window.i18n.t('access.no_rules') : 'No access rules defined');
+            empty.dataset.i18n = 'access.no_rules';
             return;
         }
 
@@ -103,16 +104,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Set Icon
             const iconDiv = clone.querySelector('.rule-icon');
-            if (rule.access === 'public') iconDiv.innerHTML = '<i class="fa fa-globe"></i>';
-            else if (rule.access === 'private') iconDiv.innerHTML = '<i class="fa fa-lock"></i>';
-            else iconDiv.innerHTML = '<i class="fa fa-shield"></i>';
+            if (rule.access === 'public') iconDiv.appendChild(WikiDOM.icon('fa fa-globe'));
+            else if (rule.access === 'private') iconDiv.appendChild(WikiDOM.icon('fa fa-lock'));
+            else iconDiv.appendChild(WikiDOM.icon('fa fa-shield'));
 
             // Set Content
             const titleEl = clone.querySelector('.rule-title');
             const subtitleEl = clone.querySelector('.rule-subtitle');
 
             // Parse pattern for display
-            let basePath = rule.pattern;
+            let basePath = String(rule.pattern ?? '');
             let matchIcon = 'fa-file-text-o';
             let matchKey = 'access.match_exact';
             let matchDefault = 'This document only';
@@ -130,25 +131,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const matchText = window.i18n ? window.i18n.t(matchKey) : matchDefault;
-            const matchHtml = `<span class="match-type" title="${matchText}"><i class="fa ${matchIcon}"></i></span>`;
+            const matchType = WikiDOM.element('span', 'match-type');
+            matchType.title = matchText;
+            matchType.appendChild(WikiDOM.icon(`fa ${matchIcon}`));
 
             if (rule.description) {
                 titleEl.textContent = rule.description;
                 titleEl.style.fontFamily = 'inherit';
                 
-                subtitleEl.innerHTML = `${matchHtml} <span class="rule-path">${basePath}</span>`;
+                subtitleEl.append(matchType, document.createTextNode(' '), WikiDOM.element('span', 'rule-path', basePath));
                 subtitleEl.style.display = 'block';
             } else {
                 titleEl.textContent = basePath;
                 titleEl.style.fontFamily = 'monospace';
                 
-                subtitleEl.innerHTML = `${matchHtml} <span class="match-text" data-i18n="${matchKey}">${matchText}</span>`;
+                const matchLabel = WikiDOM.element('span', 'match-text', matchText);
+                matchLabel.dataset.i18n = matchKey;
+                subtitleEl.append(matchType, document.createTextNode(' '), matchLabel);
                 subtitleEl.style.display = 'block';
             }
             
             const badge = clone.querySelector('.rule-access-badge');
-            badge.textContent = rule.access;
-            badge.className = `rule-access-badge access-${rule.access}`;
+            const access = ['public', 'private', 'restricted'].includes(rule.access) ? rule.access : 'restricted';
+            badge.textContent = access;
+            badge.className = `rule-access-badge access-${access}`;
 
             // Groups
             const groupsDiv = clone.querySelector('.rule-groups');
@@ -194,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Determine selectedFolder based on index (Edit Mode) BEFORE populating tree
         if (index >= 0) {
             const rule = currentRules[index];
-            let pattern = rule.pattern;
+            let pattern = String(rule.pattern ?? '');
             
             if (pattern.endsWith('/**')) {
                 selectedFolder = pattern.substring(0, pattern.length - 3) || '/';
@@ -213,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const rule = currentRules[index];
             
             // Parse pattern to set match type
-            let pattern = rule.pattern;
+            let pattern = String(rule.pattern ?? '');
             let matchType = 'exact';
             
             if (pattern.endsWith('/**')) {
@@ -225,11 +231,14 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedFolderPath.textContent = selectedFolder;
             
             // Set Match Type
-            const matchTypeInput = document.querySelector(`input[name="matchType"][value="${matchType}"]`);
+            const matchTypeInput = Array.from(document.querySelectorAll('input[name="matchType"]'))
+                .find(input => input.value === matchType);
             if (matchTypeInput) matchTypeInput.checked = true;
             
             // Set Access Level
-            const accessLevelInput = document.querySelector(`input[name="accessLevel"][value="${rule.access}"]`);
+            const access = ['public', 'private', 'restricted'].includes(rule.access) ? rule.access : 'restricted';
+            const accessLevelInput = Array.from(document.querySelectorAll('input[name="accessLevel"]'))
+                .find(input => input.value === access);
             if (accessLevelInput) accessLevelInput.checked = true;
             
             // Set Groups
@@ -311,15 +320,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderGroups() {
-        selectedGroups.innerHTML = '';
+        WikiDOM.clear(selectedGroups);
         currentGroups.forEach(group => {
             const tag = document.createElement('div');
             tag.className = 'group-tag-removable';
-            tag.innerHTML = `
-                <span>${group}</span>
-                <span class="remove-group" data-group="${group}">&times;</span>
-            `;
-            tag.querySelector('.remove-group').onclick = () => removeGroup(group);
+            tag.appendChild(WikiDOM.element('span', '', group));
+            const remove = WikiDOM.element('span', 'remove-group', '\u00d7');
+            remove.dataset.group = group;
+            remove.onclick = () => removeGroup(group);
+            tag.appendChild(remove);
             selectedGroups.appendChild(tag);
         });
     }
@@ -456,27 +465,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function populateFolderTree() {
-        folderTree.innerHTML = `<div class="loading">${window.i18n ? window.i18n.t('access.loading_folders') : 'Loading folders...'}</div>`;
+        WikiDOM.message(folderTree, 'loading', window.i18n ? window.i18n.t('access.loading_folders') : 'Loading folders...');
         
         try {
             const response = await fetch('/api/folders');
             if (response.ok) {
                 const data = await response.json();
-                folderTree.innerHTML = '';
+                WikiDOM.clear(folderTree);
                 
                 if (data.folders && data.folders.length > 0) {
                     data.folders.forEach(folder => {
                         addFolderToTree(folder.path, folder.name, folder.level);
                     });
                 } else {
-                    folderTree.innerHTML = `<div class="empty-message">${window.i18n ? window.i18n.t('access.no_folders') : 'No folders found'}</div>`;
+                    WikiDOM.message(folderTree, 'empty-message', window.i18n ? window.i18n.t('access.no_folders') : 'No folders found');
                 }
             } else {
-                folderTree.innerHTML = `<div class="error">${window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders'}</div>`;
+                WikiDOM.message(folderTree, 'error', window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders');
             }
         } catch (error) {
             console.error('Error loading folders:', error);
-            folderTree.innerHTML = `<div class="error">${window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders'}</div>`;
+            WikiDOM.message(folderTree, 'error', window.i18n ? window.i18n.t('access.error_load_folders') : 'Failed to load folders');
         }
     }
 
@@ -486,10 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         item.style.paddingLeft = `${level * 20 + 10}px`;
         if (path === selectedFolder) item.classList.add('selected');
         
-        item.innerHTML = `
-            <i class="fa fa-folder folder-icon"></i>
-            <span class="folder-name">${name}</span>
-        `;
+        item.append(WikiDOM.icon('fa fa-folder folder-icon'), WikiDOM.element('span', 'folder-name', name));
         
         item.onclick = () => {
             document.querySelectorAll('.folder-tree-item').forEach(el => el.classList.remove('selected'));

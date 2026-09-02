@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"html/template"
 
+	"wiki-go/internal/safehtml"
+
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -36,8 +38,8 @@ func RenderCommentMarkdown(markdownSource string) template.HTML {
 
 	var output bytes.Buffer
 	if err := markdown.Convert([]byte(markdownSource), &output); err != nil {
-		return template.HTML(commentRenderError)
+		return safehtml.FromRenderer([]byte(commentRenderError))
 	}
 
-	return template.HTML(output.String())
+	return safehtml.FromRenderer(output.Bytes())
 }

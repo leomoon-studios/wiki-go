@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 	"wiki-go/internal/logger"
+	"wiki-go/internal/safehtml"
 	"wiki-go/internal/types"
 	"wiki-go/internal/utils"
 )
@@ -583,7 +583,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 	// If content is empty but home document exists, ensure we have something truthy for template conditions
 	if strings.TrimSpace(string(renderedContent)) == "" {
-		renderedContent = template.HTML(" ") // Single space to make it truthy but effectively empty
+		renderedContent = safehtml.NonEmptyPlaceholder // Make an existing empty document truthy to templates.
 	}
 
 	// Render the page

@@ -220,17 +220,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show results container
         importResults.style.display = 'block';
 
-        // Build results HTML
-        let resultsHtml = '';
+        const fragment = document.createDocumentFragment();
 
         if (data.importedFiles && data.importedFiles.length) {
-            resultsHtml += '<ul class="imported-files-list">';
+            const importedList = WikiDOM.element('ul', 'imported-files-list');
 
             data.importedFiles.forEach(file => {
-                resultsHtml += `<li>${file.originalPath} → <a href="${file.newPath}" target="_blank">${file.newPath}</a></li>`;
+                const item = document.createElement('li');
+                item.appendChild(document.createTextNode(`${file.originalPath ?? ''} → `));
+                const link = WikiDOM.element('a', '', file.newPath);
+                link.href = WikiDOM.localURL(file.newPath);
+                link.target = '_blank';
+                link.rel = 'noopener';
+                item.appendChild(link);
+                importedList.appendChild(item);
             });
 
-            resultsHtml += '</ul>';
+            fragment.appendChild(importedList);
 
             // Refresh the sidebar to show new content
             if (window.SidebarNavigation && window.SidebarNavigation.refreshSidebar) {
@@ -239,21 +245,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (data.errors && data.errors.length) {
-            resultsHtml += '<h5>Errors:</h5>';
-            resultsHtml += '<ul class="import-errors-list">';
+            fragment.appendChild(WikiDOM.element('h5', '', 'Errors:'));
+            const errorsList = WikiDOM.element('ul', 'import-errors-list');
 
             data.errors.forEach(error => {
-                resultsHtml += `<li>${error}</li>`;
+                errorsList.appendChild(WikiDOM.element('li', '', error));
             });
 
-            resultsHtml += '</ul>';
+            fragment.appendChild(errorsList);
         }
 
         // Add summary
-        resultsHtml += `<p class="import-summary">Successfully imported ${data.successCount || 0} files with ${data.errorCount || 0} errors.</p>`;
+        fragment.appendChild(WikiDOM.element('p', 'import-summary', `Successfully imported ${data.successCount || 0} files with ${data.errorCount || 0} errors.`));
 
         // Update results content
-        importResultsContent.innerHTML = resultsHtml;
+        importResultsContent.replaceChildren(fragment);
     }
 
     /**

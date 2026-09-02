@@ -50,6 +50,60 @@ function getFileIcon(fileType) {
     return icon;
 }
 
+function getFileIconElement(fileType) {
+    const wrapper = WikiDOM.element('div', 'file-icon');
+    let iconClass = 'fa-file-o';
+    if (fileType && fileType.startsWith('image/')) iconClass = 'fa-file-image-o';
+    else if (fileType === 'application/pdf') iconClass = 'fa-file-pdf-o';
+    else if (fileType === 'application/zip') iconClass = 'fa-file-archive-o';
+    else if (fileType === 'text/plain') iconClass = 'fa-file-text-o';
+    else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') iconClass = 'fa-file-word-o';
+    else if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') iconClass = 'fa-file-excel-o';
+    else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') iconClass = 'fa-file-powerpoint-o';
+    else if (['video/mp4', 'video/quicktime', 'video/webm', 'video/avi'].includes(fileType)) iconClass = 'fa-file-video-o';
+    wrapper.appendChild(WikiDOM.icon(`fa ${iconClass}`));
+    return wrapper;
+}
+
+function normalizeFile(file) {
+    const docPath = getCurrentDocPath();
+    if (typeof file === 'string') {
+        const fileExt = file.split('.').pop().toLowerCase();
+        return {
+            URL: `/api/files/${docPath}/${file}`,
+            Type: FILE_EXTENSION_MIME_TYPES[fileExt] || '',
+            Name: file,
+            Size: 0
+        };
+    }
+
+    const name = String(file?.Name || file?.name || 'Unknown file');
+    return {
+        URL: file?.URL || `/api/files/${docPath}/${name}`,
+        Type: String(file?.Type || file?.type || ''),
+        Name: name,
+        Size: file?.Size || file?.size || 0
+    };
+}
+
+function createFileAction(className, iconClass, title, label, i18nKey) {
+    const button = WikiDOM.element('button', className);
+    button.type = 'button';
+    button.title = title;
+    const labelElement = WikiDOM.element('span', '', label);
+    if (i18nKey) {
+        button.dataset.i18nTitle = i18nKey;
+        labelElement.dataset.i18n = i18nKey;
+    }
+    button.append(WikiDOM.icon(`fa ${iconClass}`), labelElement);
+    return button;
+}
+
+function fileListContainsName(filesList, name) {
+    return Array.from(filesList.querySelectorAll('.file-name'))
+        .some(element => element.dataset.currentName === name);
+}
+
 // Render files list HTML
 function renderFilesList(files, mentionedFiles) {
     // Get filesList element first to prevent reference references
@@ -69,7 +123,7 @@ function renderFilesList(files, mentionedFiles) {
     console.log("Rendering files list:", files);
 
     if (!files || files.length === 0) {
-        filesList.innerHTML = '<div class="empty-message">' + (window.i18n ? window.i18n.t('attachments.no_files') : 'No files found for this document.') + '</div>';
+        WikiDOM.message(filesList, 'empty-message', window.i18n ? window.i18n.t('attachments.no_files') : 'No files found for this document.');
         return;
     }
 
@@ -79,35 +133,13 @@ function renderFilesList(files, mentionedFiles) {
         errorMessage.style.display = 'none';
     }
 
-    const html = files.map(file => {
+    const fragment = document.createDocumentFragment();
+    files.forEach(file => {
         // Debug each file in the console
         console.log("Processing file:", file);
 
         // Check if file is a string (just filename) or object
-        let safeFile;
-        if (typeof file === 'string') {
-            // If file is just a string (filename), create object with defaults
-            const filename = file;
-            const fileExt = filename.split('.').pop().toLowerCase();
-
-            // Use the globally defined FILE_EXTENSION_MIME_TYPES from base.html template
-            let fileType = FILE_EXTENSION_MIME_TYPES[fileExt] || '';
-
-            safeFile = {
-                URL: `/api/files/${getCurrentDocPath()}/${filename}`,
-                Type: fileType,
-                Name: filename,
-                Size: 0
-            };
-        } else {
-            // Ensure all properties exist with defaults for missing ones
-            safeFile = {
-                URL: file.URL || `/api/files/${getCurrentDocPath()}/${file.Name || file.name || 'unknown'}`,
-                Type: file.Type || file.type || '',
-                Name: file.Name || file.name || 'Unknown file',
-                Size: file.Size || file.size || 0
-            };
-        }
+        const safeFile = normalizeFile(file);
 
         console.log("Safe file object:", safeFile);
 
@@ -128,40 +160,45 @@ function renderFilesList(files, mentionedFiles) {
             console.log('File is mentioned:', filename);
         }
 
-        return `
-            <div class="file-item${highlightClass}" data-file-url="${safeFile.URL}">
-                <input type="checkbox" class="file-select-checkbox" data-filename="${safeFile.Name}">
-                <div class="file-info">
-                    <div class="file-icon">${getFileIcon(safeFile.Type)}</div>
-                    <div class="file-name" data-path="${filePath}" data-current-name="${safeFile.Name}">
-                        <span class="name-text">${safeFile.Name}</span>
-                        <input type="text" class="name-edit" value="${safeFile.Name}" style="display: none;">
-                    </div>
-                    <div class="file-size">${formatFileSize(safeFile.Size)}</div>
-                </div>
-                <div class="file-actions">
-                    <button class="insert-file-btn" title="${window.i18n ? window.i18n.t('common.insert') : 'Insert into editor'}" data-url="${safeFile.URL}" data-is-image="${isImage}" data-name="${safeFile.Name}" data-i18n-title="common.insert">
-                        <i class="fa fa-plus"></i>
-                        <span data-i18n="common.insert">${window.i18n ? window.i18n.t('common.insert') : 'Insert'}</span>
-                    </button>
-                    <button class="view-file-btn" title="${window.i18n ? window.i18n.t('common.view') : 'View file'}" data-url="${safeFile.URL}" data-i18n-title="common.view">
-                        <i class="fa fa-eye"></i>
-                        <span data-i18n="common.view">${window.i18n ? window.i18n.t('common.view') : 'View'}</span>
-                    </button>
-                    <button class="rename-file-btn" title="${window.i18n ? window.i18n.t('common.rename') : 'Rename file'}" data-path="${filePath}" data-name="${safeFile.Name}" data-i18n-title="common.rename">
-                        <i class="fa fa-pencil"></i>
-                        <span data-i18n="common.rename">${window.i18n ? window.i18n.t('common.rename') : 'Rename'}</span>
-                    </button>
-                    <button class="delete-file-btn" title="${window.i18n ? window.i18n.t('common.delete') : 'Delete file'}" data-path="${filePath}" data-i18n-title="common.delete">
-                        <i class="fa fa-trash"></i>
-                        <span data-i18n="common.delete">${window.i18n ? window.i18n.t('common.delete') : 'Delete'}</span>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
+        const item = WikiDOM.element('div', `file-item${highlightClass}`);
+        item.dataset.fileUrl = WikiDOM.localURL(safeFile.URL);
 
-    filesList.innerHTML = html;
+        const checkbox = WikiDOM.element('input', 'file-select-checkbox');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.filename = safeFile.Name;
+
+        const fileName = WikiDOM.element('div', 'file-name');
+        fileName.dataset.path = filePath;
+        fileName.dataset.currentName = safeFile.Name;
+        fileName.appendChild(WikiDOM.element('span', 'name-text', safeFile.Name));
+        const nameEdit = WikiDOM.element('input', 'name-edit');
+        nameEdit.type = 'text';
+        nameEdit.value = safeFile.Name;
+        nameEdit.style.display = 'none';
+        fileName.appendChild(nameEdit);
+
+        const info = WikiDOM.element('div', 'file-info');
+        info.append(getFileIconElement(safeFile.Type), fileName, WikiDOM.element('div', 'file-size', formatFileSize(safeFile.Size)));
+
+        const insert = createFileAction('insert-file-btn', 'fa-plus', window.i18n ? window.i18n.t('common.insert') : 'Insert into editor', window.i18n ? window.i18n.t('common.insert') : 'Insert', 'common.insert');
+        insert.dataset.url = WikiDOM.localURL(safeFile.URL);
+        insert.dataset.isImage = String(isImage);
+        insert.dataset.name = safeFile.Name;
+        const view = createFileAction('view-file-btn', 'fa-eye', window.i18n ? window.i18n.t('common.view') : 'View file', window.i18n ? window.i18n.t('common.view') : 'View', 'common.view');
+        view.dataset.url = WikiDOM.localURL(safeFile.URL);
+        const rename = createFileAction('rename-file-btn', 'fa-pencil', window.i18n ? window.i18n.t('common.rename') : 'Rename file', window.i18n ? window.i18n.t('common.rename') : 'Rename', 'common.rename');
+        rename.dataset.path = filePath;
+        rename.dataset.name = safeFile.Name;
+        const remove = createFileAction('delete-file-btn', 'fa-trash', window.i18n ? window.i18n.t('common.delete') : 'Delete file', window.i18n ? window.i18n.t('common.delete') : 'Delete', 'common.delete');
+        remove.dataset.path = filePath;
+
+        const actions = WikiDOM.element('div', 'file-actions');
+        actions.append(insert, view, rename, remove);
+        item.append(checkbox, info, actions);
+        fragment.appendChild(item);
+    });
+
+    filesList.replaceChildren(fragment);
 
     // Add event listeners for file actions
     filesList.querySelectorAll('.delete-file-btn').forEach(button => {
@@ -418,7 +455,7 @@ async function loadDocumentFiles() {
     } catch (error) {
         console.error('Error loading files:', error);
         if (filesList) {
-            filesList.innerHTML = `<div class="empty-message">Error: ${error.message || 'Failed to load files'}</div>`;
+            WikiDOM.message(filesList, 'empty-message', `Error: ${error.message || 'Failed to load files'}`);
         }
     }
 }
@@ -440,45 +477,27 @@ function updateFileAttachments(files) {
     // Show the section since we have files
     fileAttachmentsSection.style.display = 'block';
 
-    const html = files.map(file => {
-        // Process file similar to the files list
-        let safeFile;
-        if (typeof file === 'string') {
-            // If file is just a string (filename), create object with defaults
-            const filename = file;
-            const fileExt = filename.split('.').pop().toLowerCase();
+    const fragment = document.createDocumentFragment();
+    files.forEach(file => {
+        const safeFile = normalizeFile(file);
+        const link = WikiDOM.element('a', 'attachment-item');
+        link.href = WikiDOM.localURL(safeFile.URL);
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.title = `Open ${safeFile.Name}`;
 
-            // Use the globally defined FILE_EXTENSION_MIME_TYPES from base.html template
-            let fileType = FILE_EXTENSION_MIME_TYPES[fileExt] || '';
+        const icon = getFileIconElement(safeFile.Type);
+        icon.className = 'attachment-icon';
+        const info = WikiDOM.element('div', 'attachment-info');
+        info.append(
+            WikiDOM.element('div', 'attachment-name', safeFile.Name),
+            WikiDOM.element('div', 'attachment-size', formatFileSize(safeFile.Size))
+        );
+        link.append(icon, info);
+        fragment.appendChild(link);
+    });
 
-            safeFile = {
-                URL: `/api/files/${getCurrentDocPath()}/${filename}`,
-                Type: fileType,
-                Name: filename,
-                Size: 0
-            };
-        } else {
-            // Ensure all properties exist with defaults for missing ones
-            safeFile = {
-                URL: file.URL || `/api/files/${getCurrentDocPath()}/${file.Name || file.name || 'unknown'}`,
-                Type: file.Type || file.type || '',
-                Name: file.Name || file.name || 'Unknown file',
-                Size: file.Size || file.size || 0
-            };
-        }
-
-        return `
-            <a href="${safeFile.URL}" class="attachment-item" target="_blank" title="Open ${safeFile.Name}">
-                <div class="attachment-icon">${getFileIcon(safeFile.Type)}</div>
-                <div class="attachment-info">
-                    <div class="attachment-name">${safeFile.Name}</div>
-                    <div class="attachment-size">${formatFileSize(safeFile.Size)}</div>
-                </div>
-            </a>
-        `;
-    }).join('');
-
-    fileAttachmentsList.innerHTML = html;
+    fileAttachmentsList.replaceChildren(fragment);
 }
 
 // Delete a file
@@ -595,7 +614,7 @@ async function renameFile(path, newName) {
             setTimeout(() => {
                 // Find if any file in the list has the new name
                 const filesList = document.querySelector('.files-list');
-                if (filesList && filesList.querySelector(`.file-name[data-current-name="${newName}"]`)) {
+                if (filesList && fileListContainsName(filesList, newName)) {
                     console.log("File with new name found despite 404 error, rename likely succeeded");
                     // Show success message
                     if (window.DialogSystem && window.DialogSystem.showToast) {
@@ -641,7 +660,7 @@ async function renameFile(path, newName) {
         // Check if files list already contains a file with the new name,
         // which would indicate the rename succeeded despite an error response
         const filesList = document.querySelector('.files-list');
-        if (filesList && filesList.querySelector(`.file-name[data-current-name="${newName}"]`)) {
+        if (filesList && fileListContainsName(filesList, newName)) {
             console.log("File with new name found in DOM, rename likely succeeded despite error");
             return true;
         }
