@@ -59,7 +59,7 @@ func CSPMiddleware(next http.Handler) http.Handler {
 			"script-src 'self'",
 			"script-src-attr 'none'",
 			// Images from same origin and data: URLs (for embedded images)
-			"img-src 'self' data: https://*.ytimg.com https://*.vimeocdn.com",
+			"img-src 'self' data: https://www.google.com https://*.gstatic.com https://*.ytimg.com https://*.vimeocdn.com",
 			// Connect only to same origin
 			"connect-src 'self'",
 			// Fonts from same origin
