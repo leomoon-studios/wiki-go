@@ -112,6 +112,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			extension.DefinitionList,  // Enable definition lists
 			extension.GFM,             // GitHub Flavored Markdown
 			goldext.OnePasswordIgnore, // Add data-1p-ignore to code blocks
+			goldext.TrustedNodes,      // Render typed Wiki-Go extension nodes
 			// MathJax is now handled via client-side JavaScript
 		),
 		// Parser options
@@ -130,7 +131,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 	var buf bytes.Buffer
 
 	// Convert markdown to HTML
-	if err := markdown.Convert([]byte(md), &buf); err != nil {
+	if err := markdown.Convert([]byte(md), &buf, parser.WithContext(goldext.NewRenderContext(docPath))); err != nil {
 		// If there's an error, return an error message
 		errMsg := []byte("<p>Error rendering markdown with Goldmark: " + err.Error() + "</p>")
 		return errMsg
