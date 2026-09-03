@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
 	"wiki-go/internal/crypto"
@@ -135,6 +136,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a copy of the current config
 	updatedConfig := *cfg
+	updatedConfig.Users = append([]config.User(nil), cfg.Users...)
 
 	// Validate role
 	if req.Role != config.RoleAdmin && req.Role != config.RoleEditor && req.Role != config.RoleViewer {
@@ -195,6 +197,7 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a copy of the current config
 	updatedConfig := *cfg
+	updatedConfig.Users = append([]config.User(nil), cfg.Users...)
 
 	// Validate role
 	if req.Role != config.RoleAdmin && req.Role != config.RoleEditor && req.Role != config.RoleViewer {
@@ -203,8 +206,11 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Find and update the user
 	userFound := false
+	revokeSessions := false
 	for i, user := range updatedConfig.Users {
 		if user.Username == req.Username {
+			revokeSessions = roleRank(req.Role) < roleRank(user.Role) ||
+				req.NewPassword != "" || !slices.Equal(req.Groups, user.Groups)
 			// Update the user's role
 			updatedConfig.Users[i].Role = req.Role
 			// Update groups
@@ -228,6 +234,15 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "User not found", http.StatusNotFound, "")
 		return
 	}
+	if revokeSessions {
+		if _, err := auth.RevokeUserSessions(req.Username); err != nil {
+			sendJSONError(w, "Failed to revoke user sessions", http.StatusInternalServerError, err.Error())
+			return
+		}
+		if session.Username == req.Username {
+			auth.ClearSessionCookies(w, cfg)
+		}
+	}
 
 	// Save the updated config
 	configPath := config.ConfigFilePath
@@ -245,9 +260,23 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "User updated successfully",
+		"success":    true,
+		"message":    "User updated successfully",
+		"logged_out": revokeSessions && session.Username == req.Username,
 	})
+}
+
+func roleRank(role string) int {
+	switch role {
+	case config.RoleAdmin:
+		return 3
+	case config.RoleEditor:
+		return 2
+	case config.RoleViewer:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // DeleteUserHandler deletes a user
@@ -274,6 +303,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a copy of the current config
 	updatedConfig := *cfg
+	updatedConfig.Users = append([]config.User(nil), cfg.Users...)
 
 	// Find and remove the user
 	userFound := false
@@ -301,6 +331,10 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if adminCount == 0 {
 		sendJSONError(w, "Cannot delete the last admin user", http.StatusBadRequest, "")
+		return
+	}
+	if _, err := auth.RevokeUserSessions(username); err != nil {
+		sendJSONError(w, "Failed to revoke user sessions", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -364,6 +398,7 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a copy of the current config
 	updatedConfig := *cfg
+	updatedConfig.Users = append([]config.User(nil), cfg.Users...)
 
 	// Find and update the password of the user
 	userFound := false
@@ -398,6 +433,11 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "User not found", http.StatusNotFound, "")
 		return
 	}
+	if _, err := auth.RevokeUserSessions(session.Username); err != nil {
+		sendJSONError(w, "Failed to revoke user sessions", http.StatusInternalServerError, err.Error())
+		return
+	}
+	auth.ClearSessionCookies(w, cfg)
 
 	// Save the updated config
 	configPath := config.ConfigFilePath
@@ -412,8 +452,10 @@ func PasswordHandler(w http.ResponseWriter, r *http.Request) {
 	// Send success response
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "User password updated successfully",
+		"success":    true,
+		"message":    "User password updated successfully",
+		"logged_out": true,
+		"redirect":   "/login",
 	})
 }
 

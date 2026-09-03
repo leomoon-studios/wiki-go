@@ -980,10 +980,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.ok) {
+                const result = await response.json();
                 hideSettingsDialog();
-
-                // Refresh the default password banner in case admin changed away from "admin"
-                window.Auth.checkDefaultPassword();
 
                 var confirmationTitle = 'Profile';
                 var confirmationMessage = 'Password changed successfully';
@@ -995,6 +993,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.DialogSystem.showMessageDialog(
                     confirmationTitle,
                     confirmationMessage,
+                    function() {
+                        window.location.href = result.redirect || '/login';
+                    }
                 );
 
                 profileForm.reset();

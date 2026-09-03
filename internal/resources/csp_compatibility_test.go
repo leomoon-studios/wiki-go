@@ -65,3 +65,30 @@ func TestTemplatesAndFirstPartyScriptsAreCSPCompatible(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestProfilePasswordChangeRedirectsAfterAcknowledgement(t *testing.T) {
+	settingsManager, err := fs.ReadFile(staticFiles, "static/js/settings-manager.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	settingsScript := string(settingsManager)
+	for _, expected := range []string{
+		"const result = await response.json()",
+		"result.redirect || '/login'",
+		"window.DialogSystem.showMessageDialog",
+	} {
+		if !strings.Contains(settingsScript, expected) {
+			t.Errorf("settings-manager.js does not contain %q", expected)
+		}
+	}
+
+	dialogSystem, err := fs.ReadFile(staticFiles, "static/js/dialog-system.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dialogScript := string(dialogSystem)
+	if !strings.Contains(dialogScript, "function showMessageDialog(title, message, callback)") ||
+		!strings.Contains(dialogScript, "callback();") {
+		t.Error("message dialog does not invoke its acknowledgement callback")
+	}
+}

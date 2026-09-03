@@ -22,7 +22,7 @@ var (
 type User struct {
 	Username string   `yaml:"username" json:"username"`
 	Password string   `yaml:"password" json:"password,omitempty"`
-	Role     string   `yaml:"role" json:"role"`                       // "admin", "editor", or "viewer"
+	Role     string   `yaml:"role" json:"role"`                         // "admin", "editor", or "viewer"
 	Groups   []string `yaml:"groups,omitempty" json:"groups,omitempty"` // Optional groups for access control
 }
 
@@ -51,11 +51,14 @@ type Config struct {
 		// where HTTPS is not available. This reduces security by allowing
 		// cookies to be transmitted in plain text.
 		AllowInsecureCookies bool `yaml:"allow_insecure_cookies"`
+		// TrustedProxies contains proxy IP addresses or CIDR networks whose
+		// forwarded client IP headers may be used. It is empty by default.
+		TrustedProxies []string `yaml:"trusted_proxies,omitempty"`
 		// Enable native TLS. When true, application will run over HTTPS using the
 		// supplied certificate and key paths.
-		SSL      bool   `yaml:"ssl"`
-		SSLCert  string `yaml:"ssl_cert"`
-		SSLKey   string `yaml:"ssl_key"`
+		SSL     bool   `yaml:"ssl"`
+		SSLCert string `yaml:"ssl_cert"`
+		SSLKey  string `yaml:"ssl_key"`
 	} `yaml:"server"`
 	Wiki struct {
 		RootDir                     string `yaml:"root_dir"`
@@ -80,7 +83,7 @@ type Config struct {
 	AccessRules []AccessRule `yaml:"access_rules,omitempty"`
 	Security    struct {
 		PasswordStrength int `yaml:"passwordstrength"`
-		LoginBan struct {
+		LoginBan         struct {
 			Enabled           bool `yaml:"enabled"`
 			MaxFailures       int  `yaml:"max_failures"`
 			WindowSeconds     int  `yaml:"window_seconds"`
@@ -97,6 +100,7 @@ func LoadConfig(path string) (*Config, error) {
 	config.Server.Host = "0.0.0.0" // Set to localhost for local development
 	config.Server.Port = 8080
 	config.Server.AllowInsecureCookies = false // Default to secure cookies
+	config.Server.TrustedProxies = []string{}  // Do not trust forwarding headers by default
 	config.Server.SSL = false
 	config.Server.SSLCert = ""
 	config.Server.SSLKey = ""
@@ -174,6 +178,7 @@ func LoadConfig(path string) (*Config, error) {
 				config.Server.Host,
 				config.Server.Port,
 				config.Server.AllowInsecureCookies,
+				formatYAMLStringList(config.Server.TrustedProxies),
 				config.Server.SSL,
 				config.Server.SSLCert,
 				config.Server.SSLKey,
@@ -244,6 +249,11 @@ func GetConfigTemplate() string {
     # where HTTPS is not available. This reduces security by allowing
     # cookies to be transmitted in plain text.
     allow_insecure_cookies: %t
+    # Trust X-Forwarded-For and X-Real-IP only when the direct connection
+    # comes from one of these proxy IP addresses or CIDR networks.
+    # Leave empty when Wiki-Go is not behind a reverse proxy.
+    # Standalone Nginx using proxy_pass http://127.0.0.1:PORT: ["127.0.0.1"]
+    trusted_proxies: [%s]
     # Enable native TLS. When true, application will run over HTTPS using the
     # supplied certificate and key paths.
     ssl: %t
@@ -316,6 +326,18 @@ func FormatAccessRuleEntry(rule AccessRule) string {
 	return entry
 }
 
+func formatYAMLStringList(values []string) string {
+	quoted := make([]string, 0, len(values))
+	for _, value := range values {
+		encoded, err := yaml.Marshal(value)
+		if err != nil {
+			continue
+		}
+		quoted = append(quoted, strings.TrimSpace(string(encoded)))
+	}
+	return strings.Join(quoted, ", ")
+}
+
 // SaveConfig saves the configuration to a writer
 func SaveConfig(cfg *Config, w io.Writer) error {
 	// Format all users
@@ -342,6 +364,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		cfg.Server.Host,
 		cfg.Server.Port,
 		cfg.Server.AllowInsecureCookies,
+		formatYAMLStringList(cfg.Server.TrustedProxies),
 		cfg.Server.SSL,
 		cfg.Server.SSLCert,
 		cfg.Server.SSLKey,

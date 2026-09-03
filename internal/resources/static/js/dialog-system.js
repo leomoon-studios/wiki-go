@@ -9,6 +9,7 @@
     let messageContent;
     let messageOkButton;
     let closeMessageDialog;
+    let messageCallback = null;
     
     let userConfirmDialog;
     let confirmTitle;
@@ -34,7 +35,7 @@
         });
     };
 
-    window.showMessageDialog = function(title, message) {
+    window.showMessageDialog = function(title, message, callback) {
         document.addEventListener('DOMContentLoaded', () => {
             const messageDialog = document.querySelector('.message-dialog');
             const messageTitle = document.querySelector('.message-dialog .message-title');
@@ -42,6 +43,7 @@
 
             messageTitle.textContent = title;
             messageContent.textContent = message;
+            messageCallback = typeof callback === 'function' ? callback : null;
             messageDialog.classList.add('active');
         });
     };
@@ -111,7 +113,7 @@
     });
     
     // Message dialog functions
-    function showMessageDialog(title, message) {
+    function showMessageDialog(title, message, callback) {
         if (!messageTitle || !messageContent || !messageDialog) {
             console.error('Message dialog elements not initialized');
             return;
@@ -119,6 +121,7 @@
         
         messageTitle.textContent = title;
         messageContent.textContent = message;
+        messageCallback = typeof callback === 'function' ? callback : null;
         messageDialog.classList.add('active');
     }
 
@@ -129,6 +132,11 @@
         }
         
         messageDialog.classList.remove('active');
+        const callback = messageCallback;
+        messageCallback = null;
+        if (callback) {
+            callback();
+        }
     }
     
     // Confirmation dialog functions
