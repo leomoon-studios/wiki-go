@@ -32,6 +32,7 @@ func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
 		),
 		parser.WithASTTransformers(
 			util.Prioritized(&trustedFenceTransformer{documentPath: e.documentPath}, 100),
+			util.Prioritized(&missingLinkTransformer{}, 150),
 			util.Prioritized(&documentNodeTransformer{}, 200),
 		),
 	)

@@ -113,7 +113,7 @@ func TestWikiLinkPreprocessor_BareNameNotFoundFallsBackToRoot(t *testing.T) {
 	t.Chdir(dir)
 
 	got := WikiLinkPreprocessor("[[ghost]]", "")
-	want := "[ghost](/ghost)" // root-level path -> LinkPreprocessor will red-link it
+	want := "[ghost](/ghost)" // the AST transformer marks this target during rendering
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
