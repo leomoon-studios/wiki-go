@@ -66,6 +66,52 @@ func TestTemplatesAndFirstPartyScriptsAreCSPCompatible(t *testing.T) {
 	}
 }
 
+func TestChapterLinksStateLoadsBeforeStylesheets(t *testing.T) {
+	baseTemplate, err := fs.ReadFile(templateFiles, "templates/base.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := string(baseTemplate)
+	stateScript := `<script src="/static/js/chapter-links-state.js?={{getVersion}}"></script>`
+	scriptIndex := strings.Index(base, stateScript)
+	stylesheetIndex := strings.Index(base, `<link rel="stylesheet"`)
+	if scriptIndex < 0 {
+		t.Fatal("base template does not load the external chapter-links state script")
+	}
+	if stylesheetIndex < 0 || scriptIndex > stylesheetIndex {
+		t.Fatal("chapter-links state script must execute before stylesheets are loaded")
+	}
+
+	stateFile, err := fs.ReadFile(staticFiles, "static/js/chapter-links-state.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateSource := string(stateFile)
+	for _, expected := range []string{
+		"let isRetracted = true",
+		"window.sessionStorage.getItem('chapter-links-retracted') !== 'false'",
+		"classList.toggle('chapter-links-retracted', isRetracted)",
+	} {
+		if !strings.Contains(stateSource, expected) {
+			t.Errorf("chapter-links startup script does not contain %q", expected)
+		}
+	}
+
+	controllerFile, err := fs.ReadFile(staticFiles, "static/js/markdown-extensions.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerSource := string(controllerFile)
+	for _, expected := range []string{
+		"classList.contains('chapter-links-retracted')",
+		"updateChapterLinksState(initiallyRetracted, false)",
+	} {
+		if !strings.Contains(controllerSource, expected) {
+			t.Errorf("chapter-links controller does not contain %q", expected)
+		}
+	}
+}
+
 func TestProfilePasswordChangeRedirectsAfterAcknowledgement(t *testing.T) {
 	settingsManager, err := fs.ReadFile(staticFiles, "static/js/settings-manager.js")
 	if err != nil {

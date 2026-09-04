@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const chapterLinksBody = chapterLinksPanel.querySelector('.chapter-links-body');
         const toggleText = chapterLinksToggle.querySelector('.chapter-links-toggle-text');
 
-        function updateChapterLinksState(forceRetracted) {
+        function updateChapterLinksState(forceRetracted, persistPreference = true) {
             const isRetracted = typeof forceRetracted === 'boolean'
                 ? forceRetracted
                 : !chapterLinksPanel.classList.contains('retracted');
@@ -58,11 +58,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 chapterLinksBody.setAttribute('aria-hidden', String(isRetracted));
             }
 
-            // Persist preference
-            try {
-                sessionStorage.setItem('chapter-links-retracted', String(isRetracted));
-            } catch (e) {
-                // Ignore storage errors
+            if (persistPreference) {
+                try {
+                    sessionStorage.setItem('chapter-links-retracted', String(isRetracted));
+                } catch (e) {
+                    // Ignore storage errors; the in-page control still works.
+                }
             }
 
             return isRetracted;
@@ -137,14 +138,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!dragging) return;
                 dragging = false;
                 chapterLinksToggle.style.transition = '';
-                try {
-                    if (moved) {
-                        const top = parseInt(chapterLinksToggle.style.top, 10);
+                if (moved) {
+                    // Suppress the synthetic trailing click even if storage is
+                    // unavailable; persistence must not affect interaction.
+                    suppressNextClick = true;
+                    const top = parseInt(chapterLinksToggle.style.top, 10);
+                    try {
                         sessionStorage.setItem('chapter-links-toggle-top', String(top));
-                        suppressNextClick = true;
+                    } catch (err) {
+                        // Ignore storage errors
                     }
-                } catch (err) {
-                    // Ignore storage errors
                 }
             }
 
@@ -154,25 +157,16 @@ document.addEventListener('DOMContentLoaded', function() {
             chapterLinksToggle.addEventListener('pointercancel', onPointerUp);
         })();
 
-        // Restore preference on page load. New sessions default to retracted.
-        // Use the two-step transition trick to ensure the browser actually animates
-        // the retraction when the page first renders.
-        try {
-            const saved = sessionStorage.getItem('chapter-links-retracted');
-            const savedRetracted = saved === null || saved === 'true';
-            if (savedRetracted && !chapterLinksPanel.classList.contains('retracted')) {
-                // Set the retracted state without animation first, then enable
-                // the transition class so subsequent toggles animate smoothly.
-                chapterLinksPanel.classList.add('no-animate');
-                updateChapterLinksState(true);
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        chapterLinksPanel.classList.remove('no-animate');
-                    });
-                });
-            }
-        } catch (e) {
-            // Ignore storage errors
-        }
+        // The head startup script applies this root class before first paint.
+        // Mirror it onto the panel without rewriting the stored preference, then
+        // enable transitions for subsequent user actions.
+        const initiallyRetracted = document.documentElement.classList.contains('chapter-links-retracted');
+        chapterLinksPanel.classList.add('no-animate');
+        updateChapterLinksState(initiallyRetracted, false);
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                chapterLinksPanel.classList.remove('no-animate');
+            });
+        });
     }
 });
