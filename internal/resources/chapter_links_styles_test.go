@@ -32,6 +32,7 @@ func TestChapterLinksPreserveInlineTOCStyles(t *testing.T) {
 	}
 	layoutCSS := string(layoutStyles)
 	for _, expected := range []string{
+		`width: min(var(--chapter-links-width), 85vw);`,
 		`padding: 20px 0 24px;`,
 		`.chapter-links-body {
     padding-block: 0;
@@ -68,7 +69,8 @@ func TestChapterLinksPreserveInlineTOCStyles(t *testing.T) {
     background-color: var(--hover-bg);
     text-decoration: none;`,
 		`.chapter-links .toc-list a:focus-visible {`,
-		`.chapter-links {
+		`.chapter-links,
+    .chapter-links-toggle {
         display: none !important;`,
 	} {
 		if !strings.Contains(layoutCSS+"\n"+markdownCSS, expected) {

@@ -370,7 +370,8 @@ mark {
     }
 
     /* Right-side chapter links panel */
-    .chapter-links {
+    .chapter-links,
+    .chapter-links-toggle {
         display: none !important;
     }
 }

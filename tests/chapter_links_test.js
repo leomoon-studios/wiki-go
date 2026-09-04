@@ -66,9 +66,15 @@ class FakeElement {
     contains(element) {
         return this.children.includes(element);
     }
+
+    setPointerCapture() {}
+
+    getBoundingClientRect() {
+        return {top: Number.parseInt(this.style.top || '100', 10)};
+    }
 }
 
-function initializeChapterLinks(labels, initiallyRetracted) {
+function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = false) {
     const root = {classList: new FakeClassList()};
     root.classList.toggle('chapter-links-retracted', initiallyRetracted);
 
@@ -106,7 +112,7 @@ function initializeChapterLinks(labels, initiallyRetracted) {
         document,
         window: {
             addEventListener: () => {},
-            matchMedia: () => ({matches: false}),
+            matchMedia: () => ({matches: coarsePointer}),
             innerHeight: 800,
         },
         sessionStorage: {
@@ -162,4 +168,24 @@ test('chapter links preserve non-English labels from template data', () => {
     assert.equal(state.toggle.attributes['aria-label'], labels.retract);
     state.toggle.listeners.click();
     assert.equal(state.toggle.attributes['aria-label'], labels.expand);
+});
+
+test('mobile drag does not trigger a trailing panel toggle', () => {
+    const state = initializeChapterLinks({
+        expand: 'Expand',
+        retract: 'Retract',
+    }, false, true);
+
+    state.toggle.listeners.pointerdown({
+        pointerType: 'touch',
+        pointerId: 1,
+        clientY: 100,
+    });
+    state.toggle.listeners.pointermove({pointerId: 1, clientY: 150});
+    state.toggle.listeners.pointerup({pointerId: 1});
+    state.toggle.listeners.click();
+
+    assert.equal(state.toggle.style.top, '150px');
+    assert.equal(state.stored['chapter-links-toggle-top'], '150');
+    assert.equal(state.toggle.attributes['aria-expanded'], 'true');
 });
