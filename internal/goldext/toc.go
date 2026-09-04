@@ -2,14 +2,48 @@ package goldext
 
 import (
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/util"
 )
+
+const documentOutlineStateKey = "document-outline"
 
 // TOCHeading is a safe snapshot of one document heading.
 type TOCHeading struct {
 	Level int
 	Text  string
 	ID    string
+}
+
+// DocumentOutline contains safe navigation metadata collected from the same
+// AST that is rendered for a document.
+type DocumentOutline struct {
+	Headings     []TOCHeading
+	HasInlineTOC bool
+}
+
+func storeDocumentOutline(context parser.Context, outline DocumentOutline) {
+	outline.Headings = cloneTOCHeadings(outline.Headings)
+	RenderStateFromContext(context).Set(documentOutlineStateKey, outline)
+}
+
+// DocumentOutlineFromContext returns a copy of the outline collected during a
+// Markdown conversion.
+func DocumentOutlineFromContext(context parser.Context) DocumentOutline {
+	value, ok := RenderStateFromContext(context).Get(documentOutlineStateKey)
+	if !ok {
+		return DocumentOutline{}
+	}
+	outline, ok := value.(DocumentOutline)
+	if !ok {
+		return DocumentOutline{}
+	}
+	outline.Headings = cloneTOCHeadings(outline.Headings)
+	return outline
+}
+
+func cloneTOCHeadings(headings []TOCHeading) []TOCHeading {
+	return append([]TOCHeading(nil), headings...)
 }
 
 // TOCBlock is produced from a standalone [toc] marker.
@@ -32,7 +66,7 @@ func (n *TOCBlock) Dump(source []byte, level int) {
 }
 
 func newTOCBlock(headings []TOCHeading) *TOCBlock {
-	return &TOCBlock{Headings: append([]TOCHeading(nil), headings...)}
+	return &TOCBlock{Headings: cloneTOCHeadings(headings)}
 }
 
 func (r *trustedNodeRenderer) renderTOCBlock(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
