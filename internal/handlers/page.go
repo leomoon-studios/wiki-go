@@ -127,6 +127,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	var lastModified time.Time
 	var dirContent template.HTML
 	var rawContent string // Raw markdown content for edit mode
+	var chapterHeadings []types.ChapterHeading
 
 	// Look for document.md in the directory
 	docPath := filepath.Join(fsPath, "document.md")
@@ -151,8 +152,13 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 			documentLayout = metadata.Layout
 		}
 
-		// Use the document path for rendering to handle local file references
-		content = utils.RenderMarkdownWithPathHTML(string(mdContent), decodedPath)
+		// Use the document path for rendering to handle local file references and
+		// collect the outline from the same trusted AST conversion.
+		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), decodedPath)
+		content = safehtml.FromRenderer(renderResult.HTML)
+		if !isEditMode && documentLayout != "kanban" && documentLayout != "links" {
+			chapterHeadings = chapterHeadingsForPage(renderResult.Headings)
+		}
 
 		// If content is empty but document exists, ensure we have something truthy for template conditions
 		if strings.TrimSpace(string(content)) == "" {
@@ -281,6 +287,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		DocumentLayout:     navItem.DocumentLayout,
 		IsEditMode:         isEditMode,
 		RawContent:         rawContent, // Pass raw markdown content for edit mode
+		ChapterHeadings:    chapterHeadings,
 	}
 
 	renderTemplate(w, data)

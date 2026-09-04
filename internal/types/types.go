@@ -35,6 +35,14 @@ type BreadcrumbItem struct {
 	IsLast bool
 }
 
+// ChapterHeading is an escaped template view of one rendered document
+// heading. Level is limited to 1-6 and ID is normalized before construction.
+type ChapterHeading struct {
+	Level int
+	Text  string
+	ID    string
+}
+
 // PageData represents the data passed to the template
 type PageData struct {
 	Navigation         *NavTree
@@ -55,4 +63,5 @@ type PageData struct {
 	DocumentLayout     string             // Document layout type from frontmatter (e.g., "kanban")
 	IsEditMode         bool               // Whether page is in edit mode (separate edit page architecture)
 	RawContent         string             // Raw markdown content with frontmatter for edit mode
+	ChapterHeadings    []ChapterHeading   // Structured outline for the chapter-links panel
 }

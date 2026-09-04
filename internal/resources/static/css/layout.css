@@ -176,7 +176,7 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 /* Page title (top-level heading) in bold */
-.chapter-links .toc-list > li > a {
+.chapter-links .toc-level-1 > a {
     font-weight: 600;
 }
 
@@ -187,6 +187,26 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 .chapter-links .toc-list li {
     margin-bottom: 8px;
     font-size: 0.9rem;
+}
+
+.chapter-links .toc-level-2 {
+    margin-left: 0.75rem;
+}
+
+.chapter-links .toc-level-3 {
+    margin-left: 1.5rem;
+}
+
+.chapter-links .toc-level-4 {
+    margin-left: 2.25rem;
+}
+
+.chapter-links .toc-level-5 {
+    margin-left: 3rem;
+}
+
+.chapter-links .toc-level-6 {
+    margin-left: 3.75rem;
 }
 
 .chapter-links .toc-list a {

@@ -578,8 +578,14 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		userRole = session.Role
 	}
 
-	// Render the markdown content
-	renderedContent := utils.RenderMarkdownHTML(string(content))
+	// Render the Markdown and collect the outline from the same trusted AST
+	// conversion. Preserve the homepage's existing empty document path.
+	renderResult := utils.RenderMarkdownWithPathResult(string(content), "")
+	renderedContent := safehtml.FromRenderer(renderResult.HTML)
+	var chapterHeadings []types.ChapterHeading
+	if !isEditMode {
+		chapterHeadings = chapterHeadingsForPage(renderResult.Headings)
+	}
 
 	// If content is empty but home document exists, ensure we have something truthy for template conditions
 	if strings.TrimSpace(string(renderedContent)) == "" {
@@ -600,6 +606,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		DocPath:            "pages/home", // Special path for homepage
 		IsEditMode:         isEditMode,
 		RawContent:         rawContent,
+		ChapterHeadings:    chapterHeadings,
 	}
 
 	renderTemplate(w, data)
