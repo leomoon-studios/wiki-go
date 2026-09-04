@@ -32,6 +32,9 @@
 
   "nav.home": "Главная",
   "nav.back_to_home": "Вернуться на главную",
+  "chapter_links.on_this_page": "На этой странице",
+  "chapter_links.expand": "Развернуть ссылки на разделы",
+  "chapter_links.retract": "Свернуть ссылки на разделы",
   "sitemap.title": "Карта сайта",
   "sitemap.xml_sitemap": "XML-карта сайта",
   "sitemap.xml_description": "XML-формат для поисковых систем",

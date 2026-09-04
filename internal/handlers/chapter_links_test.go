@@ -83,6 +83,7 @@ func TestChapterLinksTemplateContextuallyEscapesHeadings(t *testing.T) {
 		t.Fatal(err)
 	}
 	rendered := output.String()
+	renderedDocument := string(renderResult.HTML)
 	for _, expected := range []string{
 		`<aside class="chapter-links"`,
 		`class="toc-level-1"`,
@@ -95,12 +96,26 @@ func TestChapterLinksTemplateContextuallyEscapesHeadings(t *testing.T) {
 			t.Errorf("chapter links omitted %q: %s", expected, rendered)
 		}
 	}
-	if strings.Contains(strings.ToLower(rendered), "<img") || strings.Contains(strings.ToLower(rendered), ` onclick=`) {
-		t.Fatalf("chapter links emitted active heading markup: %s", rendered)
+	for name, candidate := range map[string]string{
+		"document":      renderedDocument,
+		"chapter links": rendered,
+	} {
+		lower := strings.ToLower(candidate)
+		for _, forbidden := range []string{"<img", "<svg", "<script", ` onerror="`, ` onload="`, ` onclick="`} {
+			if strings.Contains(lower, forbidden) {
+				t.Fatalf("%s emitted active heading markup %q: %s", name, forbidden, candidate)
+			}
+		}
+		if !strings.Contains(candidate, `Safe &lt;img src=x onerror=&#34;alert(1)&#34;&gt;`) {
+			t.Errorf("%s omitted the escaped heading text: %s", name, candidate)
+		}
 	}
 	for _, heading := range renderResult.Headings {
-		if !strings.Contains(string(renderResult.HTML), `id="`+heading.ID+`"`) {
+		if strings.Count(renderedDocument, `id="`+heading.ID+`"`) != 1 {
 			t.Errorf("chapter link %q does not resolve to a rendered heading: %s", heading.ID, renderResult.HTML)
+		}
+		if strings.Count(rendered, `href="#`+heading.ID+`"`) != 1 {
+			t.Errorf("rendered heading %q does not have exactly one matching chapter link: %s", heading.ID, rendered)
 		}
 	}
 	parentLink := strings.Index(rendered, `href="#`+renderResult.Headings[0].ID+`"`)

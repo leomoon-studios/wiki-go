@@ -32,6 +32,9 @@
 
   "nav.home": "Início",
   "nav.back_to_home": "Voltar ao início",
+  "chapter_links.on_this_page": "Nesta página",
+  "chapter_links.expand": "Expandir links dos capítulos",
+  "chapter_links.retract": "Recolher links dos capítulos",
   "sitemap.title": "Mapa do site",
   "sitemap.xml_sitemap": "Mapa do site XML",
   "sitemap.xml_description": "Formato XML para mecanismos de busca",

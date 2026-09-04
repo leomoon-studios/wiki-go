@@ -32,6 +32,9 @@
 
   "nav.home": "Hjem",
   "nav.back_to_home": "Tilbage til forsiden",
+  "chapter_links.on_this_page": "På denne side",
+  "chapter_links.expand": "Udvid kapitellinks",
+  "chapter_links.retract": "Fold kapitellinks sammen",
   "sitemap.title": "Siteoversigt",
   "sitemap.xml_sitemap": "XML-siteoversigt",
   "sitemap.xml_description": "XML-format til søgemaskiner",

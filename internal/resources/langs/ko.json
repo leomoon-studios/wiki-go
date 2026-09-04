@@ -32,6 +32,9 @@
 
   "nav.home": "홈",
   "nav.back_to_home": "홈으로 돌아가기",
+  "chapter_links.on_this_page": "이 페이지에서",
+  "chapter_links.expand": "장 링크 펼치기",
+  "chapter_links.retract": "장 링크 접기",
   "sitemap.title": "사이트맵",
   "sitemap.xml_sitemap": "XML 사이트맵",
   "sitemap.xml_description": "검색 엔진용 XML 형식",

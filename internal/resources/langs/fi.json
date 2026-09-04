@@ -32,6 +32,9 @@
 
   "nav.home": "Koti",
   "nav.back_to_home": "Takaisin etusivulle",
+  "chapter_links.on_this_page": "Tällä sivulla",
+  "chapter_links.expand": "Laajenna lukulinkit",
+  "chapter_links.retract": "Supista lukulinkit",
   "sitemap.title": "Sivukartta",
   "sitemap.xml_sitemap": "XML-sivukartta",
   "sitemap.xml_description": "XML-muoto hakukoneille",

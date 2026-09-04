@@ -1,18 +1,23 @@
 {{define "chapter-links"}}
 {{if .ChapterHeadings}}
-<aside class="chapter-links" aria-label="On this page">
-    <div id="chapter-links-body" class="chapter-links-body">
-        <div class="chapter-links-header">On this page</div>
-        <nav class="wiki-toc table-of-contents" aria-label="Table of Contents">
+<aside class="chapter-links" aria-labelledby="chapter-links-title" aria-hidden="true" dir="auto" inert>
+    <div id="chapter-links-body" class="chapter-links-body" aria-hidden="true">
+        <div id="chapter-links-title" class="chapter-links-header">{{t "chapter_links.on_this_page"}}</div>
+        <nav class="wiki-toc table-of-contents" aria-labelledby="chapter-links-title">
             <ul class="toc-list">
                 {{template "chapter-links-items" .ChapterHeadings}}
             </ul>
         </nav>
     </div>
 </aside>
-<button type="button" class="chapter-links-toggle" aria-label="Retract chapter links" aria-expanded="true" aria-controls="chapter-links-body">
-    <span class="chapter-links-toggle-text" aria-hidden="true">&gt;&gt;</span>
-    <span class="chapter-links-toggle-tooltip" aria-hidden="true">On this page</span>
+<button type="button" class="chapter-links-toggle"
+        aria-label="{{t "chapter_links.expand"}}"
+        aria-expanded="false"
+        aria-controls="chapter-links-body"
+        data-label-expand="{{t "chapter_links.expand"}}"
+        data-label-retract="{{t "chapter_links.retract"}}">
+    <span class="chapter-links-toggle-text" aria-hidden="true"></span>
+    <span class="chapter-links-toggle-tooltip" aria-hidden="true">{{t "chapter_links.on_this_page"}}</span>
 </button>
 {{end}}
 {{end}}

@@ -82,6 +82,24 @@ func TestChapterLinksStateLoadsBeforeStylesheets(t *testing.T) {
 		t.Fatal("chapter-links state script must execute before stylesheets are loaded")
 	}
 
+	panelTemplate, err := fs.ReadFile(templateFiles, "templates/chapter-links.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	panelMarkup := string(panelTemplate)
+	for _, expected := range []string{
+		`<button type="button" class="chapter-links-toggle"`,
+		`data-label-expand="{{t "chapter_links.expand"}}"`,
+		`data-label-retract="{{t "chapter_links.retract"}}"`,
+	} {
+		if !strings.Contains(panelMarkup, expected) {
+			t.Errorf("chapter-links CSP-safe controls omit %q", expected)
+		}
+	}
+	if strings.Contains(panelMarkup, "<script") || eventAttributePattern.MatchString(panelMarkup) {
+		t.Fatal("chapter-links controls require inline JavaScript or event handlers")
+	}
+
 	stateFile, err := fs.ReadFile(staticFiles, "static/js/chapter-links-state.js")
 	if err != nil {
 		t.Fatal(err)
@@ -105,9 +123,17 @@ func TestChapterLinksStateLoadsBeforeStylesheets(t *testing.T) {
 	for _, expected := range []string{
 		"classList.contains('chapter-links-retracted')",
 		"updateChapterLinksState(initiallyRetracted, false)",
+		"chapterLinksToggle.dataset.labelExpand",
+		"chapterLinksToggle.dataset.labelRetract",
+		"chapterLinksPanel.toggleAttribute('inert', isRetracted)",
 	} {
 		if !strings.Contains(controllerSource, expected) {
 			t.Errorf("chapter-links controller does not contain %q", expected)
+		}
+	}
+	for _, forbidden := range []string{"innerHTML", "insertAdjacentHTML", "document.write", "setAttribute('onclick'"} {
+		if strings.Contains(controllerSource, forbidden) {
+			t.Errorf("chapter-links controller uses CSP-sensitive DOM API %q", forbidden)
 		}
 	}
 }

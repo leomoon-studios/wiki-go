@@ -71,7 +71,8 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 .chapter-links-body {
-    padding: 0 14px 0 16px;
+    padding-block: 0;
+    padding-inline: 14px;
     background: transparent;
     opacity: 1;
     height: 100%;
@@ -124,8 +125,23 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 .chapter-links-toggle-text {
-    display: inline-block;
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
     transition: transform 0.2s ease;
+}
+
+.chapter-links.retracted + .chapter-links-toggle .chapter-links-toggle-text,
+html.chapter-links-retracted .chapter-links + .chapter-links-toggle .chapter-links-toggle-text {
+    transform: rotate(225deg);
+}
+
+.chapter-links-toggle:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 /* Tooltip label shown when the panel is retracted */
@@ -192,7 +208,7 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 
 .chapter-links .toc-list {
     margin: 0;
-    padding-left: 0;
+    padding-inline-start: 0;
 }
 
 .chapter-links .toc-list li {
@@ -203,7 +219,7 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 
 .chapter-links .toc-list-nested {
     margin: 2px 0 0;
-    padding-left: 0.75rem;
+    padding-inline-start: 0.75rem;
 }
 
 .chapter-links .toc-list a {

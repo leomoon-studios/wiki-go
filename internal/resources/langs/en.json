@@ -32,6 +32,9 @@
 
   "nav.home": "Home",
   "nav.back_to_home": "Back to Home",
+  "chapter_links.on_this_page": "On this page",
+  "chapter_links.expand": "Expand chapter links",
+  "chapter_links.retract": "Retract chapter links",
   "sitemap.title": "Sitemap",
   "sitemap.xml_sitemap": "XML Sitemap",
   "sitemap.xml_description": "XML format for search engines",

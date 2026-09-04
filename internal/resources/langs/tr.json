@@ -32,6 +32,9 @@
 
   "nav.home": "Ana Sayfa",
   "nav.back_to_home": "Ana Sayfaya Dön",
+  "chapter_links.on_this_page": "Bu sayfada",
+  "chapter_links.expand": "Bölüm bağlantılarını genişlet",
+  "chapter_links.retract": "Bölüm bağlantılarını daralt",
   "sitemap.title": "Site Haritası",
   "sitemap.xml_sitemap": "XML Site Haritası",
   "sitemap.xml_description": "Arama motorları için XML formatı",

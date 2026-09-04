@@ -37,7 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (chapterLinksPanel && chapterLinksToggle) {
         const chapterLinksBody = chapterLinksPanel.querySelector('.chapter-links-body');
-        const toggleText = chapterLinksToggle.querySelector('.chapter-links-toggle-text');
+        const expandLabel = chapterLinksToggle.dataset.labelExpand;
+        const retractLabel = chapterLinksToggle.dataset.labelRetract;
 
         function updateChapterLinksState(forceRetracted, persistPreference = true) {
             const isRetracted = typeof forceRetracted === 'boolean'
@@ -48,11 +49,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.documentElement.classList.toggle('chapter-links-retracted', isRetracted);
 
             chapterLinksToggle.setAttribute('aria-expanded', String(!isRetracted));
-            chapterLinksToggle.setAttribute('aria-label', isRetracted ? 'Expand chapter links' : 'Retract chapter links');
-
-            if (toggleText) {
-                toggleText.textContent = isRetracted ? '<<' : '>>';
+            chapterLinksToggle.setAttribute('aria-label', isRetracted ? expandLabel : retractLabel);
+            chapterLinksPanel.setAttribute('aria-hidden', String(isRetracted));
+            if (isRetracted && chapterLinksPanel.contains(document.activeElement)) {
+                chapterLinksToggle.focus();
             }
+            chapterLinksPanel.toggleAttribute('inert', isRetracted);
 
             if (chapterLinksBody) {
                 chapterLinksBody.setAttribute('aria-hidden', String(isRetracted));

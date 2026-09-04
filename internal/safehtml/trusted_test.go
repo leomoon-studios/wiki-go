@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -112,6 +113,54 @@ func TestTrustedHTMLConversionsStayInsidePackage(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestChapterLinksStayInsideTrustedHTMLBoundary(t *testing.T) {
+	repoRoot := repositoryRoot(t)
+	handlerPath := filepath.Join(repoRoot, "internal", "handlers", "chapter_links.go")
+	parsed, err := parser.ParseFile(token.NewFileSet(), handlerPath, nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, imported := range parsed.Imports {
+		if strings.Trim(imported.Path.Value, `"`) == "html/template" {
+			t.Fatal("chapter-links handler must pass typed values to html/template, not construct trusted HTML")
+		}
+	}
+	ast.Inspect(parsed, func(node ast.Node) bool {
+		switch typed := node.(type) {
+		case *ast.SelectorExpr:
+			if typed.Sel.Name == "HTML" {
+				t.Error("chapter-links handler references an HTML trust type")
+			}
+		case *ast.BasicLit:
+			if typed.Kind != token.STRING {
+				return true
+			}
+			value, unquoteErr := strconv.Unquote(typed.Value)
+			if unquoteErr == nil && strings.Contains(value, "<") {
+				t.Errorf("chapter-links handler assembles markup in a string literal: %q", value)
+			}
+		}
+		return true
+	})
+
+	templatePath := filepath.Join(repoRoot, "internal", "resources", "templates", "chapter-links.html")
+	templateSource, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	markup := string(templateSource)
+	for _, forbidden := range []string{".TableOfContents", ".HTML", "template.HTML", "safeHTML", "unsafeHTML"} {
+		if strings.Contains(markup, forbidden) {
+			t.Errorf("chapter-links template crosses the trusted HTML boundary with %q", forbidden)
+		}
+	}
+	for _, required := range []string{"{{.Text}}", "{{.ID}}", "{{.Level}}", "{{if .Children}}"} {
+		if !strings.Contains(markup, required) {
+			t.Errorf("chapter-links template does not render typed field %q", required)
+		}
 	}
 }
 
