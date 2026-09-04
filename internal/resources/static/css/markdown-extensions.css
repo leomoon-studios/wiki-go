@@ -73,7 +73,6 @@ mark {
 .wiki-toc {
     margin: 1.5rem 0;
     padding: 1rem;
-    background-color: var(--hover-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
@@ -125,7 +124,7 @@ mark {
 
 /* Dark theme adjustments */
 :root[data-theme="dark"] .wiki-toc {
-    background-color: var(--code-bg);
+    background-color: transparent;
 }
 
 /* Mermaid diagrams */
@@ -348,7 +347,7 @@ mark {
 
     /* TOC print styles */
     .wiki-toc {
-        background-color: #f8f8f8 !important;
+        background-color: transparent !important;
         border: 1px solid #ddd !important;
         break-inside: avoid;
     }
@@ -360,5 +359,10 @@ mark {
 
     .toc-list a {
         color: black !important;
+    }
+
+    /* Right-side chapter links panel */
+    .chapter-links {
+        display: none !important;
     }
 }

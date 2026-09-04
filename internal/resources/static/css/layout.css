@@ -14,6 +14,200 @@
     flex-direction: column;
 }
 
+/* Right-side chapter links panel (drawer mode).
+ * The panel is an off-canvas overlay at the right edge, shown/hidden by
+ * sliding it with a transform so the text inside never reflows during the
+ * animation. The main content area keeps its normal width and position. */
+.chapter-links {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(var(--chapter-links-width), 85vw);
+    height: 100vh;
+    padding: 60px 0 32px 16px;
+    box-sizing: border-box;
+    overflow: visible;
+    background-color: var(--bg-color);
+    border-left: 1px solid var(--border-color);
+    z-index: 1002; /* Above sidebar overlay so it can be opened independently */
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+/* Suppress transitions during state restoration so the page renders in its
+ * final (expanded or retracted) form without a visible animation. */
+.chapter-links.no-animate {
+    transition: none !important;
+}
+
+.chapter-links.no-animate .chapter-links-body {
+    transition: none !important;
+}
+
+.chapter-links.retracted {
+    transform: translateX(100%);
+    border-left: none;
+    overflow: visible;
+}
+
+/* Pre-first-paint retract state applied to <html> by an inline script so the
+ * panel renders retracted without waiting for markdown-extensions.js. */
+html.chapter-links-retracted .chapter-links {
+    transform: translateX(100%);
+    border-left: none;
+    overflow: visible;
+}
+
+html.chapter-links-retracted .chapter-links + .chapter-links-toggle {
+    right: 0;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+}
+
+html.chapter-links-retracted .chapter-links .chapter-links-body {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.chapter-links-body {
+    padding-right: 16px;
+    background: transparent;
+    opacity: 1;
+    max-height: calc(100vh - 132px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transition: opacity 0.25s ease;
+}
+
+.chapter-links.retracted .chapter-links-body {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Toggle button sits just left of the panel (attached to the right edge when
+ * the panel is retracted). It is a sibling of the panel so it is never clipped
+ * by the panel's own overflow. */
+.chapter-links-toggle {
+    position: fixed;
+    top: 100px;
+    right: var(--chapter-links-width);
+    width: 28px;
+    height: 40px;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 0;
+    z-index: 1003;
+    transition: right 0.3s ease;
+}
+
+.chapter-links.retracted + .chapter-links-toggle {
+    right: 0;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+}
+
+.chapter-links-toggle:hover {
+    color: var(--primary-color);
+    background-color: var(--hover-bg);
+}
+
+.chapter-links-toggle-text {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+/* Tooltip label shown when the panel is retracted */
+.chapter-links-toggle-tooltip {
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%) translateX(-6px);
+    background: var(--sidebar-bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.chapter-links.retracted + .chapter-links-toggle:hover .chapter-links-toggle-tooltip {
+    opacity: 1;
+}
+
+/* Hidden on mobile: hover tooltips are not usable on touch devices */
+@media (max-width: 950px) {
+    .chapter-links-toggle-tooltip {
+        display: none;
+    }
+}
+
+.chapter-links-header {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    padding-right: 16px;
+}
+
+.chapter-links .wiki-toc {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.chapter-links .toc-title {
+    display: none;
+}
+
+/* Page title (top-level heading) in bold */
+.chapter-links .toc-list > li > a {
+    font-weight: 600;
+}
+
+.chapter-links .toc-list {
+    padding-left: 0;
+}
+
+.chapter-links .toc-list li {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.chapter-links .toc-list a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: block;
+}
+
+.chapter-links .toc-list a:hover {
+    color: var(--primary-color);
+}
+
+/* When retracted, the toggle tab attaches to the right edge of the screen. */
+.chapter-links.retracted + .chapter-links-toggle,
+html.chapter-links-retracted .chapter-links + .chapter-links-toggle {
+    right: 0;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+}
+
 /* Class to allow full width content when needed */
 .full-width-content {
     max-width: none !important;
@@ -90,6 +284,13 @@
     content: "📄";
     margin-right: 8px;
     font-size: 14px;
+}
+
+/* Narrow screens (just below the mobile breakpoint): make sure content fills the gap */
+@media (max-width: 950px) {
+    .content {
+        width: calc(100% - var(--sidebar-width));
+    }
 }
 
 /* ---------- Responsive styles ---------- */

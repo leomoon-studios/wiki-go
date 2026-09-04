@@ -1,0 +1,14 @@
+{{define "chapter-links"}}
+{{if .TableOfContents}}
+<aside class="chapter-links" aria-label="On this page">
+    <div id="chapter-links-body" class="chapter-links-body">
+        <div class="chapter-links-header">On this page</div>
+        {{.TableOfContents}}
+    </div>
+</aside>
+<button type="button" class="chapter-links-toggle" aria-label="Retract chapter links" aria-expanded="true" aria-controls="chapter-links-body">
+    <span class="chapter-links-toggle-text" aria-hidden="true">&gt;&gt;</span>
+    <span class="chapter-links-toggle-tooltip" aria-hidden="true">On this page</span>
+</button>
+{{end}}
+{{end}}
