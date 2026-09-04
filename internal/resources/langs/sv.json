@@ -32,6 +32,9 @@
 
   "nav.home": "Hem",
   "nav.back_to_home": "Tillbaka till startsidan",
+  "chapter_links.on_this_page": "På den här sidan",
+  "chapter_links.expand": "Expandera kapitellänkar",
+  "chapter_links.retract": "Fäll ihop kapitellänkar",
   "sitemap.title": "Webbplatskarta",
   "sitemap.xml_sitemap": "XML-webbplatskarta",
   "sitemap.xml_description": "XML-format för sökmotorer",

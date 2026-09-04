@@ -66,6 +66,78 @@ func TestTemplatesAndFirstPartyScriptsAreCSPCompatible(t *testing.T) {
 	}
 }
 
+func TestChapterLinksStateLoadsBeforeStylesheets(t *testing.T) {
+	baseTemplate, err := fs.ReadFile(templateFiles, "templates/base.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := string(baseTemplate)
+	stateScript := `<script src="/static/js/chapter-links-state.js?={{getVersion}}"></script>`
+	scriptIndex := strings.Index(base, stateScript)
+	stylesheetIndex := strings.Index(base, `<link rel="stylesheet"`)
+	if scriptIndex < 0 {
+		t.Fatal("base template does not load the external chapter-links state script")
+	}
+	if stylesheetIndex < 0 || scriptIndex > stylesheetIndex {
+		t.Fatal("chapter-links state script must execute before stylesheets are loaded")
+	}
+
+	panelTemplate, err := fs.ReadFile(templateFiles, "templates/chapter-links.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	panelMarkup := string(panelTemplate)
+	for _, expected := range []string{
+		`<button type="button" class="chapter-links-toggle"`,
+		`data-label-expand="{{t "chapter_links.expand"}}"`,
+		`data-label-retract="{{t "chapter_links.retract"}}"`,
+	} {
+		if !strings.Contains(panelMarkup, expected) {
+			t.Errorf("chapter-links CSP-safe controls omit %q", expected)
+		}
+	}
+	if strings.Contains(panelMarkup, "<script") || eventAttributePattern.MatchString(panelMarkup) {
+		t.Fatal("chapter-links controls require inline JavaScript or event handlers")
+	}
+
+	stateFile, err := fs.ReadFile(staticFiles, "static/js/chapter-links-state.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateSource := string(stateFile)
+	for _, expected := range []string{
+		"let isRetracted = true",
+		"window.sessionStorage.getItem('chapter-links-retracted') !== 'false'",
+		"classList.toggle('chapter-links-retracted', isRetracted)",
+	} {
+		if !strings.Contains(stateSource, expected) {
+			t.Errorf("chapter-links startup script does not contain %q", expected)
+		}
+	}
+
+	controllerFile, err := fs.ReadFile(staticFiles, "static/js/markdown-extensions.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerSource := string(controllerFile)
+	for _, expected := range []string{
+		"classList.contains('chapter-links-retracted')",
+		"updateChapterLinksState(initiallyRetracted, false)",
+		"chapterLinksToggle.dataset.labelExpand",
+		"chapterLinksToggle.dataset.labelRetract",
+		"chapterLinksPanel.toggleAttribute('inert', isRetracted)",
+	} {
+		if !strings.Contains(controllerSource, expected) {
+			t.Errorf("chapter-links controller does not contain %q", expected)
+		}
+	}
+	for _, forbidden := range []string{"innerHTML", "insertAdjacentHTML", "document.write", "setAttribute('onclick'"} {
+		if strings.Contains(controllerSource, forbidden) {
+			t.Errorf("chapter-links controller uses CSP-sensitive DOM API %q", forbidden)
+		}
+	}
+}
+
 func TestProfilePasswordChangeRedirectsAfterAcknowledgement(t *testing.T) {
 	settingsManager, err := fs.ReadFile(staticFiles, "static/js/settings-manager.js")
 	if err != nil {

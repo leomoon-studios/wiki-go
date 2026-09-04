@@ -128,6 +128,13 @@ mark {
     background-color: var(--code-bg);
 }
 
+/* The chapter-links drawer reuses the trusted TOC markup, but its navigation
+ * should remain part of the drawer surface rather than look like an embedded
+ * inline TOC card. This rule follows the theme override so it wins the cascade. */
+:root[data-theme="dark"] .chapter-links .wiki-toc {
+    background-color: transparent;
+}
+
 /* Mermaid diagrams */
 .mermaid {
     margin: 20px 0;
@@ -360,5 +367,11 @@ mark {
 
     .toc-list a {
         color: black !important;
+    }
+
+    /* Right-side chapter links panel */
+    .chapter-links,
+    .chapter-links-toggle {
+        display: none !important;
     }
 }

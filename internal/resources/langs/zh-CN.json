@@ -32,6 +32,9 @@
 
   "nav.home": "首页",
   "nav.back_to_home": "返回首页",
+  "chapter_links.on_this_page": "本页内容",
+  "chapter_links.expand": "展开章节链接",
+  "chapter_links.retract": "收起章节链接",
   "sitemap.title": "站点地图",
   "sitemap.xml_sitemap": "XML 站点地图",
   "sitemap.xml_description": "搜索引擎 XML 格式",

@@ -32,6 +32,9 @@
 
   "nav.home": "首頁",
   "nav.back_to_home": "返回首頁",
+  "chapter_links.on_this_page": "本頁內容",
+  "chapter_links.expand": "展開章節連結",
+  "chapter_links.retract": "收合章節連結",
   "sitemap.title": "網站地圖",
   "sitemap.xml_sitemap": "XML 網站地圖",
   "sitemap.xml_description": "搜尋引擎 XML 格式",

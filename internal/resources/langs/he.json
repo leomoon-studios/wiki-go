@@ -32,6 +32,9 @@
 
   "nav.home": "דף הבית",
   "nav.back_to_home": "חזרה לדף הבית",
+  "chapter_links.on_this_page": "בעמוד זה",
+  "chapter_links.expand": "הרחבת קישורי הפרקים",
+  "chapter_links.retract": "צמצום קישורי הפרקים",
   "sitemap.title": "מפת אתר",
   "sitemap.xml_sitemap": "מפת אתר XML",
   "sitemap.xml_description": "פורמט XML למנועי חיפוש",

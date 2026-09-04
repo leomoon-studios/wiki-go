@@ -32,6 +32,9 @@
 
   "nav.home": "خانه",
   "nav.back_to_home": "بازگشت به خانه",
+  "chapter_links.on_this_page": "در این صفحه",
+  "chapter_links.expand": "باز کردن پیوندهای بخش‌ها",
+  "chapter_links.retract": "جمع کردن پیوندهای بخش‌ها",
   "sitemap.title": "نقشه سایت",
   "sitemap.xml_sitemap": "نقشه سایت XML",
   "sitemap.xml_description": "فرمت XML برای موتورهای جستجو",

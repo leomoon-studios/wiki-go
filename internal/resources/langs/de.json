@@ -32,6 +32,9 @@
 
   "nav.home": "Startseite",
   "nav.back_to_home": "Zurück zur Startseite",
+  "chapter_links.on_this_page": "Auf dieser Seite",
+  "chapter_links.expand": "Kapitellinks einblenden",
+  "chapter_links.retract": "Kapitellinks ausblenden",
   "sitemap.title": "Seitenübersicht",
   "sitemap.xml_sitemap": "XML-Seitenübersicht",
   "sitemap.xml_description": "XML-Format für Suchmaschinen",

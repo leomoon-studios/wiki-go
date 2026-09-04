@@ -34,13 +34,15 @@
     <link rel="preload" href="/static/css/layout.css?={{getVersion}}" as="style">
     <link rel="preload" href="/static/css/navigation.css?={{getVersion}}" as="style">
     <link rel="preload" href="/static/js/theme-manager.js?={{getVersion}}" as="script">
+    <link rel="preload" href="/static/js/chapter-links-state.js?={{getVersion}}" as="script">
     <link rel="preload" href="/static/js/utilities.js?={{getVersion}}" as="script">
     <link rel="preload" href="/static/js/debug-toggle.js?={{getVersion}}" as="script">
     <link rel="preload" href="/static/libs/fontawesome-4.7.0/css/fontawesome.min.css" as="style">
-    <!-- Prevent theme flash - load these scripts first -->
+    <!-- Prevent theme and chapter-panel flash - load these scripts first -->
     <script src="/static/js/debug-toggle.js?={{getVersion}}"></script>
     <script src="/static/js/utilities.js?={{getVersion}}"></script>
     <script src="/static/js/theme-manager.js?={{getVersion}}"></script>
+    <script src="/static/js/chapter-links-state.js?={{getVersion}}"></script>
     <!-- File extensions configuration -->
     <script src="/static/js/file-extensions.js?={{getVersion}}"></script>
     <!-- Base styles -->
@@ -256,6 +258,8 @@
             </div>
         </footer>
     </div>
+
+    {{template "chapter-links" .}}
 
     <div class="search-results" dir="auto">
         <div class="search-results-header">

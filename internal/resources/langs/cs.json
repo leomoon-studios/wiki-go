@@ -32,6 +32,9 @@
 
   "nav.home": "Domů",
   "nav.back_to_home": "Zpět na úvodní stránku",
+  "chapter_links.on_this_page": "Na této stránce",
+  "chapter_links.expand": "Rozbalit odkazy na kapitoly",
+  "chapter_links.retract": "Sbalit odkazy na kapitoly",
   "sitemap.title": "Mapa stránek",
   "sitemap.xml_sitemap": "XML mapa stránek",
   "sitemap.xml_description": "XML formát pro vyhledávače",

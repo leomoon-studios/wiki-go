@@ -10,7 +10,7 @@ import (
 
 type documentNodeTransformer struct{}
 
-func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.Reader, _ parser.Context) {
+func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.Reader, context parser.Context) {
 	source := reader.Source()
 	var headings []*ast.Heading
 	var paragraphs []*ast.Paragraph
@@ -31,6 +31,7 @@ func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.
 	})
 
 	tocHeadings := transformHeadings(headings, source)
+	hasInlineTOC := false
 	for _, paragraph := range paragraphs {
 		if paragraph.Parent() == nil {
 			continue
@@ -38,6 +39,7 @@ func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.
 		paragraphSource := strings.TrimSpace(string(paragraph.Lines().Value(source)))
 		parent := paragraph.Parent()
 		if paragraphSource == "[toc]" {
+			hasInlineTOC = true
 			parent.ReplaceChild(parent, paragraph, newTOCBlock(tocHeadings))
 			continue
 		}
@@ -60,6 +62,11 @@ func (t *documentNodeTransformer) Transform(document *ast.Document, reader text.
 		parent := blockquote.Parent()
 		parent.ReplaceChild(parent, blockquote, alert)
 	}
+
+	storeDocumentOutline(context, DocumentOutline{
+		Headings:     tocHeadings,
+		HasInlineTOC: hasInlineTOC,
+	})
 }
 
 func transformHeadings(headings []*ast.Heading, source []byte) []TOCHeading {

@@ -60,8 +60,22 @@ func RenderMarkdownWithPathHTML(md string, docPath string) template.HTML {
 	return safehtml.FromRenderer(RenderMarkdownWithPath(md, docPath))
 }
 
+// MarkdownRenderResult contains safe renderer output and structured document
+// navigation metadata collected from the same Goldmark AST.
+type MarkdownRenderResult struct {
+	HTML         []byte
+	Headings     []goldext.TOCHeading
+	HasInlineTOC bool
+}
+
 // RenderMarkdownWithPath converts markdown text to HTML with the current document path
 func RenderMarkdownWithPath(md string, docPath string) []byte {
+	return RenderMarkdownWithPathResult(md, docPath).HTML
+}
+
+// RenderMarkdownWithPathResult converts Markdown and returns the document
+// outline produced by that exact conversion.
+func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResult {
 	// Check for frontmatter
 	metadata, contentWithoutFrontmatter, hasFrontmatter := frontmatter.Parse(md)
 
@@ -89,7 +103,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			nil,
 			goldext.TrustedNodesForDocument(docPath),
 		)
-		return []byte(kanbanHTML)
+		return MarkdownRenderResult{HTML: []byte(kanbanHTML)}
 	}
 
 	// If this has links layout, render as links document
@@ -99,7 +113,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			// If links rendering fails, fall back to regular markdown
 			md = contentWithoutFrontmatter
 		} else {
-			return []byte(linksHTML)
+			return MarkdownRenderResult{HTML: []byte(linksHTML)}
 		}
 	}
 
@@ -128,8 +142,10 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 		),
 		// Parser options
 		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(), // Enable auto heading IDs
-			parser.WithAttribute(),     // Enable attributes
+			// The trusted document transformer assigns normalized IDs after it has
+			// collected the rendered plain text. Explicit IDs still arrive through
+			// the attribute parser.
+			parser.WithAttribute(),
 		),
 		// Renderer options
 		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
@@ -137,15 +153,21 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 
 	// Create a buffer to store the rendered HTML
 	var buf bytes.Buffer
+	renderContext := goldext.NewRenderContext(docPath)
 
 	// Convert markdown to HTML
-	if err := markdown.Convert([]byte(md), &buf, parser.WithContext(goldext.NewRenderContext(docPath))); err != nil {
+	if err := markdown.Convert([]byte(md), &buf, parser.WithContext(renderContext)); err != nil {
 		// If there's an error, return an error message
 		errMsg := []byte("<p>Error rendering Markdown with Goldmark: " + template.HTMLEscapeString(err.Error()) + "</p>")
-		return errMsg
+		return MarkdownRenderResult{HTML: errMsg}
 	}
 
-	return buf.Bytes()
+	outline := goldext.DocumentOutlineFromContext(renderContext)
+	return MarkdownRenderResult{
+		HTML:         buf.Bytes(),
+		Headings:     outline.Headings,
+		HasInlineTOC: outline.HasInlineTOC,
+	}
 }
 
 // blockLineRe matches the start of a fenced code block, ATX heading, or paragraph

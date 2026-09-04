@@ -32,6 +32,9 @@
 
   "nav.home": "होम",
   "nav.back_to_home": "होम पर वापस जाएं",
+  "chapter_links.on_this_page": "इस पृष्ठ पर",
+  "chapter_links.expand": "अध्याय लिंक विस्तृत करें",
+  "chapter_links.retract": "अध्याय लिंक समेटें",
   "sitemap.title": "साइटमैप",
   "sitemap.xml_sitemap": "XML साइटमैप",
   "sitemap.xml_description": "खोज इंजन के लिए XML प्रारूप",
