@@ -84,6 +84,20 @@ document.addEventListener('DOMContentLoaded', function() {
             updateChapterLinksState(!chapterLinksPanel.classList.contains('retracted'));
         });
 
+        // On narrow layouts the panel covers much of the page. Treat a tap on
+        // the uncovered page area as a dismissal, while leaving interactions
+        // with the panel and its toggle untouched.
+        const mobileChapterLinks = window.matchMedia('(max-width: 950px)');
+        document.addEventListener('pointerdown', function(e) {
+            if (!mobileChapterLinks.matches || chapterLinksPanel.classList.contains('retracted')) {
+                return;
+            }
+            if (chapterLinksPanel.contains(e.target) || chapterLinksToggle.contains(e.target)) {
+                return;
+            }
+            updateChapterLinksState(true);
+        });
+
         // Touch devices: allow users to drag the toggle tab vertically so it
         // can be moved out of the way of important content.
         (function initMobileDrag() {

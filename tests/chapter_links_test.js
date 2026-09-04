@@ -64,7 +64,7 @@ class FakeElement {
     }
 
     contains(element) {
-        return this.children.includes(element);
+        return this === element || this.children.some(child => child.contains(element));
     }
 
     setPointerCapture() {}
@@ -74,7 +74,7 @@ class FakeElement {
     }
 }
 
-function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = false) {
+function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = false, mobileViewport = coarsePointer) {
     const root = {classList: new FakeClassList()};
     root.classList.toggle('chapter-links-retracted', initiallyRetracted);
 
@@ -90,6 +90,7 @@ function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = fals
     });
 
     let readyHandler;
+    const documentListeners = {};
     const document = {
         documentElement: root,
         activeElement: null,
@@ -99,7 +100,11 @@ function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = fals
             '.chapter-links-toggle': toggle,
         })[selector] || null,
         addEventListener: (name, callback) => {
-            if (name === 'DOMContentLoaded') readyHandler = callback;
+            if (name === 'DOMContentLoaded') {
+                readyHandler = callback;
+            } else {
+                documentListeners[name] = callback;
+            }
         },
     };
     toggle.focus = () => {
@@ -112,7 +117,9 @@ function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = fals
         document,
         window: {
             addEventListener: () => {},
-            matchMedia: () => ({matches: coarsePointer}),
+            matchMedia: query => ({
+                matches: query === '(pointer: coarse)' ? coarsePointer : mobileViewport,
+            }),
             innerHeight: 800,
         },
         sessionStorage: {
@@ -128,7 +135,7 @@ function initializeChapterLinks(labels, initiallyRetracted, coarsePointer = fals
     vm.runInNewContext(fs.readFileSync(controllerPath, 'utf8'), context, {filename: controllerPath});
     readyHandler();
 
-    return {body, document, focusedLink, panel, root, stored, toggle};
+    return {body, document, documentListeners, focusedLink, panel, root, stored, toggle};
 }
 
 test('chapter links synchronize translated accessible state', () => {
@@ -187,5 +194,36 @@ test('mobile drag does not trigger a trailing panel toggle', () => {
 
     assert.equal(state.toggle.style.top, '150px');
     assert.equal(state.stored['chapter-links-toggle-top'], '150');
+    assert.equal(state.toggle.attributes['aria-expanded'], 'true');
+});
+
+test('mobile outside tap retracts the open chapter links panel', () => {
+    const state = initializeChapterLinks({
+        expand: 'Expand',
+        retract: 'Retract',
+    }, false, false, true);
+    const panelLink = new FakeElement('chapter-link');
+    const outsideContent = new FakeElement('page-content');
+    state.panel.children.push(panelLink);
+
+    state.documentListeners.pointerdown({target: panelLink});
+    assert.equal(state.toggle.attributes['aria-expanded'], 'true');
+
+    state.documentListeners.pointerdown({target: state.toggle});
+    assert.equal(state.toggle.attributes['aria-expanded'], 'true');
+
+    state.documentListeners.pointerdown({target: outsideContent});
+    assert.equal(state.toggle.attributes['aria-expanded'], 'false');
+    assert.equal(state.panel.attributes['aria-hidden'], 'true');
+    assert.equal(state.stored['chapter-links-retracted'], 'true');
+});
+
+test('desktop outside click leaves the chapter links panel open', () => {
+    const state = initializeChapterLinks({
+        expand: 'Expand',
+        retract: 'Retract',
+    }, false);
+
+    state.documentListeners.pointerdown({target: new FakeElement('page-content')});
     assert.equal(state.toggle.attributes['aria-expanded'], 'true');
 });
