@@ -353,7 +353,7 @@ body.has-password-warning .breadcrumbs {
         position: fixed;
         top: 0;
         left: 0;
-        z-index: 1001;
+        z-index: 1101;
         background: var(--bg-color);
         border-bottom: 1px solid var(--border-color);
         border-right: 1px solid var(--border-color);
@@ -369,7 +369,7 @@ body.has-password-warning .breadcrumbs {
 
     /* Ensure hamburger transforms into X when sidebar is active */
     .hamburger.active {
-        z-index: 1002; /* Ensure it stays on top */
+        z-index: 1101; /* Keep the close control above both mobile drawers */
     }
 
     .sidebar {
@@ -380,7 +380,7 @@ body.has-password-warning .breadcrumbs {
         top: 0;
         left: 0;
         height: 100%;
-        z-index: 1001;
+        z-index: 1100;
     }
 
     .sidebar.active {
@@ -408,7 +408,7 @@ body.has-password-warning .breadcrumbs {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
-        z-index: 90;
+        z-index: 1090;
         backdrop-filter: blur(2px);
     }
 

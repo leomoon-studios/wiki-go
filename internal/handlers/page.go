@@ -157,7 +157,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), decodedPath)
 		content = safehtml.FromRenderer(renderResult.HTML)
 		if !isEditMode && documentLayout != "kanban" && documentLayout != "links" {
-			chapterHeadings = chapterHeadingsForPage(renderResult.Headings)
+			chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)
 		}
 
 		// If content is empty but document exists, ensure we have something truthy for template conditions

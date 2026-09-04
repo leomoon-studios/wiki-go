@@ -38,9 +38,10 @@ type BreadcrumbItem struct {
 // ChapterHeading is an escaped template view of one rendered document
 // heading. Level is limited to 1-6 and ID is normalized before construction.
 type ChapterHeading struct {
-	Level int
-	Text  string
-	ID    string
+	Level    int
+	Text     string
+	ID       string
+	Children []ChapterHeading
 }
 
 // PageData represents the data passed to the template

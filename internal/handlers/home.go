@@ -584,7 +584,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	renderedContent := safehtml.FromRenderer(renderResult.HTML)
 	var chapterHeadings []types.ChapterHeading
 	if !isEditMode {
-		chapterHeadings = chapterHeadingsForPage(renderResult.Headings)
+		chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)
 	}
 
 	// If content is empty but home document exists, ensure we have something truthy for template conditions

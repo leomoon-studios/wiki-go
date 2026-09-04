@@ -5,9 +5,7 @@
         <div class="chapter-links-header">On this page</div>
         <nav class="wiki-toc table-of-contents" aria-label="Table of Contents">
             <ul class="toc-list">
-                {{range .ChapterHeadings}}
-                <li class="toc-level-{{.Level}}"><a href="#{{.ID}}">{{.Text}}</a></li>
-                {{end}}
+                {{template "chapter-links-items" .ChapterHeadings}}
             </ul>
         </nav>
     </div>
@@ -16,5 +14,18 @@
     <span class="chapter-links-toggle-text" aria-hidden="true">&gt;&gt;</span>
     <span class="chapter-links-toggle-tooltip" aria-hidden="true">On this page</span>
 </button>
+{{end}}
+{{end}}
+
+{{define "chapter-links-items"}}
+{{range .}}
+<li class="toc-level-{{.Level}}">
+    <a href="#{{.ID}}">{{.Text}}</a>
+    {{if .Children}}
+    <ul class="toc-list toc-list-nested">
+        {{template "chapter-links-items" .Children}}
+    </ul>
+    {{end}}
+</li>
 {{end}}
 {{end}}

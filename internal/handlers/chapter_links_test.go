@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -19,12 +20,48 @@ func TestChapterHeadingsForPageAcceptsOnlyValidatedMetadata(t *testing.T) {
 		{Level: 2, Text: "Invalid ID", ID: `bad" onclick="alert(2)`},
 	}
 
-	got := chapterHeadingsForPage(input)
+	got := chapterHeadingsForPage(input, false)
 	want := []types.ChapterHeading{
 		{Level: 1, Text: input[0].Text, ID: "safe-heading"},
 	}
-	if len(got) != len(want) || got[0] != want[0] {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected validated headings:\nwant: %#v\n got: %#v", want, got)
+	}
+}
+
+func TestChapterHeadingsForPagePreservesHierarchy(t *testing.T) {
+	input := []goldext.TOCHeading{
+		{Level: 1, Text: "Guide", ID: "guide"},
+		{Level: 3, Text: "Skipped level", ID: "skipped-level"},
+		{Level: 4, Text: "Nested detail", ID: "nested-detail"},
+		{Level: 2, Text: "Sibling section", ID: "sibling-section"},
+		{Level: 4, Text: "Sibling detail", ID: "sibling-detail"},
+		{Level: 1, Text: "Second guide", ID: "second-guide"},
+	}
+
+	want := []types.ChapterHeading{
+		{
+			Level: 1, Text: "Guide", ID: "guide",
+			Children: []types.ChapterHeading{
+				{
+					Level: 3, Text: "Skipped level", ID: "skipped-level",
+					Children: []types.ChapterHeading{
+						{Level: 4, Text: "Nested detail", ID: "nested-detail"},
+					},
+				},
+				{
+					Level: 2, Text: "Sibling section", ID: "sibling-section",
+					Children: []types.ChapterHeading{
+						{Level: 4, Text: "Sibling detail", ID: "sibling-detail"},
+					},
+				},
+			},
+		},
+		{Level: 1, Text: "Second guide", ID: "second-guide"},
+	}
+
+	if got := chapterHeadingsForPage(input, false); !reflect.DeepEqual(got, want) {
+		t.Fatalf("chapter hierarchy was flattened:\nwant: %#v\n got: %#v", want, got)
 	}
 }
 
@@ -38,7 +75,7 @@ func TestChapterLinksTemplateContextuallyEscapesHeadings(t *testing.T) {
 		t.Fatalf("renderer returned unexpected chapter headings: %#v", renderResult.Headings)
 	}
 	data := &types.PageData{
-		ChapterHeadings: chapterHeadingsForPage(renderResult.Headings),
+		ChapterHeadings: chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC),
 	}
 
 	var output bytes.Buffer
@@ -65,6 +102,30 @@ func TestChapterLinksTemplateContextuallyEscapesHeadings(t *testing.T) {
 		if !strings.Contains(string(renderResult.HTML), `id="`+heading.ID+`"`) {
 			t.Errorf("chapter link %q does not resolve to a rendered heading: %s", heading.ID, renderResult.HTML)
 		}
+	}
+	parentLink := strings.Index(rendered, `href="#`+renderResult.Headings[0].ID+`"`)
+	nestedList := strings.Index(rendered, `class="toc-list toc-list-nested"`)
+	childLink := strings.Index(rendered, `href="#`+renderResult.Headings[1].ID+`"`)
+	if parentLink < 0 || nestedList < parentLink || childLink < nestedList {
+		t.Fatalf("chapter template did not nest the child heading under its parent: %s", rendered)
+	}
+}
+
+func TestChapterHeadingsForPageSuppressesDuplicateInlineTOC(t *testing.T) {
+	renderResult := utils.RenderMarkdownWithPathResult("[toc]\n\n# Visible\n", "guides/outline")
+	if !renderResult.HasInlineTOC {
+		t.Fatal("renderer did not report the trusted inline TOC")
+	}
+	if got := chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC); len(got) != 0 {
+		t.Fatalf("chapter panel duplicated an inline TOC: %#v", got)
+	}
+
+	codeResult := utils.RenderMarkdownWithPathResult("`[toc]`\n\n# Visible\n", "guides/outline")
+	if codeResult.HasInlineTOC {
+		t.Fatal("inline code was treated as a trusted inline TOC")
+	}
+	if got := chapterHeadingsForPage(codeResult.Headings, codeResult.HasInlineTOC); len(got) != 1 {
+		t.Fatalf("inline code incorrectly suppressed the chapter panel: %#v", got)
 	}
 }
 

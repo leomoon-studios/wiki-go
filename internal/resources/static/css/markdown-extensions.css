@@ -73,6 +73,7 @@ mark {
 .wiki-toc {
     margin: 1.5rem 0;
     padding: 1rem;
+    background-color: var(--hover-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
@@ -124,6 +125,13 @@ mark {
 
 /* Dark theme adjustments */
 :root[data-theme="dark"] .wiki-toc {
+    background-color: var(--code-bg);
+}
+
+/* The chapter-links drawer reuses the trusted TOC markup, but its navigation
+ * should remain part of the drawer surface rather than look like an embedded
+ * inline TOC card. This rule follows the theme override so it wins the cascade. */
+:root[data-theme="dark"] .chapter-links .wiki-toc {
     background-color: transparent;
 }
 
@@ -347,7 +355,7 @@ mark {
 
     /* TOC print styles */
     .wiki-toc {
-        background-color: transparent !important;
+        background-color: #f8f8f8 !important;
         border: 1px solid #ddd !important;
         break-inside: avoid;
     }

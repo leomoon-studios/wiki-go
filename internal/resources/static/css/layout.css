@@ -24,7 +24,7 @@
     right: 0;
     width: min(var(--chapter-links-width), 85vw);
     height: 100vh;
-    padding: 60px 0 32px 16px;
+    padding: 20px 0 24px;
     box-sizing: border-box;
     overflow: visible;
     background-color: var(--bg-color);
@@ -71,12 +71,14 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 .chapter-links-body {
-    padding-right: 16px;
+    padding: 0 14px 0 16px;
     background: transparent;
     opacity: 1;
-    max-height: calc(100vh - 132px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     transition: opacity 0.25s ease;
 }
 
@@ -156,12 +158,15 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 .chapter-links-header {
+    flex: 0 0 auto;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 12px;
-    padding-right: 16px;
+    margin-bottom: 8px;
+    padding: 0 8px 10px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .chapter-links .wiki-toc {
@@ -169,6 +174,11 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
     border: none;
     padding: 0;
     margin: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .chapter-links .toc-title {
@@ -181,42 +191,41 @@ html.chapter-links-retracted .chapter-links .chapter-links-body {
 }
 
 .chapter-links .toc-list {
+    margin: 0;
     padding-left: 0;
 }
 
 .chapter-links .toc-list li {
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    margin: 0 0 2px;
+    font-size: 0.875rem;
+    line-height: 1.35;
 }
 
-.chapter-links .toc-level-2 {
-    margin-left: 0.75rem;
-}
-
-.chapter-links .toc-level-3 {
-    margin-left: 1.5rem;
-}
-
-.chapter-links .toc-level-4 {
-    margin-left: 2.25rem;
-}
-
-.chapter-links .toc-level-5 {
-    margin-left: 3rem;
-}
-
-.chapter-links .toc-level-6 {
-    margin-left: 3.75rem;
+.chapter-links .toc-list-nested {
+    margin: 2px 0 0;
+    padding-left: 0.75rem;
 }
 
 .chapter-links .toc-list a {
     color: var(--text-color);
     text-decoration: none;
     display: block;
+    padding: 5px 8px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+    transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .chapter-links .toc-list a:hover {
     color: var(--primary-color);
+    background-color: var(--hover-bg);
+    text-decoration: none;
+}
+
+.chapter-links .toc-list a:focus-visible {
+    color: var(--primary-color);
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
 }
 
 /* When retracted, the toggle tab attaches to the right edge of the screen. */
