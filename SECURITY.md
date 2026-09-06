@@ -26,9 +26,44 @@ Wiki-Go includes several security features:
 - **TLS Support**: Built-in TLS support for encrypted connections.
 - **Role-Based Access Control**: Fine-grained permissions through admin, editor, and viewer roles.
 - **Path-Based Access Rules**: Granular document access control using glob patterns, access levels, and group membership.
-- **File Upload Validation**: MIME type checking for uploaded files (can be disabled if needed).
+- **Safe Markdown Rendering**: User-authored inline HTML, CSS, and JavaScript are not supported in Markdown documents or comments.
+- **Trusted Markdown Extensions**: Wiki-Go extensions render through typed components that escape text, normalize identifiers, and validate URLs before producing markup.
+- **SVG Upload Protection**: SVG uploads are parsed through a strict XML allowlist even when general MIME checking is disabled.
+- **Content Security Policy**: Wiki-Go enforces a restrictive page policy that allows scripts only from approved application sources and blocks inline script handlers.
+- **File Upload Validation**: MIME type checking protects uploaded files, with SVG safety checks remaining mandatory when general MIME checking is disabled.
 - **Private Wiki Mode**: Option to require authentication for all pages.
 - **Login Rate Limiting**: Built-in protection against brute force attacks by temporarily banning IP addresses after multiple failed login attempts, with exponential backoff.
+- **Session Revocation**: Security-sensitive account changes revoke the affected user's active sessions in memory and persistent storage.
+- **Trusted Proxy Boundary**: Forwarded client IP headers are ignored unless the direct proxy is explicitly trusted.
+
+## Markdown and Content Rendering Security
+
+Wiki-Go treats Markdown as content rather than executable page markup. User-authored inline HTML, CSS, and JavaScript in Markdown documents and comments are unsupported and are not rendered as active application content. Raw HTML is omitted or displayed inertly instead of being passed through to the browser.
+
+This restriction applies consistently to normal document pages, the editor preview, version-history previews, home-page content, comments, kanban documents, and links documents.
+
+### Trusted Wiki-Go Extensions
+
+Wiki-Go's built-in Markdown extensions do not depend on user-provided raw HTML. Supported features are parsed into trusted, typed nodes or escaped templates controlled by Wiki-Go.
+
+These rendering boundaries provide the following protections:
+
+- Element and attribute names are selected by Wiki-Go rather than supplied by Markdown authors.
+- User-controlled text is HTML-escaped before insertion into trusted output.
+- Identifiers and CSS class tokens generated from content are normalized.
+- Links and media destinations are restricted to validated local URLs or approved URL schemes.
+- Missing internal document and attachment links retain their visual `notfound` indicator through a trusted renderer.
+- Render-specific state is isolated so concurrent document rendering does not share placeholder content.
+
+Supported Markdown and Wiki-Go extensions remain available, including tables, task lists, code blocks, GitHub-style admonitions, Mermaid diagrams, kanban boards, links pages, wiki links, attachments, details blocks, infoboxes, highlighting, superscript, subscript, table-of-contents generation, heading anchors, supported media embeds, and Wiki-Go custom tags.
+
+### Defense in Depth
+
+The safe Markdown boundary is reinforced by an enforcing Content Security Policy. Application scripts are loaded from approved sources, inline event handlers are blocked, and embedded objects are disabled.
+
+SVG files receive separate upload and serving protections. Uploaded SVG content is parsed using a minimal allowlist that excludes executable or externally loaded content, and SVG responses use restrictive security headers.
+
+Administrators upgrading from an earlier release should review documents that contain custom HTML, `<style>` blocks, inline styles, scripts, or HTML-based components. These constructs are no longer supported inside Markdown and should be replaced with standard Markdown, a supported Wiki-Go extension, or administrator-controlled application styling.
 
 ## Role-Based Access Control
 
@@ -146,15 +181,15 @@ Wiki-Go includes built-in protection against brute force attacks by temporarily 
 The login ban system is enabled by default with the following settings:
 
 - **Enabled**: Yes
-- **Maximum Failures**: 3 (failures before triggering a ban)
-- **Window Time**: 30 seconds (time window in which failures are counted)
+- **Maximum Failures**: 5 (failures before triggering a ban)
+- **Window Time**: 180 seconds (time window in which failures are counted)
 - **Initial Ban Duration**: 60 seconds (length of the first ban)
 - **Maximum Ban Duration**: 86400 seconds (24 hours, upper limit for exponential backoff)
 
 ### User Experience
 
-1. First 3 failures → Standard error message ("Invalid username or password")
-2. After 3 failures → 1-minute ban with message "Too many failed login attempts; try again later"
+1. The first failures receive the standard "Invalid username or password" response.
+2. The fifth failure within the default three-minute window triggers a one-minute ban.
 3. After ban expires, next failure → 2-minute ban (doubling each time)
 4. Ban durations continue doubling up to the configured maximum
 5. Successful login resets all ban state for that IP address
@@ -184,6 +219,27 @@ security:
 - Banned state: "Too many failed login attempts; try again later"
 - When banned, the client also receives HTTP status 429 (Too Many Requests) with a "Retry-After" header
 
+### Reverse Proxies and Client IP Addresses
+
+Wiki-Go uses the direct network peer for login throttling by default. `X-Forwarded-For` and `X-Real-IP` are accepted only when the direct peer matches an exact IP address or CIDR network configured under `server.trusted_proxies`.
+
+Instances that are not behind a reverse proxy should leave the list empty:
+
+```yaml
+server:
+  trusted_proxies: []
+```
+
+For standalone Nginx running on the same machine and proxying to Wiki-Go through an IPv4 loopback address such as `proxy_pass http://127.0.0.1:3030`, trust only that loopback address:
+
+```yaml
+server:
+  trusted_proxies:
+    - "127.0.0.1"
+```
+
+Add `::1` only if the proxy connects through IPv6 loopback. Container deployments should trust the exact proxy address or a dedicated container-network CIDR rather than a broad private network.
+
 ## Session Security
 
 Wiki-Go implements secure session management with persistence capabilities.
@@ -200,7 +256,9 @@ Wiki-Go implements secure session management with persistence capabilities.
 
 - **Expiration**: Standard sessions expire after 24 hours. "Keep me logged in" sessions persist for 30 days.
 - **Automatic Cleanup**: The system automatically purges expired sessions from both memory and disk to maintain hygiene and security.
-- **Secure Cookies**: Session tokens are transmitted via `HttpOnly`, `SameSite=Strict` cookies, preventing XSS and CSRF attacks.
+- **Account Changes**: Password changes, administrator password resets, role demotions, group-access changes, and account deletion revoke affected sessions.
+- **Password Change Experience**: A successful self-service password change clears the browser session and redirects the user to log in again after confirmation.
+- **Secure Cookies**: Session tokens are transmitted using `HttpOnly`, `Secure` by default, and `SameSite=Lax` cookie protections.
 
 ## Security Recommendations
 
@@ -214,7 +272,7 @@ For secure deployment of Wiki-Go, we recommend:
 6. **Configure access rules** for sensitive documents, use restricted access with groups for confidential content.
 7. **Regularly review access rules** to ensure rule order and group assignments are correct.
 8. **Regularly update** to the latest version for security patches.
-9. **Use a reverse proxy** like Nginx, Caddy, or Traefik for additional security layers.
+9. **Use a reverse proxy** like Nginx, Caddy, or Traefik for additional security layers, and configure only its direct address under `server.trusted_proxies` when forwarded client IPs are needed.
 10. **Back up your data** regularly to prevent data loss.
 11. **Set appropriate file upload size limits** to prevent denial of service attacks.
 12. **Regularly review user accounts and group memberships** to ensure only authorized users have access.
@@ -233,6 +291,8 @@ Our security practices include:
 4. Use of standard libraries for cryptographic operations
 5. Secure session management
 6. Principle of least privilege for user roles
+7. Safe-by-default Markdown rendering with trusted extension components
+8. Defense-in-depth browser and attachment security policies
 
 ## Known Issues
 

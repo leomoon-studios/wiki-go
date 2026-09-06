@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -15,9 +14,21 @@ import (
 	"wiki-go/internal/config"
 	"wiki-go/internal/frontmatter"
 	"wiki-go/internal/i18n"
+	"wiki-go/internal/safehtml"
 	"wiki-go/internal/types"
 	"wiki-go/internal/utils"
 )
+
+var directoryListingTemplate = template.Must(template.New("directory-listing").Parse(
+	`{{range .}}<div class="directory-item is-dir"><a href="{{.Path}}">{{.Title}}</a></div>{{end}}`,
+))
+
+var directoryTitleTemplate = template.Must(template.New("directory-title").Parse(`<h1>{{.}}</h1>`))
+
+type directoryListingItem struct {
+	Path  string
+	Title string
+}
 
 // PageHandler handles requests for pages
 func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
@@ -116,6 +127,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	var lastModified time.Time
 	var dirContent template.HTML
 	var rawContent string // Raw markdown content for edit mode
+	var chapterHeadings []types.ChapterHeading
 
 	// Look for document.md in the directory
 	docPath := filepath.Join(fsPath, "document.md")
@@ -140,14 +152,19 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 			documentLayout = metadata.Layout
 		}
 
-		// Use the document path for rendering to handle local file references
-		content = template.HTML(utils.RenderMarkdownWithPath(string(mdContent), decodedPath))
-		
+		// Use the document path for rendering to handle local file references and
+		// collect the outline from the same trusted AST conversion.
+		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), decodedPath)
+		content = safehtml.FromRenderer(renderResult.HTML)
+		if !isEditMode && documentLayout != "kanban" && documentLayout != "links" {
+			chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)
+		}
+
 		// If content is empty but document exists, ensure we have something truthy for template conditions
 		if strings.TrimSpace(string(content)) == "" {
-			content = template.HTML(" ") // Single space to make it truthy but effectively empty
+			content = safehtml.NonEmptyPlaceholder // Make an existing empty document truthy to templates.
 		}
-		
+
 		lastModified = docInfo.ModTime()
 
 		// Update the document layout in the page data
@@ -162,7 +179,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Build directory listing HTML
-	var dirItems []string
+	var dirItems []directoryListingItem
 	for _, f := range files {
 		if !f.IsDir() || strings.HasPrefix(f.Name(), ".") || f.Name() == "document.md" {
 			continue // Skip non-directories, hidden files, and document.md
@@ -183,24 +200,30 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		if _, err := os.Stat(subDocPath); err == nil {
 			// Use the GetDocumentTitle function which includes emoji processing
 			dirTitle := utils.GetDocumentTitle(filepath.Join(fsPath, dirName))
-			dirItems = append(dirItems, fmt.Sprintf(`<div class="directory-item is-dir"><a href="%s">%s</a></div>`,
-				urlPath, dirTitle))
+			dirItems = append(dirItems, directoryListingItem{Path: urlPath, Title: dirTitle})
 			continue
 		}
 
 		// Fallback to formatted directory name if no document.md or no title found
 		dirTitle := utils.FormatDirName(dirName)
-		dirItems = append(dirItems, fmt.Sprintf(`<div class="directory-item is-dir"><a href="%s">%s</a></div>`,
-			urlPath, dirTitle))
+		dirItems = append(dirItems, directoryListingItem{Path: urlPath, Title: dirTitle})
 	}
 
 	if len(dirItems) > 0 {
-		dirContent = template.HTML(strings.Join(dirItems, "\n"))
+		dirContent, err = safehtml.Execute(directoryListingTemplate, dirItems)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// If no document.md exists, show directory title and listing
 	if docInfo == nil {
-		content = template.HTML(fmt.Sprintf("<h1>%s</h1>", navItem.Title))
+		content, err = safehtml.Execute(directoryTitleTemplate, navItem.Title)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		lastModified = info.ModTime()
 	}
 
@@ -239,8 +262,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 				// Process comments (render markdown, format timestamps)
 				for i := range commentsList {
-					// Use template.HTML to properly render the HTML without escaping
-					commentsList[i].RenderedHTML = template.HTML(utils.RenderMarkdown(commentsList[i].Content))
+					commentsList[i].RenderedHTML = utils.RenderCommentMarkdown(commentsList[i].Content)
 					commentsList[i].FormattedTime = comments.FormatCommentTime(commentsList[i].Timestamp)
 				}
 			}
@@ -265,6 +287,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		DocumentLayout:     navItem.DocumentLayout,
 		IsEditMode:         isEditMode,
 		RawContent:         rawContent, // Pass raw markdown content for edit mode
+		ChapterHeadings:    chapterHeadings,
 	}
 
 	renderTemplate(w, data)

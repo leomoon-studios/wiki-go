@@ -32,6 +32,9 @@
 
   "nav.home": "ホーム",
   "nav.back_to_home": "ホームに戻る",
+  "chapter_links.on_this_page": "このページの内容",
+  "chapter_links.expand": "章リンクを展開",
+  "chapter_links.retract": "章リンクを折りたたむ",
   "sitemap.title": "サイトマップ",
   "sitemap.xml_sitemap": "XMLサイトマップ",
   "sitemap.xml_description": "検索エンジン向けXML形式",

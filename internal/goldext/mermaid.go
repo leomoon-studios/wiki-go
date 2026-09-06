@@ -1,104 +1,40 @@
 package goldext
 
 import (
-	"fmt"
-	"strings"
-	"sync"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/util"
 )
 
-// Store extracted Mermaid blocks until after Goldmark processing
-var (
-	mermaidBlocks     = make(map[string]string)
-	mermaidBlockCount = 0
-	mermaidMutex      sync.Mutex
-)
-
-// MermaidPreprocessor extracts mermaid blocks and replaces them with placeholders
-// that Goldmark won't process. The blocks will be restored after Goldmark rendering.
-func MermaidPreprocessor(markdown string, _ string) string {
-	mermaidMutex.Lock()
-	defer mermaidMutex.Unlock()
-
-	// Reset the storage on each new document
-	mermaidBlocks = make(map[string]string)
-	mermaidBlockCount = 0
-
-	// Process line by line to safely extract mermaid blocks
-	lines := strings.Split(markdown, "\n")
-	var result []string
-
-	inMermaidBacktick := false
-	inMermaidTilde := false
-	mermaidContent := []string{}
-
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-
-		// Detect start/end of mermaid blocks
-		if trimmed == "```mermaid" {
-			inMermaidBacktick = true
-			mermaidContent = []string{}
-			continue
-		} else if trimmed == "```" && inMermaidBacktick {
-			inMermaidBacktick = false
-			// Generate a placeholder that Goldmark won't touch
-			blockID := fmt.Sprintf("MERMAID_BLOCK_%d", mermaidBlockCount)
-			mermaidBlockCount++
-			// Store the actual mermaid div
-			mermaidDiv := "<div class=\"mermaid\">" + strings.Join(mermaidContent, "\n") + "</div>"
-			mermaidBlocks[blockID] = mermaidDiv
-			// Add placeholder to output - this will pass through Goldmark untouched
-			result = append(result, "<!-- "+blockID+" -->")
-			continue
-		} else if trimmed == "~~~mermaid" {
-			inMermaidTilde = true
-			mermaidContent = []string{}
-			continue
-		} else if trimmed == "~~~" && inMermaidTilde {
-			inMermaidTilde = false
-			// Generate a placeholder that Goldmark won't touch
-			blockID := fmt.Sprintf("MERMAID_BLOCK_%d", mermaidBlockCount)
-			mermaidBlockCount++
-			// Store the actual mermaid div
-			mermaidDiv := "<div class=\"mermaid\">" + strings.Join(mermaidContent, "\n") + "</div>"
-			mermaidBlocks[blockID] = mermaidDiv
-			// Add placeholder to output - this will pass through Goldmark untouched
-			result = append(result, "<!-- "+blockID+" -->")
-			continue
-		}
-
-		// Collect content or pass unchanged
-		if inMermaidBacktick || inMermaidTilde {
-			mermaidContent = append(mermaidContent, line)
-		} else {
-			result = append(result, line)
-		}
-	}
-
-	// Handle any unclosed blocks (rare, but possible)
-	if inMermaidBacktick || inMermaidTilde {
-		blockID := fmt.Sprintf("MERMAID_BLOCK_%d", mermaidBlockCount)
-		mermaidBlockCount++
-		mermaidDiv := "<div class=\"mermaid\">" + strings.Join(mermaidContent, "\n") + "</div>"
-		mermaidBlocks[blockID] = mermaidDiv
-		result = append(result, "<!-- "+blockID+" -->")
-	}
-
-	return strings.Join(result, "\n")
+// MermaidBlock is produced only from an exact ```mermaid fenced block. Its
+// source is always emitted as escaped text for the strict client-side renderer.
+type MermaidBlock struct {
+	ast.BaseBlock
 }
 
-// RestoreMermaidBlocks replaces placeholders with actual mermaid diagrams
-// This must be called after Goldmark processing
-func RestoreMermaidBlocks(html string) string {
-	mermaidMutex.Lock()
-	defer mermaidMutex.Unlock()
+// KindMermaidBlock is the Goldmark kind for MermaidBlock.
+var KindMermaidBlock = ast.NewNodeKind("WikiGoMermaidBlock")
 
-	result := html
-	for id, block := range mermaidBlocks {
-		placeholder := fmt.Sprintf("<!-- %s -->", id)
-		result = strings.Replace(result, placeholder, block, 1)
+// Kind implements ast.Node.
+func (n *MermaidBlock) Kind() ast.NodeKind {
+	return KindMermaidBlock
+}
+
+// Dump implements ast.Node.
+func (n *MermaidBlock) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, nil, nil)
+}
+
+func newMermaidBlock() *MermaidBlock {
+	return &MermaidBlock{}
+}
+
+func (r *trustedNodeRenderer) renderMermaidBlock(writer util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
 	}
 
-	return result
+	_, _ = writer.WriteString(`<div class="mermaid">`)
+	_, _ = writer.Write(util.EscapeHTML(node.Lines().Value(source)))
+	_, _ = writer.WriteString("</div>\n")
+	return ast.WalkSkipChildren, nil
 }

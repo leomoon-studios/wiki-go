@@ -1,0 +1,36 @@
+{{define "chapter-links"}}
+{{if .ChapterHeadings}}
+<aside class="chapter-links" aria-labelledby="chapter-links-title" aria-hidden="true" dir="auto" inert>
+    <div id="chapter-links-body" class="chapter-links-body" aria-hidden="true">
+        <div id="chapter-links-title" class="chapter-links-header">{{t "chapter_links.on_this_page"}}</div>
+        <nav class="wiki-toc table-of-contents" aria-labelledby="chapter-links-title">
+            <ul class="toc-list">
+                {{template "chapter-links-items" .ChapterHeadings}}
+            </ul>
+        </nav>
+    </div>
+</aside>
+<button type="button" class="chapter-links-toggle"
+        aria-label="{{t "chapter_links.expand"}}"
+        aria-expanded="false"
+        aria-controls="chapter-links-body"
+        data-label-expand="{{t "chapter_links.expand"}}"
+        data-label-retract="{{t "chapter_links.retract"}}">
+    <span class="chapter-links-toggle-text" aria-hidden="true"></span>
+    <span class="chapter-links-toggle-tooltip" aria-hidden="true">{{t "chapter_links.on_this_page"}}</span>
+</button>
+{{end}}
+{{end}}
+
+{{define "chapter-links-items"}}
+{{range .}}
+<li class="toc-level-{{.Level}}">
+    <a href="#{{.ID}}">{{.Text}}</a>
+    {{if .Children}}
+    <ul class="toc-list toc-list-nested">
+        {{template "chapter-links-items" .Children}}
+    </ul>
+    {{end}}
+</li>
+{{end}}
+{{end}}

@@ -13,6 +13,10 @@ server:
     # where HTTPS is not available. This reduces security by allowing
     # cookies to be transmitted in plain text.
     allow_insecure_cookies: true
+    # Forwarded client-IP headers are ignored unless the direct proxy is listed.
+    # Entries may be exact IP addresses or CIDR networks.
+    # Standalone Nginx using proxy_pass http://127.0.0.1:PORT: ["127.0.0.1"]
+    trusted_proxies: []
     # Enable native TLS. When true, application will run over HTTPS using the
     # supplied certificate and key paths.
     ssl: false

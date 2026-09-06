@@ -193,47 +193,81 @@ func GetSession(r *http.Request) *Session {
 	return &session
 }
 
-// ClearSession removes the session from the sessions map and clears the cookie
-func ClearSession(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
-	c, err := r.Cookie("session_token")
-	if err != nil {
-		return
-	}
-
-	hashedToken := hashToken(c.Value)
-
+// RevokeUserSessions removes every active session for username from memory and
+// the persistent session store. The in-memory map is replaced only after the
+// updated store has been written successfully.
+func RevokeUserSessions(username string) (int, error) {
 	mu.Lock()
-	if _, exists := sessions[hashedToken]; exists {
-		delete(sessions, hashedToken)
-		if sessionStore != nil {
-			if err := sessionStore.SaveSessions(sessions); err != nil {
-				logger.Error("Error saving sessions in ClearSession: %v", err)
-			}
-		}
-	} else {
-		logger.Warn("Session not found during logout for token hash: %s", hashedToken)
-	}
-	mu.Unlock()
+	defer mu.Unlock()
 
-	// Clear the session token cookie
+	updatedSessions := make(map[string]Session, len(sessions))
+	revoked := 0
+	for token, session := range sessions {
+		if session.Username == username {
+			revoked++
+			continue
+		}
+		updatedSessions[token] = session
+	}
+	if revoked == 0 {
+		return 0, nil
+	}
+
+	if sessionStore != nil {
+		if err := sessionStore.SaveSessions(updatedSessions); err != nil {
+			return 0, err
+		}
+	}
+	sessions = updatedSessions
+	return revoked, nil
+}
+
+// ClearSessionCookies expires the browser-visible parts of a session. It is
+// used after bulk revocation because the session token has already been
+// removed from the server-side store.
+func ClearSessionCookies(w http.ResponseWriter, cfg *config.Config) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   !cfg.Server.AllowInsecureCookies,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
 
-	// Clear the session user cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_user",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: false,
 		Secure:   !cfg.Server.AllowInsecureCookies,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
+}
+
+// ClearSession removes the session from the sessions map and clears the cookie
+func ClearSession(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
+	c, err := r.Cookie("session_token")
+	if err == nil {
+		hashedToken := hashToken(c.Value)
+
+		mu.Lock()
+		if _, exists := sessions[hashedToken]; exists {
+			delete(sessions, hashedToken)
+			if sessionStore != nil {
+				if err := sessionStore.SaveSessions(sessions); err != nil {
+					logger.Error("Error saving sessions in ClearSession: %v", err)
+				}
+			}
+		} else {
+			logger.Warn("Session not found during logout for token hash: %s", hashedToken)
+		}
+		mu.Unlock()
+	}
+
+	ClearSessionCookies(w, cfg)
 }
 
 // ValidateCredentials validates user credentials against the config

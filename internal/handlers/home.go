@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 	"wiki-go/internal/logger"
+	"wiki-go/internal/safehtml"
 	"wiki-go/internal/types"
 	"wiki-go/internal/utils"
 )
@@ -571,19 +571,25 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	// Get authentication status
 	// session is already retrieved above
 	isAuthenticated := session != nil
-	
+
 	// Get user role
 	userRole := ""
 	if isAuthenticated && session != nil {
 		userRole = session.Role
 	}
 
-	// Render the markdown content
-	renderedContent := template.HTML(utils.RenderMarkdown(string(content)))
-	
+	// Render the Markdown and collect the outline from the same trusted AST
+	// conversion. Preserve the homepage's existing empty document path.
+	renderResult := utils.RenderMarkdownWithPathResult(string(content), "")
+	renderedContent := safehtml.FromRenderer(renderResult.HTML)
+	var chapterHeadings []types.ChapterHeading
+	if !isEditMode {
+		chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)
+	}
+
 	// If content is empty but home document exists, ensure we have something truthy for template conditions
 	if strings.TrimSpace(string(renderedContent)) == "" {
-		renderedContent = template.HTML(" ") // Single space to make it truthy but effectively empty
+		renderedContent = safehtml.NonEmptyPlaceholder // Make an existing empty document truthy to templates.
 	}
 
 	// Render the page
@@ -600,6 +606,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		DocPath:            "pages/home", // Special path for homepage
 		IsEditMode:         isEditMode,
 		RawContent:         rawContent,
+		ChapterHeadings:    chapterHeadings,
 	}
 
 	renderTemplate(w, data)

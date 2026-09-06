@@ -59,7 +59,7 @@
             const previewElement = document.querySelector('.version-preview');
             if (previewElement) {
                 const message = window.i18n ? window.i18n.t('history.select_version') : 'Select a version to preview';
-                previewElement.innerHTML = `<div class="empty-message">${message}</div>`;
+                WikiDOM.message(previewElement, 'empty-message', message);
             }
         } catch (error) {
             console.error("Error closing version history dialog:", error);
@@ -70,7 +70,7 @@
     async function loadDocumentVersions() {
         const path = getCurrentDocPath();
         console.log("Loading versions for document path:", path);
-        versionList.innerHTML = '<div class="loading-spinner">Loading versions...</div>';
+        WikiDOM.message(versionList, 'loading-spinner', 'Loading versions...');
 
         try {
             const apiUrl = `/api/versions/${path}`;
@@ -95,20 +95,22 @@
             renderVersionsList(data.versions);
         } catch (error) {
             console.error('Error loading document versions:', error);
-            versionList.innerHTML = `<div class="error-message">Failed to load versions: ${error.message}</div>`;
+            WikiDOM.message(versionList, 'error-message', `Failed to load versions: ${error.message}`);
         }
     }
 
     // Render the list of document versions
     function renderVersionsList(versions) {
         if (!versions || versions.length === 0) {
-            versionList.innerHTML = `<div class="empty-message">${window.i18n ? window.i18n.t('history.no_versions') : 'No previous versions found'}</div>`;
+            WikiDOM.message(versionList, 'empty-message', window.i18n ? window.i18n.t('history.no_versions') : 'No previous versions found');
             return;
         }
 
-        const html = versions.map(version => {
+        const fragment = document.createDocumentFragment();
+        versions.forEach(version => {
             // Create a Date object from the version's timestamp (format: yyyymmddhhmmss)
-            const timestamp = version.timestamp;
+            const timestamp = String(version?.timestamp ?? '');
+            if (!/^\d{14}$/.test(timestamp)) return;
             const year = timestamp.substring(0, 4);
             const month = timestamp.substring(4, 6);
             const day = timestamp.substring(6, 8);
@@ -119,26 +121,32 @@
             const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
             const formattedDate = date.toLocaleString();
 
-            return `
-                <div class="version-item" data-version="${version.timestamp}">
-                    <div class="version-info">
-                        <div class="version-date">${formattedDate}</div>
-                    </div>
-                    <div class="version-actions">
-                        <button class="preview-version-btn" title="${window.i18n ? window.i18n.t('history.preview_button') : 'Preview this version'}" data-i18n-title="history.preview_button">
-                            <i class="fa fa-eye"></i>
-                            <span data-i18n="history.preview_button">${window.i18n ? window.i18n.t('history.preview_button') : 'Preview'}</span>
-                        </button>
-                        <button class="restore-version-btn" title="${window.i18n ? window.i18n.t('history.restore_button') : 'Restore this version'}" data-i18n-title="history.restore_button">
-                            <i class="fa fa-history"></i>
-                            <span data-i18n="history.restore_button">${window.i18n ? window.i18n.t('history.restore_button') : 'Restore'}</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            const item = WikiDOM.element('div', 'version-item');
+            item.dataset.version = String(version.timestamp ?? '');
+            const info = WikiDOM.element('div', 'version-info');
+            info.appendChild(WikiDOM.element('div', 'version-date', formattedDate));
 
-        versionList.innerHTML = html;
+            const actions = WikiDOM.element('div', 'version-actions');
+            const preview = WikiDOM.element('button', 'preview-version-btn');
+            preview.type = 'button';
+            preview.title = window.i18n ? window.i18n.t('history.preview_button') : 'Preview this version';
+            preview.dataset.i18nTitle = 'history.preview_button';
+            const previewLabel = WikiDOM.element('span', '', window.i18n ? window.i18n.t('history.preview_button') : 'Preview');
+            previewLabel.dataset.i18n = 'history.preview_button';
+            preview.append(WikiDOM.icon('fa fa-eye'), previewLabel);
+            const restore = WikiDOM.element('button', 'restore-version-btn');
+            restore.type = 'button';
+            restore.title = window.i18n ? window.i18n.t('history.restore_button') : 'Restore this version';
+            restore.dataset.i18nTitle = 'history.restore_button';
+            const restoreLabel = WikiDOM.element('span', '', window.i18n ? window.i18n.t('history.restore_button') : 'Restore');
+            restoreLabel.dataset.i18n = 'history.restore_button';
+            restore.append(WikiDOM.icon('fa fa-history'), restoreLabel);
+            actions.append(preview, restore);
+            item.append(info, actions);
+            fragment.appendChild(item);
+        });
+
+        versionList.replaceChildren(fragment);
 
         // Add event listeners for version actions
         versionList.querySelectorAll('.preview-version-btn').forEach(button => {
@@ -174,7 +182,7 @@
 
         // Determine which element to use for the preview content
         const targetElement = previewElement || previewContainer;
-        targetElement.innerHTML = '<div class="loading-spinner">Loading preview...</div>';
+        WikiDOM.message(targetElement, 'loading-spinner', 'Loading preview...');
 
         try {
             // First, fetch the raw content of the version
@@ -211,11 +219,10 @@
             const renderedHTML = await renderResponse.text();
 
             // Display the rendered content
-            targetElement.innerHTML = `
-                <div class="version-content markdown-body">
-                    ${renderedHTML}
-                </div>
-            `;
+            const versionContent = WikiDOM.element('div', 'version-content markdown-body');
+            // SECURITY: this endpoint uses the same safe server-side Markdown renderer as document pages.
+            versionContent.innerHTML = renderedHTML;
+            targetElement.replaceChildren(versionContent);
 
             // Use lazy loader to load libraries if needed
             const promises = [];
@@ -286,7 +293,7 @@
             await Promise.all(promises);
         } catch (error) {
             console.error('Error loading version preview:', error);
-            targetElement.innerHTML = `<div class="error-message">Failed to load preview: ${error.message}</div>`;
+            WikiDOM.message(targetElement, 'error-message', `Failed to load preview: ${error.message}`);
         }
     }
 

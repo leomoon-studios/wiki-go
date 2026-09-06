@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadBackups() {
         if (!backupList) return;
 
-        backupList.innerHTML = `<div class="empty-message">${window.i18n ? window.i18n.t('backup.loading') : 'Loading backups...'}</div>`;
+        WikiDOM.message(backupList, 'empty-message', window.i18n ? window.i18n.t('backup.loading') : 'Loading backups...');
 
         try {
             const response = await fetch('/api/backup/list');
@@ -36,21 +36,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 renderBackups(data.backups || []);
             } else {
-                backupList.innerHTML = `<div class="error-message">${window.i18n ? window.i18n.t('backup.error_loading') : 'Failed to load backups'}</div>`;
+                WikiDOM.message(backupList, 'error-message', window.i18n ? window.i18n.t('backup.error_loading') : 'Failed to load backups');
             }
         } catch (error) {
             console.error('Error loading backups:', error);
-            backupList.innerHTML = `<div class="error-message">${window.i18n ? window.i18n.t('backup.error_loading') : 'Failed to load backups'}</div>`;
+            WikiDOM.message(backupList, 'error-message', window.i18n ? window.i18n.t('backup.error_loading') : 'Failed to load backups');
         }
     }
 
     function renderBackups(backups) {
         if (!backupList) return;
         
-        backupList.innerHTML = '';
+        WikiDOM.clear(backupList);
         
         if (backups.length === 0) {
-            backupList.innerHTML = `<div class="empty-message">${window.i18n ? window.i18n.t('backup.no_backups') : 'No backups found'}</div>`;
+            WikiDOM.message(backupList, 'empty-message', window.i18n ? window.i18n.t('backup.no_backups') : 'No backups found');
             return;
         }
 
@@ -60,23 +60,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const sizeFormatted = formatBytes(backup.size);
             
-            item.innerHTML = `
-                <div class="file-info">
-                    <div class="file-icon"><i class="fa fa-file-zip-o"></i></div>
-                    <div class="file-details" style="display: flex; flex-direction: column; overflow: hidden;">
-                        <span class="file-name" title="${backup.name}">${backup.name}</span>
-                        <span class="file-meta" style="font-size: 0.85em; color: var(--text-muted);">${backup.date} • ${sizeFormatted}</span>
-                    </div>
-                </div>
-                <div class="file-actions">
-                    <a href="${backup.url}" class="download-file-btn" title="${window.i18n ? window.i18n.t('common.download') : 'Download'}" download>
-                        <i class="fa fa-download"></i>
-                    </a>
-                    <button class="delete-file-btn" data-filename="${backup.name}" title="${window.i18n ? window.i18n.t('common.delete') : 'Delete'}">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </div>
-            `;
+            const info = WikiDOM.element('div', 'file-info');
+            const icon = WikiDOM.element('div', 'file-icon');
+            icon.appendChild(WikiDOM.icon('fa fa-file-zip-o'));
+            const details = WikiDOM.element('div', 'file-details');
+            details.style.cssText = 'display: flex; flex-direction: column; overflow: hidden;';
+            const name = WikiDOM.element('span', 'file-name', backup.name);
+            name.title = String(backup.name ?? '');
+            const metadata = WikiDOM.element('span', 'file-meta', `${backup.date ?? ''} • ${sizeFormatted}`);
+            metadata.style.cssText = 'font-size: 0.85em; color: var(--text-muted);';
+            details.append(name, metadata);
+            info.append(icon, details);
+
+            const actions = WikiDOM.element('div', 'file-actions');
+            const download = WikiDOM.element('a', 'download-file-btn');
+            download.href = WikiDOM.localURL(backup.url);
+            download.title = window.i18n ? window.i18n.t('common.download') : 'Download';
+            download.download = '';
+            download.appendChild(WikiDOM.icon('fa fa-download'));
+            const remove = WikiDOM.element('button', 'delete-file-btn');
+            remove.type = 'button';
+            remove.dataset.filename = String(backup.name ?? '');
+            remove.title = window.i18n ? window.i18n.t('common.delete') : 'Delete';
+            remove.appendChild(WikiDOM.icon('fa fa-trash'));
+            actions.append(download, remove);
+            item.append(info, actions);
             
             const deleteBtn = item.querySelector('.delete-file-btn');
             if (deleteBtn) {

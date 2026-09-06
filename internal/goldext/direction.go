@@ -2,157 +2,85 @@ package goldext
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
-	"sync"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	html "github.com/yuin/goldmark/renderer/html"
+	goldhtml "github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
-// Store extracted direction blocks until restored after Goldmark processing
-var (
-	directionBlocks     = make(map[string]string)
-	directionBlockCount = 0
-	directionMutex      sync.Mutex
-)
-
-// DirectionPreprocessor extracts rtl/ltr blocks and replaces them with placeholders
-// The actual HTML generation will happen after Goldmark processes everything else
-func DirectionPreprocessor(markdown string, _ string) string {
-	directionMutex.Lock()
-	defer directionMutex.Unlock()
-
-	// Reset the storage on each new document
-	directionBlocks = make(map[string]string)
-	directionBlockCount = 0
-
-	// Process line by line to safely extract RTL/LTR blocks
-	lines := strings.Split(markdown, "\n")
-	var result []string
-
-	// State tracking
-	inCodeBlock := false  // Are we inside a non-RTL/LTR code block?
-	inRtlLtrBlock := false // Are we inside an RTL/LTR block?
-	blockType := "" // rtl or ltr
-	blockContent := []string{}
-	codeBlockDepth := 0
-
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-
-		// Handle code block markers
-		if strings.HasPrefix(trimmed, "```") {
-			if trimmed == "```rtl" || trimmed == "```ltr" {
-				// Only process as RTL/LTR block if we're not already in a code block
-				if !inCodeBlock && !inRtlLtrBlock {
-					inRtlLtrBlock = true
-					blockType = strings.TrimPrefix(trimmed, "```")
-					blockContent = []string{}
-					continue
-				}
-			}
-
-			// Toggle code block state if not an RTL/LTR block or already in a code block
-			if !inRtlLtrBlock || inCodeBlock {
-				if codeBlockDepth == 0 {
-					codeBlockDepth = 1
-				} else {
-					codeBlockDepth = 0
-				}
-				inCodeBlock = codeBlockDepth > 0
-			}
-
-			// If this is the closing marker for an RTL/LTR block
-			if inRtlLtrBlock && trimmed == "```" && !inCodeBlock {
-				// Create a placeholder for this block
-				blockID := fmt.Sprintf("DIRECTION_BLOCK_%d", directionBlockCount)
-				directionBlockCount++
-
-				// Store the direction type and content for later processing
-				directionBlocks[blockID] = blockType + "|" + strings.Join(blockContent, "\n")
-
-				// Add the placeholder to the output
-				result = append(result, "<!-- "+blockID+" -->")
-
-				// Reset state
-				inRtlLtrBlock = false
-				blockType = ""
-				blockContent = []string{}
-				continue
-			}
-		} else if strings.HasPrefix(trimmed, "~~~") {
-			if trimmed == "~~~rtl" || trimmed == "~~~ltr" {
-				// Only process as RTL/LTR block if we're not already in a code block
-				if !inCodeBlock && !inRtlLtrBlock {
-					inRtlLtrBlock = true
-					blockType = strings.TrimPrefix(trimmed, "~~~")
-					blockContent = []string{}
-					continue
-				}
-			}
-
-			// Toggle code block state if not an RTL/LTR block or already in a code block
-			if !inRtlLtrBlock || inCodeBlock {
-				if codeBlockDepth == 0 {
-					codeBlockDepth = 1
-				} else {
-					codeBlockDepth = 0
-				}
-				inCodeBlock = codeBlockDepth > 0
-			}
-
-			// If this is the closing marker for an RTL/LTR block
-			if inRtlLtrBlock && trimmed == "~~~" && !inCodeBlock {
-				// Create a placeholder for this block
-				blockID := fmt.Sprintf("DIRECTION_BLOCK_%d", directionBlockCount)
-				directionBlockCount++
-
-				// Store the direction type and content for later processing
-				directionBlocks[blockID] = blockType + "|" + strings.Join(blockContent, "\n")
-
-				// Add the placeholder to the output
-				result = append(result, "<!-- "+blockID+" -->")
-
-				// Reset state
-				inRtlLtrBlock = false
-				blockType = ""
-				blockContent = []string{}
-				continue
-			}
-		}
-
-		// Collect content or pass line through
-		if inRtlLtrBlock && !inCodeBlock {
-			blockContent = append(blockContent, line)
-		} else {
-			result = append(result, line)
-		}
-	}
-
-	// Handle any unclosed blocks at EOF (rare case)
-	if inRtlLtrBlock && !inCodeBlock && blockType != "" {
-		blockID := fmt.Sprintf("DIRECTION_BLOCK_%d", directionBlockCount)
-		directionBlockCount++
-		directionBlocks[blockID] = blockType + "|" + strings.Join(blockContent, "\n")
-		result = append(result, "<!-- "+blockID+" -->")
-	}
-
-	return strings.Join(result, "\n")
+// DirectionBlock is produced only from an exact ```rtl or ```ltr fenced block.
+// Direction is kept as an enum so the renderer cannot emit arbitrary values.
+type DirectionBlock struct {
+	ast.BaseBlock
+	Direction TextDirection
 }
 
-// RestoreDirectionBlocks replaces direction block placeholders with HTML
-// This must be called after Goldmark rendering
-func RestoreDirectionBlocks(htmlContent string) string {
-	directionMutex.Lock()
-	defer directionMutex.Unlock()
+// TextDirection is a fixed direction accepted by DirectionBlock.
+type TextDirection uint8
 
-	// Create our own Goldmark instance for RTL/LTR content processing
-	// This won't be recursive because we're only processing the content inside the blocks
-	md := goldmark.New(
+const (
+	DirectionInvalid TextDirection = iota
+	DirectionLTR
+	DirectionRTL
+)
+
+// KindDirectionBlock is the Goldmark kind for DirectionBlock.
+var KindDirectionBlock = ast.NewNodeKind("WikiGoDirectionBlock")
+
+// Kind implements ast.Node.
+func (n *DirectionBlock) Kind() ast.NodeKind {
+	return KindDirectionBlock
+}
+
+// Dump implements ast.Node.
+func (n *DirectionBlock) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, map[string]string{
+		"Direction": directionValue(n.Direction),
+	}, nil)
+}
+
+func newDirectionBlock(direction TextDirection) *DirectionBlock {
+	return &DirectionBlock{Direction: direction}
+}
+
+func directionValue(direction TextDirection) string {
+	switch direction {
+	case DirectionLTR:
+		return "ltr"
+	case DirectionRTL:
+		return "rtl"
+	default:
+		return ""
+	}
+}
+
+func (r *trustedNodeRenderer) renderDirectionBlock(writer util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+
+	direction := directionValue(node.(*DirectionBlock).Direction)
+	if direction == "" {
+		return ast.WalkSkipChildren, nil
+	}
+
+	content := node.Lines().Value(source)
+	var rendered bytes.Buffer
+	if err := newSafeNestedMarkdown().Convert(content, &rendered); err != nil {
+		return ast.WalkSkipChildren, err
+	}
+
+	_, _ = writer.WriteString(`<div class="` + direction + `" dir="` + direction + `">`)
+	_, _ = writer.Write(rendered.Bytes())
+	_, _ = writer.WriteString("</div>\n")
+	return ast.WalkSkipChildren, nil
+}
+
+func newSafeNestedMarkdown() goldmark.Markdown {
+	return goldmark.New(
 		goldmark.WithExtensions(
 			extension.Table,
 			extension.Strikethrough,
@@ -160,42 +88,9 @@ func RestoreDirectionBlocks(htmlContent string) string {
 			extension.Footnote,
 			extension.DefinitionList,
 			extension.GFM,
+			&safeInlineFormattingExtension{},
 		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithAttribute(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-			html.WithHardWraps(),
-		),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
 	)
-
-	result := htmlContent
-
-	// Replace each placeholder with processed HTML
-	for id, block := range directionBlocks {
-		placeholder := fmt.Sprintf("<!-- %s -->", id)
-
-		// Split the stored data into type and content
-		parts := strings.SplitN(block, "|", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		dirType := parts[0]
-		content := parts[1]
-
-		// Render the content with Goldmark
-		var buf bytes.Buffer
-		if err := md.Convert([]byte(content), &buf); err != nil {
-			// If error, just use unprocessed content
-			result = strings.Replace(result, placeholder, fmt.Sprintf("<div class=\"%s\">%s</div>", dirType, content), 1)
-		} else {
-			// Use the rendered HTML inside the direction div
-			result = strings.Replace(result, placeholder, fmt.Sprintf("<div class=\"%s\">%s</div>", dirType, buf.String()), 1)
-		}
-	}
-
-	return result
 }

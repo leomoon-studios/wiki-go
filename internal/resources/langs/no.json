@@ -32,6 +32,9 @@
 
   "nav.home": "Hjem",
   "nav.back_to_home": "Tilbake til forsiden",
+  "chapter_links.on_this_page": "På denne siden",
+  "chapter_links.expand": "Utvid kapittellenker",
+  "chapter_links.retract": "Trekk sammen kapittellenker",
   "sitemap.title": "Nettstedskart",
   "sitemap.xml_sitemap": "XML-nettstedskart",
   "sitemap.xml_description": "XML-format for søkemotorer",

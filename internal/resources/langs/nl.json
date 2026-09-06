@@ -32,6 +32,9 @@
 
   "nav.home": "Home",
   "nav.back_to_home": "Terug naar home",
+  "chapter_links.on_this_page": "Op deze pagina",
+  "chapter_links.expand": "Hoofdstuklinks uitklappen",
+  "chapter_links.retract": "Hoofdstuklinks inklappen",
   "sitemap.title": "Sitemap",
   "sitemap.xml_sitemap": "XML-sitemap",
   "sitemap.xml_description": "XML-formaat voor zoekmachines",

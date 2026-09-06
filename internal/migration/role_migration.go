@@ -15,19 +15,20 @@ import (
 type User struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
-	Role     string `yaml:"role"`     // "admin", "editor", or "viewer"
+	Role     string `yaml:"role"`               // "admin", "editor", or "viewer"
 	IsAdmin  bool   `yaml:"is_admin,omitempty"` // Old field for migration
 }
 
 // Config represents a simplified version of the server configuration (copied from config to avoid import cycle)
 type Config struct {
 	Server struct {
-		Host                 string `yaml:"host"`
-		Port                 int    `yaml:"port"`
-		AllowInsecureCookies bool   `yaml:"allow_insecure_cookies"`
-		SSL                  bool   `yaml:"ssl"`
-		SSLCert              string `yaml:"ssl_cert"`
-		SSLKey               string `yaml:"ssl_key"`
+		Host                 string   `yaml:"host"`
+		Port                 int      `yaml:"port"`
+		AllowInsecureCookies bool     `yaml:"allow_insecure_cookies"`
+		TrustedProxies       []string `yaml:"trusted_proxies,omitempty"`
+		SSL                  bool     `yaml:"ssl"`
+		SSLCert              string   `yaml:"ssl_cert"`
+		SSLKey               string   `yaml:"ssl_key"`
 	} `yaml:"server"`
 	Wiki struct {
 		RootDir                   string `yaml:"root_dir"`

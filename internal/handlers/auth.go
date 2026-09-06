@@ -20,32 +20,70 @@ import (
 )
 
 type LoginRequest struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
 	KeepLoggedIn bool   `json:"keepLoggedIn"`
 }
 
 // loginBan handles IP-based banning for failed login attempts.
 var loginBan *ban.BanList
 
-// clientIP extracts the real client IP address, considering proxy headers.
-func clientIP(r *http.Request) string {
-	// Prioritise common proxy headers
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		// X-Forwarded-For may contain multiple IPs, the first is the client
-		if comma := strings.Index(ip, ","); comma != -1 {
-			return strings.TrimSpace(ip[:comma])
+// clientIP returns a forwarding header address only when the request arrived
+// from a configured trusted proxy. Otherwise the direct peer is authoritative.
+func clientIP(r *http.Request, cfg *config.Config) string {
+	peer := parseRemoteIP(r.RemoteAddr)
+	if peer == nil {
+		return r.RemoteAddr
+	}
+	if cfg == nil || !isTrustedProxy(peer, cfg.Server.TrustedProxies) {
+		return peer.String()
+	}
+
+	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwarded != "" {
+		parts := strings.Split(forwarded, ",")
+		chain := make([]net.IP, len(parts))
+		for i, part := range parts {
+			chain[i] = net.ParseIP(strings.TrimSpace(part))
+			if chain[i] == nil {
+				return peer.String()
+			}
 		}
-		return strings.TrimSpace(ip)
+
+		// Work from the nearest address toward the client and discard only
+		// proxies that are explicitly trusted. The first untrusted address is
+		// the client as observed by the trusted proxy chain.
+		for i := len(chain) - 1; i >= 0; i-- {
+			if !isTrustedProxy(chain[i], cfg.Server.TrustedProxies) {
+				return chain[i].String()
+			}
+		}
+		return chain[0].String()
 	}
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
+
+	if realIP := net.ParseIP(strings.TrimSpace(r.Header.Get("X-Real-IP"))); realIP != nil {
+		return realIP.String()
 	}
-	// Fallback to RemoteAddr
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
+	return peer.String()
+}
+
+func parseRemoteIP(remoteAddr string) net.IP {
+	if host, _, err := net.SplitHostPort(remoteAddr); err == nil {
+		return net.ParseIP(host)
 	}
-	return r.RemoteAddr // as-is (unlikely path)
+	return net.ParseIP(strings.Trim(remoteAddr, "[]"))
+}
+
+func isTrustedProxy(ip net.IP, trustedProxies []string) bool {
+	for _, value := range trustedProxies {
+		value = strings.TrimSpace(value)
+		if trustedIP := net.ParseIP(value); trustedIP != nil && trustedIP.Equal(ip) {
+			return true
+		}
+		if _, network, err := net.ParseCIDR(value); err == nil && network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // LoginHandler handles API login requests
@@ -71,7 +109,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip := clientIP(r)
+	ip := clientIP(r, cfg)
 
 	// If IP is currently banned, short-circuit before doing any work.
 	if loginBan != nil {

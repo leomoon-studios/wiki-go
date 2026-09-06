@@ -50,22 +50,21 @@ func addCacheControlHeaders(w http.ResponseWriter, filename string) {
 // CSPMiddleware adds Content Security Policy headers to all responses
 func CSPMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set a less restrictive Content Security Policy that allows inline scripts and styles
+		// Restrict executable content to files served by this application. Inline
+		// styles remain allowed until template presentation attributes are migrated.
 		csp := []string{
-			// Default to allowing same-origin resources and inline scripts/styles
-			"default-src 'self' 'unsafe-inline' 'unsafe-eval'",
+			"default-src 'self'",
 			// Allow inline styles and styles from same origin
 			"style-src 'self' 'unsafe-inline'",
-			// Allow scripts from same origin and inline scripts
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+			"script-src 'self'",
+			"script-src-attr 'none'",
 			// Images from same origin and data: URLs (for embedded images)
-			"img-src 'self' data: https://*.ytimg.com https://*.vimeocdn.com",
+			"img-src 'self' data: https://www.google.com https://*.gstatic.com https://*.ytimg.com https://*.vimeocdn.com",
 			// Connect only to same origin
 			"connect-src 'self'",
 			// Fonts from same origin
 			"font-src 'self'",
-			// Allow object/embed only from same origin
-			"object-src 'self'",
+			"object-src 'none'",
 			// Media only from same origin
 			"media-src 'self' https://*.youtube.com https://*.vimeo.com",
 			// Allow frames from YouTube and Vimeo for video embeds
@@ -76,12 +75,8 @@ func CSPMiddleware(next http.Handler) http.Handler {
 			"base-uri 'self'",
 		}
 
-		// Set the CSP header - using Content-Security-Policy-Report-Only first to avoid breaking things
-		// This will report violations but not enforce them
-		w.Header().Set("Content-Security-Policy-Report-Only", strings.Join(csp, "; "))
-
-		// Once you've fixed all the violations, you can switch to enforcing mode:
-		// w.Header().Set("Content-Security-Policy", strings.Join(csp, "; "))
+		w.Header().Set("Content-Security-Policy", strings.Join(csp, "; "))
+		w.Header().Del("Content-Security-Policy-Report-Only")
 
 		// Add other security headers
 		w.Header().Set("X-Content-Type-Options", "nosniff")

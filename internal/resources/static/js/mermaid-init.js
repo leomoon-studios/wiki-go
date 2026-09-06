@@ -88,15 +88,11 @@ window.MermaidHandler = {
             })
             .catch(err => {
               console.error(`Failed to render diagram ${index}:`, err);
-              diagram.innerHTML = `<div style="color:red;border:1px solid red;padding:10px;">
-                Diagram rendering error: ${err.message}
-              </div>`;
+              this._showRenderError(diagram, 'Diagram rendering error', err);
             });
         } catch (err) {
           console.error(`Error processing diagram ${index}:`, err);
-          diagram.innerHTML = `<div style="color:red;border:1px solid red;padding:10px;">
-            Error: ${err.message}
-          </div>`;
+          this._showRenderError(diagram, 'Error', err);
         }
       });
     } catch (error) {
@@ -159,9 +155,7 @@ window.MermaidHandler = {
           })
           .catch(err => {
             console.error(`Failed to re-render diagram ${index}:`, err);
-            diagram.innerHTML = `<div style="color:red;border:1px solid red;padding:10px;">
-              Re-rendering error: ${err.message}
-            </div>`;
+            this._showRenderError(diagram, 'Re-rendering error', err);
             diagram.classList.remove('mermaid-rerendering');
           });
           
@@ -176,6 +170,19 @@ window.MermaidHandler = {
     } catch (error) {
       console.error('Error re-rendering mermaid diagrams:', error);
     }
+  },
+
+  // Display parser errors as text so attacker-controlled Mermaid input cannot
+  // become HTML through an error message.
+  _showRenderError: function(diagram, prefix, error) {
+    const errorElement = document.createElement('div');
+    const message = error instanceof Error ? error.message : String(error);
+    errorElement.style.color = 'red';
+    errorElement.style.border = '1px solid red';
+    errorElement.style.padding = '10px';
+    errorElement.textContent = `${prefix}: ${message}`;
+    diagram.textContent = '';
+    diagram.appendChild(errorElement);
   },
 
   // Store original sources when diagrams are first rendered

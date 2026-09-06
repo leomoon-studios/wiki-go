@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -9,11 +10,12 @@ import (
 	"strings"
 	"wiki-go/internal/frontmatter"
 	"wiki-go/internal/goldext"
+	"wiki-go/internal/safehtml"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
+	goldhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // RenderMarkdownFile reads a markdown file and returns its HTML representation
@@ -46,8 +48,34 @@ func RenderMarkdown(md string) []byte {
 	return RenderMarkdownWithPath(md, "")
 }
 
+// RenderMarkdownHTML returns document HTML produced exclusively by Wiki-Go's
+// safe Markdown renderer. Callers may insert this value into html/template.
+func RenderMarkdownHTML(md string) template.HTML {
+	return safehtml.FromRenderer(RenderMarkdown(md))
+}
+
+// RenderMarkdownWithPathHTML is the path-aware template-safe rendering entry
+// point used by document pages.
+func RenderMarkdownWithPathHTML(md string, docPath string) template.HTML {
+	return safehtml.FromRenderer(RenderMarkdownWithPath(md, docPath))
+}
+
+// MarkdownRenderResult contains safe renderer output and structured document
+// navigation metadata collected from the same Goldmark AST.
+type MarkdownRenderResult struct {
+	HTML         []byte
+	Headings     []goldext.TOCHeading
+	HasInlineTOC bool
+}
+
 // RenderMarkdownWithPath converts markdown text to HTML with the current document path
 func RenderMarkdownWithPath(md string, docPath string) []byte {
+	return RenderMarkdownWithPathResult(md, docPath).HTML
+}
+
+// RenderMarkdownWithPathResult converts Markdown and returns the document
+// outline produced by that exact conversion.
+func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResult {
 	// Check for frontmatter
 	metadata, contentWithoutFrontmatter, hasFrontmatter := frontmatter.Parse(md)
 
@@ -55,7 +83,6 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 	if hasFrontmatter && metadata.Layout == "kanban" {
 		// Create preprocessor functions (excluding frontmatter since it's already processed)
 		var preprocessors []frontmatter.PreprocessorFunc
-		var postProcessors []frontmatter.PostProcessorFunc
 
 		// Add all goldext preprocessors (frontmatter will be a no-op since it's already processed)
 		for _, preprocessor := range goldext.RegisteredPreprocessors {
@@ -70,15 +97,13 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			}
 		}
 
-		// Add post-processors for mermaid and direction blocks
-		postProcessors = append(postProcessors, func(html string) string {
-			result := goldext.RestoreMermaidBlocks(html)
-			result = goldext.RestoreDirectionBlocks(result)
-			return result
-		})
-
-		kanbanHTML := frontmatter.RenderKanbanWithProcessors(contentWithoutFrontmatter, preprocessors, postProcessors)
-		return []byte(kanbanHTML)
+		kanbanHTML := frontmatter.RenderKanbanWithProcessors(
+			contentWithoutFrontmatter,
+			preprocessors,
+			nil,
+			goldext.TrustedNodesForDocument(docPath),
+		)
+		return MarkdownRenderResult{HTML: []byte(kanbanHTML)}
 	}
 
 	// If this has links layout, render as links document
@@ -88,7 +113,7 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			// If links rendering fails, fall back to regular markdown
 			md = contentWithoutFrontmatter
 		} else {
-			return []byte(linksHTML)
+			return MarkdownRenderResult{HTML: []byte(linksHTML)}
 		}
 	}
 
@@ -112,39 +137,37 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 			extension.DefinitionList,  // Enable definition lists
 			extension.GFM,             // GitHub Flavored Markdown
 			goldext.OnePasswordIgnore, // Add data-1p-ignore to code blocks
+			goldext.TrustedNodes,      // Render typed Wiki-Go extension nodes
 			// MathJax is now handled via client-side JavaScript
 		),
 		// Parser options
 		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(), // Enable auto heading IDs
-			parser.WithAttribute(),     // Enable attributes
+			// The trusted document transformer assigns normalized IDs after it has
+			// collected the rendered plain text. Explicit IDs still arrive through
+			// the attribute parser.
+			parser.WithAttribute(),
 		),
 		// Renderer options
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(), // Allow raw HTML in the markdown
-			html.WithHardWraps(),
-		),
+		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
 	)
 
 	// Create a buffer to store the rendered HTML
 	var buf bytes.Buffer
+	renderContext := goldext.NewRenderContext(docPath)
 
 	// Convert markdown to HTML
-	if err := markdown.Convert([]byte(md), &buf); err != nil {
+	if err := markdown.Convert([]byte(md), &buf, parser.WithContext(renderContext)); err != nil {
 		// If there's an error, return an error message
-		errMsg := []byte("<p>Error rendering markdown with Goldmark: " + err.Error() + "</p>")
-		return errMsg
+		errMsg := []byte("<p>Error rendering Markdown with Goldmark: " + template.HTMLEscapeString(err.Error()) + "</p>")
+		return MarkdownRenderResult{HTML: errMsg}
 	}
 
-	// Post-process: Restore Mermaid blocks that were replaced with placeholders
-	htmlResult := goldext.RestoreMermaidBlocks(buf.String())
-
-	// Post-process: Restore Direction blocks that were replaced with placeholders
-	// This ensures RTL/LTR content is properly rendered with Markdown formatting
-	htmlResult = goldext.RestoreDirectionBlocks(htmlResult)
-
-	// Return the post-processed HTML
-	return []byte(htmlResult)
+	outline := goldext.DocumentOutlineFromContext(renderContext)
+	return MarkdownRenderResult{
+		HTML:         buf.Bytes(),
+		Headings:     outline.Headings,
+		HasInlineTOC: outline.HasInlineTOC,
+	}
 }
 
 // blockLineRe matches the start of a fenced code block, ATX heading, or paragraph
@@ -166,7 +189,7 @@ func RenderMarkdownWithSourceLines(md string, docPath string) []byte {
 func injectSourceLines(htmlStr string, md string) string {
 	lines := strings.Split(md, "\n")
 
-	// Special code fences that goldext preprocesses into <div> elements (not <pre>).
+	// Special code fences that goldext renders as <div> elements (not <pre>).
 	// These must NOT be recorded in blockLines because they produce no matching HTML tag.
 	specialFences := map[string]bool{
 		"mermaid": true, "youtube": true, "vimeo": true,

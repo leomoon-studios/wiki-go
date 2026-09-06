@@ -382,7 +382,7 @@
         }
 
         // Create dropdown items
-        pathAutocomplete.innerHTML = '';
+        WikiDOM.clear(pathAutocomplete);
         selectedPathIndex = -1;
 
         filtered.forEach((path, index) => {
@@ -390,13 +390,19 @@
             item.className = 'path-autocomplete-item';
             
             const folderName = path.split('/').pop();
-            let displayText = folderName;
-            
-            // Highlight matching text
+            const displayText = String(folderName ?? '');
+
+            // Highlight matching text with text nodes so folder names cannot become markup.
             if (filterText) {
-                const regex = new RegExp(`(${filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                displayText = displayText.replace(regex, '<strong>$1</strong>');
-                item.innerHTML = displayText;
+                const regex = new RegExp(filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                let lastIndex = 0;
+                let match;
+                while ((match = regex.exec(displayText)) !== null) {
+                    item.appendChild(document.createTextNode(displayText.slice(lastIndex, match.index)));
+                    item.appendChild(WikiDOM.element('strong', '', match[0]));
+                    lastIndex = match.index + match[0].length;
+                }
+                item.appendChild(document.createTextNode(displayText.slice(lastIndex)));
             } else {
                 item.textContent = displayText;
             }

@@ -63,7 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!regionSelect || !timezoneSelect) return;
 
         // Populate region dropdown
-        regionSelect.innerHTML = '<option value="">Select Region...</option>';
+        const regionPlaceholder = WikiDOM.element('option', '', 'Select Region...');
+        regionPlaceholder.value = '';
+        regionSelect.replaceChildren(regionPlaceholder);
         Object.keys(timezonesByRegion).sort().forEach(region => {
             const option = document.createElement('option');
             option.value = region;
@@ -74,7 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle region change
         regionSelect.addEventListener('change', function() {
             const selectedRegion = this.value;
-            timezoneSelect.innerHTML = '<option value="">Select Timezone...</option>';
+            const timezonePlaceholder = WikiDOM.element('option', '', 'Select Timezone...');
+            timezonePlaceholder.value = '';
+            timezoneSelect.replaceChildren(timezonePlaceholder);
 
             if (selectedRegion && timezonesByRegion[selectedRegion]) {
                 timezonesByRegion[selectedRegion].forEach(tz => {
@@ -117,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 regionSelect.value = region;
                 regionSelect.dispatchEvent(new Event('change'));
                 // Add the timezone as an option if not present
-                if (!timezoneSelect.querySelector(`option[value="${timezone}"]`)) {
+                if (!Array.from(timezoneSelect.options).some(option => option.value === timezone)) {
                     const option = document.createElement('option');
                     option.value = timezone;
                     option.textContent = parts[parts.length - 1].replace(/_/g, ' ');
@@ -216,7 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
             activeTabTag = 'profile-tab';
         }
 
-        const activeTabButton = document.querySelector(`.tab-button[data-tab="${activeTabTag}"]`);
+        const activeTabButton = Array.from(document.querySelectorAll('.tab-button'))
+            .find(button => button.dataset.tab === activeTabTag);
         const activeTabPane = document.getElementById(activeTabTag);
 
         if (!activeTabButton || !activeTabPane) {
@@ -522,15 +527,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserGroups() {
         if (!userSelectedGroups) return;
         
-        userSelectedGroups.innerHTML = '';
+        WikiDOM.clear(userSelectedGroups);
         currentUserGroups.forEach(group => {
             const tag = document.createElement('div');
             tag.className = 'group-tag-removable';
-            tag.innerHTML = `
-                <span>${group}</span>
-                <span class="remove-group" data-group="${group}">&times;</span>
-            `;
-            tag.querySelector('.remove-group').addEventListener('click', function() {
+            tag.appendChild(WikiDOM.element('span', '', group));
+            const remove = WikiDOM.element('span', 'remove-group', '\u00d7');
+            remove.dataset.group = group;
+            tag.appendChild(remove);
+            remove.addEventListener('click', function() {
                 removeUserGroup(this.getAttribute('data-group'));
             });
             userSelectedGroups.appendChild(tag);
@@ -591,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!usersList) return;
 
         if (!users || users.length === 0) {
-            usersList.innerHTML = '<div class="empty-message">No users found</div>';
+            WikiDOM.message(usersList, 'empty-message', 'No users found');
             return;
         }
 
@@ -616,13 +621,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // If same role, sort alphabetically
-            return a.username.localeCompare(b.username);
+            return String(a.username ?? '').localeCompare(String(b.username ?? ''));
         });
 
-        const html = users.map(user => {
-            const isCurrentUser = user.username === currentUsername;
+        const fragment = document.createDocumentFragment();
+        users.forEach(user => {
+            const username = String(user.username ?? '');
+            const isCurrentUser = username === currentUsername;
             // Get role with fallback for backward compatibility
-            const role = user.role || (user.is_admin ? 'admin' : 'viewer');
+            const rawRole = user.role || (user.is_admin ? 'admin' : 'viewer');
+            const role = ['admin', 'editor', 'viewer'].includes(rawRole) ? rawRole : 'viewer';
 
             // Get role display name
             let roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
@@ -631,40 +639,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Set role badge class based on role
-            const roleBadgeClass = `role-badge role-${role}`;
+            const item = WikiDOM.element('div', 'user-item');
+            item.dataset.username = username;
+            const main = WikiDOM.element('div', 'user-main-info');
+            main.append(
+                WikiDOM.element('span', 'username', username),
+                WikiDOM.element('span', `role-badge role-${role}`, roleDisplay)
+            );
+            if (isCurrentUser) main.appendChild(WikiDOM.element('span', 'current-user-badge', window.i18n ? window.i18n.t('common.you') : 'You'));
 
-            // Render groups
-            const groupsHtml = user.groups && user.groups.length > 0 
-                ? `<div class="user-groups-list">
-                    ${user.groups.map(g => `<span class="group-tag">${g}</span>`).join('')}
-                   </div>` 
-                : '';
+            const info = WikiDOM.element('div', 'user-info');
+            info.appendChild(main);
+            if (Array.isArray(user.groups) && user.groups.length > 0) {
+                const groups = WikiDOM.element('div', 'user-groups-list');
+                user.groups.forEach(group => groups.appendChild(WikiDOM.element('span', 'group-tag', group)));
+                info.appendChild(groups);
+            }
 
-            return `
-                <div class="user-item" data-username="${user.username}">
-                    <div class="user-info">
-                        <div class="user-main-info">
-                            <span class="username">${user.username}</span>
-                            <span class="${roleBadgeClass}">${roleDisplay}</span>
-                            ${isCurrentUser ? `<span class="current-user-badge">${window.i18n ? window.i18n.t('common.you') : 'You'}</span>` : ''}
-                        </div>
-                        ${groupsHtml}
-                    </div>
-                    <div class="user-actions">
-                        <button class="edit-user-btn" title="Edit user" data-username="${user.username}" data-user='${JSON.stringify({role: role, is_admin: user.is_admin, groups: user.groups || []})}'>
-                            <i class="fa fa-pencil"></i>
-                        </button>
-                        ${!isCurrentUser ? `
-                        <button class="delete-user-btn" title="Delete user" data-username="${user.username}">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+            const actions = WikiDOM.element('div', 'user-actions');
+            const edit = WikiDOM.element('button', 'edit-user-btn');
+            edit.type = 'button';
+            edit.title = 'Edit user';
+            edit.dataset.username = username;
+            edit.dataset.user = JSON.stringify({role: role, is_admin: user.is_admin, groups: user.groups || []});
+            edit.appendChild(WikiDOM.icon('fa fa-pencil'));
+            actions.appendChild(edit);
+            if (!isCurrentUser) {
+                const remove = WikiDOM.element('button', 'delete-user-btn');
+                remove.type = 'button';
+                remove.title = 'Delete user';
+                remove.dataset.username = username;
+                remove.appendChild(WikiDOM.icon('fa fa-trash'));
+                actions.appendChild(remove);
+            }
+            item.append(info, actions);
+            fragment.appendChild(item);
+        });
 
-        usersList.innerHTML = html;
+        usersList.replaceChildren(fragment);
 
         // Add event listeners to the edit and delete buttons
         usersList.querySelectorAll('.edit-user-btn').forEach(button => {
@@ -968,10 +980,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.ok) {
+                const result = await response.json();
                 hideSettingsDialog();
-
-                // Refresh the default password banner in case admin changed away from "admin"
-                window.Auth.checkDefaultPassword();
 
                 var confirmationTitle = 'Profile';
                 var confirmationMessage = 'Password changed successfully';
@@ -983,6 +993,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.DialogSystem.showMessageDialog(
                     confirmationTitle,
                     confirmationMessage,
+                    function() {
+                        window.location.href = result.redirect || '/login';
+                    }
                 );
 
                 profileForm.reset();

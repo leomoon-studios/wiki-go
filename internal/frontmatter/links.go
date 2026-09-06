@@ -23,10 +23,10 @@ type Link struct {
 
 // LinksData represents the complete collection of links organized by category
 type LinksData struct {
-	Title      string             `json:"title"`       // Document title (H1)
-	Categories map[string][]Link  `json:"categories"`  // Links organized by category
-	TotalLinks int                `json:"total_links"` // Total number of links
-	Stats      LinksStats         `json:"stats"`       // Statistics for the links collection
+	Title      string            `json:"title"`       // Document title (H1)
+	Categories map[string][]Link `json:"categories"`  // Links organized by category
+	TotalLinks int               `json:"total_links"` // Total number of links
+	Stats      LinksStats        `json:"stats"`       // Statistics for the links collection
 }
 
 // LinksStats provides statistics about the links collection
@@ -35,6 +35,17 @@ type LinksStats struct {
 	TotalCategories int       `json:"total_categories"`
 	RecentLinks     int       `json:"recent_links"` // Links added in the last 30 days
 	LatestAdded     time.Time `json:"latest_added"` // Most recent addition date
+}
+
+type linksLabels struct {
+	NoResultsTitle   string
+	NoResultsMessage string
+	AddNewLink       string
+}
+
+type linksTemplateData struct {
+	*LinksData
+	Labels linksLabels
 }
 
 // NewLinksData creates a new LinksData instance with initialized maps
@@ -50,7 +61,7 @@ func (ld *LinksData) AddLink(link Link) {
 	if ld.Categories == nil {
 		ld.Categories = make(map[string][]Link)
 	}
-	
+
 	ld.Categories[link.Category] = append(ld.Categories[link.Category], link)
 	ld.updateStats()
 }
@@ -60,7 +71,7 @@ func (ld *LinksData) updateStats() {
 	totalLinks := 0
 	recentLinks := 0
 	oneDayAgo := time.Now().AddDate(0, 0, -1)
-	
+
 	for _, links := range ld.Categories {
 		totalLinks += len(links)
 		for _, link := range links {
@@ -69,7 +80,7 @@ func (ld *LinksData) updateStats() {
 			}
 		}
 	}
-	
+
 	ld.Stats = LinksStats{
 		TotalLinks:      totalLinks,
 		TotalCategories: len(ld.Categories),
@@ -83,51 +94,51 @@ func ValidateURL(rawURL string) error {
 	if strings.TrimSpace(rawURL) == "" {
 		return &LinkValidationError{"URL cannot be empty"}
 	}
-	
+
 	// Parse the URL
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return &LinkValidationError{"Invalid URL format: " + err.Error()}
 	}
-	
+
 	// Check if scheme is present and valid
 	if parsedURL.Scheme == "" {
 		return &LinkValidationError{"URL must include a scheme (http:// or https://)"}
 	}
-	
+
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return &LinkValidationError{"URL scheme must be http or https"}
 	}
-	
+
 	// Check if host is present
 	if parsedURL.Host == "" {
 		return &LinkValidationError{"URL must include a valid host"}
 	}
-	
+
 	return nil
 }
 
 // ValidateLink performs comprehensive validation on a Link struct
 func ValidateLink(link Link) []error {
 	var errors []error
-	
+
 	// Validate title
 	if strings.TrimSpace(link.Title) == "" {
 		errors = append(errors, &LinkValidationError{"Title cannot be empty"})
 	}
-	
+
 	// Validate URL
 	if err := ValidateURL(link.URL); err != nil {
 		errors = append(errors, err)
 	}
-	
+
 	// Validate category
 	if strings.TrimSpace(link.Category) == "" {
 		errors = append(errors, &LinkValidationError{"Category cannot be empty"})
 	}
-	
+
 	// Description is optional, so no validation needed
-	
+
 	return errors
 }
 
@@ -137,7 +148,7 @@ func ParseLinkDate(dateStr string) (time.Time, error) {
 	if t, err := time.Parse("2006-01-02", dateStr); err == nil {
 		return t, nil
 	}
-	
+
 	// Try other common formats as fallback
 	formats := []string{
 		"2006/01/02",
@@ -145,13 +156,13 @@ func ParseLinkDate(dateStr string) (time.Time, error) {
 		"2006-01-02 15:04:05",
 		"2006/01/02 15:04:05",
 	}
-	
+
 	for _, format := range formats {
 		if t, err := time.Parse(format, dateStr); err == nil {
 			return t, nil
 		}
 	}
-	
+
 	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
 }
 
@@ -161,12 +172,12 @@ func ParseDateFromString(dateStr string) time.Time {
 	if strings.TrimSpace(dateStr) == "" {
 		return time.Time{}
 	}
-	
+
 	// Try to parse in YYYY-MM-DD format
 	if t, err := time.Parse("2006-01-02", strings.TrimSpace(dateStr)); err == nil {
 		return t
 	}
-	
+
 	// If parsing fails, return zero time
 	return time.Time{}
 }
@@ -183,15 +194,15 @@ func FormatDateForDisplay(t time.Time) string {
 func SanitizeCategory(category string) string {
 	// Remove leading/trailing whitespace
 	category = strings.TrimSpace(category)
-	
+
 	// Replace multiple consecutive spaces with single space
 	category = regexp.MustCompile(`\s+`).ReplaceAllString(category, " ")
-	
+
 	// If empty after sanitization, return default
 	if category == "" {
 		return "General"
 	}
-	
+
 	return category
 }
 
@@ -201,10 +212,10 @@ func ParseLinksContent(content string) (*LinksData, error) {
 		Categories: make(map[string][]Link),
 		Stats:      LinksStats{},
 	}
-	
+
 	lines := strings.Split(content, "\n")
 	currentCategory := "General"
-	
+
 	// Regular expressions for parsing
 	h1Regex := regexp.MustCompile(`^#\s+(.+)$`)
 	h2Regex := regexp.MustCompile(`^##\s+(.+)$`)
@@ -212,21 +223,21 @@ func ParseLinksContent(content string) (*LinksData, error) {
 	// - [Title](URL) - Description | Date
 	// - [Title](URL) | Date
 	linkRegex := regexp.MustCompile(`^\s*[-*+]\s+\[([^\]]+)\]\(([^)]+)\)(?:\s*-\s*(.+?))?(?:\s*\|\s*(\d{4}-\d{2}-\d{2}))?\s*$`)
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Skip empty lines
 		if line == "" {
 			continue
 		}
-		
+
 		// Check for document title (# heading)
 		if h1Match := h1Regex.FindStringSubmatch(line); h1Match != nil {
 			data.Title = strings.TrimSpace(h1Match[1])
 			continue
 		}
-		
+
 		// Check for category headers (## heading)
 		if h2Match := h2Regex.FindStringSubmatch(line); h2Match != nil {
 			categoryName := strings.TrimSpace(h2Match[1])
@@ -241,7 +252,7 @@ func ParseLinksContent(content string) (*LinksData, error) {
 			}
 			continue
 		}
-		
+
 		// Check for link items (- [Title](URL) - Description | Date or - [Title](URL) | Date)
 		if linkMatch := linkRegex.FindStringSubmatch(line); linkMatch != nil {
 			title := strings.TrimSpace(linkMatch[1])
@@ -254,7 +265,7 @@ func ParseLinksContent(content string) (*LinksData, error) {
 			if len(linkMatch) > 4 && linkMatch[4] != "" {
 				dateStr = strings.TrimSpace(linkMatch[4])
 			}
-			
+
 			// Create link
 			link := Link{
 				Title:       title,
@@ -262,7 +273,7 @@ func ParseLinksContent(content string) (*LinksData, error) {
 				Description: description,
 				Category:    currentCategory,
 			}
-			
+
 			// Parse date if provided
 			if dateStr != "" {
 				if date, err := ParseLinkDate(dateStr); err == nil {
@@ -270,26 +281,26 @@ func ParseLinksContent(content string) (*LinksData, error) {
 				}
 				// Ignore date parsing errors, just use zero time
 			}
-			
+
 			// Validate link
 			if err := ValidateLink(link); err != nil {
 				// Skip invalid links but continue parsing
 				continue
 			}
-			
+
 			// Initialize category if it doesn't exist
 			if _, exists := data.Categories[currentCategory]; !exists {
 				data.Categories[currentCategory] = []Link{}
 			}
-			
+
 			// Add link to category
 			data.Categories[currentCategory] = append(data.Categories[currentCategory], link)
 		}
 	}
-	
+
 	// Calculate statistics
 	data.calculateStats()
-	
+
 	return data, nil
 }
 
@@ -298,31 +309,31 @@ func (ld *LinksData) calculateStats() {
 	totalLinks := 0
 	recentLinks := 0
 	var latestDate time.Time
-	
+
 	// 1 day ago for "recent" calculation
 	oneDayAgo := time.Now().AddDate(0, 0, -1)
-	
+
 	for _, links := range ld.Categories {
 		totalLinks += len(links)
-		
+
 		for _, link := range links {
 			// Count recent links (added in last 1 day)
 			if !link.AddedAt.IsZero() && link.AddedAt.After(oneDayAgo) {
 				recentLinks++
 			}
-			
+
 			// Track latest added date
 			if !link.AddedAt.IsZero() && link.AddedAt.After(latestDate) {
 				latestDate = link.AddedAt
 			}
 		}
 	}
-	
+
 	ld.Stats = LinksStats{
-		TotalLinks:    totalLinks,
+		TotalLinks:      totalLinks,
 		TotalCategories: len(ld.Categories),
-		RecentLinks:   recentLinks,
-		LatestAdded:   latestDate,
+		RecentLinks:     recentLinks,
+		LatestAdded:     latestDate,
 	}
 }
 
@@ -342,14 +353,18 @@ func RenderLinks(content string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse links content: %v", err)
 	}
-	
-	// Create template with helper functions
-	t := template.New("links").Funcs(template.FuncMap{
-		"getFaviconURL": getFaviconURL,
-	})
-	
-	// Read the external template file - for now we'll build a simple version
-	// This will be handled by the main document system which loads external templates
+
+	labels := linksLabels{
+		NoResultsTitle:   i18n.Translate("links.no_results_title"),
+		NoResultsMessage: i18n.Translate("links.no_results_message"),
+		AddNewLink:       i18n.Translate("links.add_new_link"),
+	}
+	return renderLinksTemplate(linksData, labels)
+}
+
+func renderLinksTemplate(linksData *LinksData, labels linksLabels) (string, error) {
+	t := template.New("links").Funcs(template.FuncMap{"getFaviconURL": getFaviconURL})
+
 	tmpl := `<div class="links-container" data-total-links="{{.Stats.TotalLinks}}">
     {{if .Title}}
     <!-- Document Title -->
@@ -361,7 +376,7 @@ func RenderLinks(content string) (string, error) {
         <div class="search-filter-row">
             <div class="search-group">
                 <input type="text" id="linksSearch" class="search-input" placeholder="Search links by title, description, or URL..." autocomplete="off">
-                <button type="button" class="search-clear" id="searchClear" title="Clear search" style="display: none;">×</button>
+                <button type="button" class="search-clear" id="searchClear" title="Clear search" hidden>×</button>
             </div>
             <div class="filter-group">
                 <div class="language-selector-wrapper">
@@ -384,7 +399,7 @@ func RenderLinks(content string) (string, error) {
                 </div>
             </div>
         </div>
-        <div class="search-results-info" id="searchResultsInfo" style="display: none;">
+        <div class="search-results-info" id="searchResultsInfo" hidden>
             <span class="results-count">0 links found</span>
             <button type="button" class="clear-filters" id="clearFilters">Clear all filters</button>
         </div>
@@ -415,7 +430,7 @@ func RenderLinks(content string) (string, error) {
     <!-- Links sections -->
     <div class="links-content" id="linksContent">
         <!-- Hidden data for all categories (including empty ones) -->
-        <div id="allCategories" style="display: none;" data-categories="{{range $category, $links := .Categories}}{{$category}},{{end}}"></div>
+        <div id="allCategories" hidden data-categories="{{range $category, $links := .Categories}}{{$category}},{{end}}"></div>
         
         {{range $category, $links := .Categories}}
         {{if gt (len $links) 0}}
@@ -449,32 +464,31 @@ func RenderLinks(content string) (string, error) {
     </div>
 
     <!-- No results message -->
-    <div class="no-results" id="noResults" style="display: none;">
+    <div class="no-results" id="noResults" hidden>
         <div class="no-results-icon">🔍</div>
-        <div class="no-results-title">` + i18n.Translate("links.no_results_title") + `</div>
-        <div class="no-results-message">` + i18n.Translate("links.no_results_message") + `</div>
+        <div class="no-results-title">{{.Labels.NoResultsTitle}}</div>
+        <div class="no-results-message">{{.Labels.NoResultsMessage}}</div>
     </div>
 
     <!-- Floating Add Link button for admin/editor users -->
     <div class="floating-add-link-container editor-admin-only">
-        <button class="floating-add-link-btn" onclick="showAddLinkDialog()" title="` + i18n.Translate("links.add_new_link") + `">
+        <button type="button" class="floating-add-link-btn" title="{{.Labels.AddNewLink}}">
             <i class="fa fa-plus"></i>
         </button>
     </div>
 </div>`
-	
-	t, err = t.Parse(tmpl)
+
+	t, err := t.Parse(tmpl)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %v", err)
 	}
-	
+
 	// Execute template
 	var buf strings.Builder
-	err = t.Execute(&buf, linksData)
-	if err != nil {
+	if err := t.Execute(&buf, linksTemplateData{LinksData: linksData, Labels: labels}); err != nil {
 		return "", fmt.Errorf("failed to execute template: %v", err)
 	}
-	
+
 	return buf.String(), nil
 }
 
@@ -486,12 +500,12 @@ func getFaviconURL(url string) string {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "https://" + url
 	}
-	
+
 	u, err := urlPkg.Parse(url)
 	if err != nil {
 		return ""
 	}
-	
+
 	// Use Google's favicon service
 	return fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=32", u.Host)
 }

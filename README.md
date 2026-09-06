@@ -130,6 +130,18 @@ docker-compose -f docker-compose-http.yml up -d
 
 This starts Wiki-Go on http://localhost:8080. Ideal when you terminate TLS at a reverse-proxy (Nginx/Traefik/Caddy). Remember to set `allow_insecure_cookies: true` in `data/config.yaml` if the proxy–>container hop is plain HTTP.
 
+To use the original client address for login throttling, add only the reverse proxy's exact IP address or network to `server.trusted_proxies`. The default empty list ignores all forwarded-IP headers.
+
+For standalone Nginx running on the same machine, when `proxy_pass` points to an IPv4 loopback address such as `http://127.0.0.1:3030`, use:
+
+```yaml
+server:
+    trusted_proxies:
+        - "127.0.0.1"
+```
+
+Add `::1` only when Nginx connects to Wiki-Go through IPv6 loopback. For Docker, use the dedicated Compose network's actual proxy address or CIDR rather than trusting every private network.
+
 <details>
 <summary>Nginx reverse-proxy configuration (click to expand)</summary>
 
@@ -201,6 +213,7 @@ server:
   host: 0.0.0.0
   port: 443            # container listens on 443
   allow_insecure_cookies: false
+  trusted_proxies: []  # add your reverse proxy IP/CIDR only when applicable
   ssl: true            # enable built-in HTTPS
   ssl_cert: "/path/to/certificate.crt"
   ssl_key:  "/path/to/private.key"
@@ -276,6 +289,10 @@ server:
     # where HTTPS is not available. This reduces security by allowing
     # cookies to be transmitted in plain text.
     allow_insecure_cookies: true
+    # Trust forwarding headers only from these proxy IPs or CIDR networks.
+    # Leave empty unless Wiki-Go is behind a reverse proxy.
+    # Standalone Nginx using proxy_pass http://127.0.0.1:PORT: ["127.0.0.1"]
+    trusted_proxies: []
     # Enable native TLS. When true, application will run over HTTPS using the
     # supplied certificate and key paths.
     ssl: false

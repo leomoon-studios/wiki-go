@@ -1021,24 +1021,28 @@ class KanbanTaskManager {
     // Process highlight text (==text==)
     processed = processed.replace(/==([^=]+)==/g, '<mark>$1</mark>');
 
-    // Process links [text](url)
-    processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    // Process images before links because image syntax contains link syntax.
+    processed = processed.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+      let safeURL = WikiDOM.markdownURL(url, true);
+      if (!safeURL) return alt;
+      if (!/^([/]|https?:)/i.test(safeURL)) {
+        const docPath = (typeof getCurrentDocPath === 'function') ? getCurrentDocPath() : '';
+        safeURL = '/api/files/' + docPath + '/' + safeURL;
+      }
+      return '<img src="' + safeURL + '" alt="' + alt + '">';
+    });
+
+    // Process links [text](url), allowing only browser-safe schemes.
+    processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, label, url) {
+      const safeURL = WikiDOM.markdownURL(url);
+      return safeURL ? '<a href="' + safeURL + '">' + label + '</a>' : label;
+    });
 
     // Process inline code (`code`)
     processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
 
     // Process strikethrough text (~~text~~)
     processed = processed.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-    // Process image markdown ![alt](url)
-    processed = processed.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
-      // Only rewrite if not absolute or already API path
-      if (!/^([\/]|https?:)/.test(url)) {
-        var docPath = (typeof getCurrentDocPath === 'function') ? getCurrentDocPath() : '';
-        url = '/api/files/' + docPath + '/' + url;
-      }
-      return '<img src="' + url + '" alt="' + alt + '">';
-    });
 
     return processed;
   }

@@ -1121,7 +1121,7 @@
         // Search functionality
         searchInput.addEventListener('input', function() {
             const query = this.value.trim();
-            searchClear.style.display = query ? 'block' : 'none';
+            searchClear.hidden = !query;
             applyFilters();
         });
 
@@ -1135,7 +1135,7 @@
         if (searchClear) {
             searchClear.addEventListener('click', function() {
                 searchInput.value = '';
-                searchClear.style.display = 'none';
+                searchClear.hidden = true;
                 applyFilters();
                 searchInput.focus();
             });
@@ -1147,7 +1147,7 @@
                 searchInput.value = '';
                 categoryFilter.value = '';
                 sortFilter.value = 'default';
-                searchClear.style.display = 'none';
+                searchClear.hidden = true;
                 applyFilters();
             });
         }
@@ -1260,14 +1260,14 @@
             if (filteredLinks.length === 0) {
                 // Show no results message
                 if (noResults) {
-                    noResults.style.display = 'block';
+                    noResults.hidden = false;
                 }
                 return;
             }
 
             // Hide no results message
             if (noResults) {
-                noResults.style.display = 'none';
+                noResults.hidden = true;
             }
 
             // Group filtered links by category and maintain sort order
@@ -1285,7 +1285,8 @@
                 const links = linksByCategory[categoryName];
                 
                 // Find the category element
-                const categoryElement = document.querySelector(`[data-category="${categoryName}"]`);
+                const categoryElement = Array.from(document.querySelectorAll('[data-category]'))
+                    .find(element => element.dataset.category === categoryName);
                 if (categoryElement) {
                     categoryElement.classList.remove('hidden');
                     
@@ -1329,11 +1330,11 @@
                 }
                 
                 if (searchResultsInfo) {
-                    searchResultsInfo.style.display = 'flex';
+                    searchResultsInfo.hidden = false;
                 }
             } else {
                 if (searchResultsInfo) {
-                    searchResultsInfo.style.display = 'none';
+                    searchResultsInfo.hidden = true;
                 }
             }
         }

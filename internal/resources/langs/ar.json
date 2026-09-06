@@ -32,6 +32,9 @@
 
   "nav.home": "الرئيسية",
   "nav.back_to_home": "العودة إلى الرئيسية",
+  "chapter_links.on_this_page": "في هذه الصفحة",
+  "chapter_links.expand": "توسيع روابط الأقسام",
+  "chapter_links.retract": "طي روابط الأقسام",
   "sitemap.title": "خريطة الموقع",
   "sitemap.xml_sitemap": "خريطة الموقع XML",
   "sitemap.xml_description": "تنسيق XML لمحركات البحث",

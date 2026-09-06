@@ -29,13 +29,16 @@ func TestLinkPreprocessor_UsesConfiguredAbsoluteRoot(t *testing.T) {
 	}
 }
 
-func TestLinkPreprocessor_MissingLinkStillMarkedNotFound(t *testing.T) {
+func TestLinkPreprocessor_MissingLinkRemainsMarkdown(t *testing.T) {
 	rootDir := t.TempDir()
 	ConfigureContentPaths(rootDir, "documents")
 	t.Cleanup(func() { ConfigureContentPaths("data", "documents") })
 
 	got := LinkPreprocessor("[Missing](/missing#section)", "")
-	if !strings.Contains(got, `class="notfound"`) {
-		t.Errorf("missing link not marked notfound: %q", got)
+	if got != "[Missing](/missing#section)" {
+		t.Errorf("missing absolute link changed unexpectedly: %q", got)
+	}
+	if strings.Contains(got, "<") {
+		t.Errorf("link preprocessor emitted HTML: %q", got)
 	}
 }

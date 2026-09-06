@@ -32,6 +32,9 @@
 
   "nav.home": "Strona główna",
   "nav.back_to_home": "Wróć na stronę główną",
+  "chapter_links.on_this_page": "Na tej stronie",
+  "chapter_links.expand": "Rozwiń odnośniki do rozdziałów",
+  "chapter_links.retract": "Zwiń odnośniki do rozdziałów",
   "sitemap.title": "Mapa strony",
   "sitemap.xml_sitemap": "Mapa strony XML",
   "sitemap.xml_description": "Format XML dla wyszukiwarek",

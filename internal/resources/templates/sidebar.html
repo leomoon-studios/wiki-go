@@ -25,7 +25,7 @@
         <div class="owner">{{.Config.Wiki.Owner}}</div>
         <div class="notice">{{processShortcodes .Config.Wiki.Notice}}</div>
         <div class="sidebar-footer-buttons">
-            <button class="sidebar-footer-btn" aria-label="Sitemap" title="{{t "sitemap.title"}}" onclick="window.open('/sitemap/', '_blank')">
+            <button class="sidebar-footer-btn open-sitemap" aria-label="Sitemap" title="{{t "sitemap.title"}}" data-sitemap-url="/sitemap/">
                 <i class="fa fa-sitemap"></i>
             </button>
             <button class="sidebar-footer-btn" aria-label="Toggle theme">
