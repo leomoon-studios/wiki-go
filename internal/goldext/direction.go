@@ -88,7 +88,7 @@ func newSafeNestedMarkdown() goldmark.Markdown {
 			extension.Footnote,
 			extension.DefinitionList,
 			extension.GFM,
-			&safeInlineFormattingExtension{},
+			TrustedNodes,
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),

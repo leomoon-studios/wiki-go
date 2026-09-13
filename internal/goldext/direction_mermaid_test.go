@@ -107,6 +107,35 @@ func TestMermaidFenceEscapesSourceAndUsesStrictBrowserConfig(t *testing.T) {
 	}
 }
 
+func TestDetailsBlocksRenderNestedMermaidFences(t *testing.T) {
+	markdown := newTrustedFenceTestMarkdown()
+	for name, source := range map[string][]byte{
+		"backtick details with tilde Mermaid": []byte("````details Details\n~~~mermaid\ngraph LR;\n    A-->B;\n~~~\n````\n"),
+		"tilde details with backtick Mermaid": []byte("~~~details Details\n```mermaid\ngraph LR;\n    A-->B;\n```\n~~~\n"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var output bytes.Buffer
+			if err := markdown.Convert(source, &output); err != nil {
+				t.Fatalf("render nested Mermaid: %v", err)
+			}
+
+			got := output.String()
+			for _, want := range []string{
+				`<details class="markdown-details"><summary>Details</summary>`,
+				`<div class="mermaid">graph LR;`,
+				`A--&gt;B;`,
+			} {
+				if !strings.Contains(got, want) {
+					t.Errorf("details output omitted %q: %s", want, got)
+				}
+			}
+			if strings.Contains(got, `language-mermaid`) {
+				t.Fatalf("nested Mermaid fence rendered as a code block: %s", got)
+			}
+		})
+	}
+}
+
 func TestDirectionAndMermaidRendersDoNotShareState(t *testing.T) {
 	const renderCount = 32
 	markdown := newTrustedFenceTestMarkdown()
