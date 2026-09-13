@@ -36,3 +36,15 @@ func TestDocumentRendererRejectsUnsafeMediaInputs(t *testing.T) {
 		t.Fatalf("unsafe media input created active embed markup: %s", got)
 	}
 }
+
+func TestDocumentRendererPreservesExternalMarkdownImages(t *testing.T) {
+	got := string(RenderMarkdownWithPath(
+		"![Markdown Logo](https://www.markdownlang.com/static/images/logo.png)",
+		"guides/start",
+	))
+
+	want := `<img src="https://www.markdownlang.com/static/images/logo.png" alt="Markdown Logo">`
+	if !strings.Contains(got, want) {
+		t.Fatalf("external Markdown image was not rendered: %s", got)
+	}
+}

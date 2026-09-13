@@ -58,8 +58,9 @@ func CSPMiddleware(next http.Handler) http.Handler {
 			"style-src 'self' 'unsafe-inline'",
 			"script-src 'self'",
 			"script-src-attr 'none'",
-			// Images from same origin and data: URLs (for embedded images)
-			"img-src 'self' data: https://www.google.com https://*.gstatic.com https://*.ytimg.com https://*.vimeocdn.com",
+			// Markdown image destinations are validated to allow HTTP(S), alongside
+			// same-origin and data: images.
+			"img-src 'self' data: http: https:",
 			// Connect only to same origin
 			"connect-src 'self'",
 			// Fonts from same origin

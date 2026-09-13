@@ -27,9 +27,9 @@ func TestCSPMiddlewareEnforcesSameOriginScripts(t *testing.T) {
 		}
 	}
 	imageDirective := cspDirective(policy, "img-src")
-	for _, faviconOrigin := range []string{"https://www.google.com", "https://*.gstatic.com"} {
-		if !strings.Contains(imageDirective, faviconOrigin) {
-			t.Errorf("image policy blocks link favicons from %s: %q", faviconOrigin, imageDirective)
+	for _, source := range []string{"'self'", "data:", "http:", "https:"} {
+		if !strings.Contains(imageDirective, source) {
+			t.Errorf("image policy blocks supported image source %s: %q", source, imageDirective)
 		}
 	}
 	for _, forbidden := range []string{"'unsafe-inline'", "'unsafe-eval'"} {
