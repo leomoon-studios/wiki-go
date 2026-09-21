@@ -1174,11 +1174,19 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Validate request
-	if renameReq.CurrentPath == "" || renameReq.NewName == "" {
+	if renameReq.CurrentPath == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
 			Message: "Current path and new name are required.",
+		})
+		return
+	}
+	if err := validateAttachmentFilename(renameReq.NewName); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{
+			Success: false,
+			Message: "New name must be a valid filename.",
 		})
 		return
 	}
