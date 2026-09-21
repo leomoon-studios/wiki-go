@@ -107,14 +107,23 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		return
 	}
 
-	// Clean and normalize the path
-	docPath = filepath.Clean(docPath)
-	docPath = strings.TrimSuffix(docPath, "/")
-	docPath = strings.ReplaceAll(docPath, "\\", "/")
+	canonicalDocPath, err := utils.CanonicalRequestPath(docPath)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid document path."})
+		return
+	}
+	docPath = strings.TrimPrefix(canonicalDocPath, "/")
 
 	// Special case for homepage
-	if docPath == "" || docPath == "/" {
+	if docPath == "" {
 		docPath = "pages/home"
+	}
+	logicalPath, err := logicalDocumentPath(docPath)
+	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
+		return
 	}
 
 	// Determine the full filesystem path to the document's directory
@@ -336,9 +345,13 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	}
 
 	// Clean and normalize the path
-	path = filepath.Clean(path)
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
+	canonicalPath, err := utils.CanonicalRequestPath(path)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
+		return
+	}
+	path = strings.TrimPrefix(canonicalPath, "/")
 
 	// Determine logical path for access check
 	logicalPath := "/" + path
@@ -474,10 +487,14 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	// Remove leading slash if present
 	path = strings.TrimPrefix(path, "/")
 
-	// Clean and normalize the path
-	path = filepath.Clean(path)
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
+	// Canonicalize before applying document authorization.
+	canonicalPath, err := utils.CanonicalRequestPath(path)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
+		return
+	}
+	path = strings.TrimPrefix(canonicalPath, "/")
 
 	// Verify we have a path
 	if path == "" {
@@ -486,6 +503,12 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 			Success: false,
 			Message: "Invalid file path.",
 		})
+		return
+	}
+	logicalPath, err := attachmentDocumentPath(path)
+	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
 	}
 
@@ -1058,6 +1081,10 @@ func ListDocumentsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Co
 				// Remove any leading slash that might remain
 				relPath = strings.TrimPrefix(relPath, "/")
 			}
+			logicalPath, pathErr := logicalDocumentPath(relPath)
+			if pathErr != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+				return nil
+			}
 
 			// Add to documents list
 			documents = append(documents, Document{
@@ -1160,15 +1187,30 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	logger.Debug("Rename request received - CurrentPath: %s, NewName: %s", renameReq.CurrentPath, renameReq.NewName)
 
 	// Clean and normalize the path
-	path := renameReq.CurrentPath
-	path = filepath.Clean(path)
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
+	canonicalPath, err := utils.CanonicalRequestPath(renameReq.CurrentPath)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
+		return
+	}
+	path := strings.TrimPrefix(canonicalPath, "/")
+	sourceLogicalPath, err := attachmentDocumentPath(path)
+	if err != nil || !canAccessLogicalDocument(session, cfg, sourceLogicalPath) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
+		return
+	}
 
 	// Extract directory and filename
 	dir := filepath.Dir(path)
 	filename := filepath.Base(path)
 	newPath := filepath.Join(dir, renameReq.NewName)
+	destinationLogicalPath, err := attachmentDocumentPath(filepath.ToSlash(newPath))
+	if err != nil || !canAccessLogicalDocument(session, cfg, destinationLogicalPath) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
+		return
+	}
 
 	// Log paths for debugging
 	logger.Debug("Path components: path=%s, dir=%s, filename=%s, newPath=%s", path, dir, filename, newPath)
@@ -1241,7 +1283,7 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Rename the file
-	err := os.Rename(currentFilePath, newFilePath)
+	err = os.Rename(currentFilePath, newFilePath)
 	if err != nil {
 		logger.Error("Error renaming file: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

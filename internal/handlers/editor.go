@@ -45,7 +45,15 @@ func SourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the path from the URL, removing the /api/source prefix
-	path := strings.TrimPrefix(r.URL.Path, "/api/source")
+	path, err := logicalDocumentPath(strings.TrimPrefix(r.URL.Path, "/api/source"))
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
+	if !canAccessLogicalDocument(session, cfg, path) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
+		return
+	}
 
 	var docPath string
 	var dirPath string
@@ -56,13 +64,11 @@ func SourceHandler(w http.ResponseWriter, r *http.Request) {
 		docPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
 		dirPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home")
 	} else {
-		// Clean and normalize the path
-		path = filepath.Clean(path)
-		path = strings.TrimSuffix(path, "/")
-		path = strings.ReplaceAll(path, "\\", "/")
-
-		// Get the full filesystem path, adding the documents subdirectory
-		dirPath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+		dirPath, err = utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+		if err != nil {
+			sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+			return
+		}
 		docPath = filepath.Join(dirPath, "document.md")
 	}
 
@@ -137,7 +143,15 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the path from the URL, removing the /api/save prefix
-	path := strings.TrimPrefix(r.URL.Path, "/api/save")
+	path, err := logicalDocumentPath(strings.TrimPrefix(r.URL.Path, "/api/save"))
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
+	if !canAccessLogicalDocument(session, cfg, path) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
+		return
+	}
 
 	var docPath string
 	var relativePath string // To store path relative to the documents dir
@@ -148,16 +162,15 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		docPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
 		relativePath = "pages/home"
 	} else {
-		// Clean and normalize the path
-		path = filepath.Clean(path)
-		path = strings.TrimSuffix(path, "/")
-		path = strings.ReplaceAll(path, "\\", "/")
-
 		// Save relative path for versioning
 		relativePath = "documents/" + strings.TrimPrefix(path, "/")
 
-		// Get the full filesystem path, adding the documents subdirectory
-		docPath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path, "document.md")
+		docDir, resolveErr := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+		if resolveErr != nil {
+			sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+			return
+		}
+		docPath = filepath.Join(docDir, "document.md")
 	}
 
 	// Read the request body (new content)
@@ -294,6 +307,15 @@ func CreateDocumentHandler(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Invalid path after sanitization", http.StatusBadRequest, "")
 		return
 	}
+	logicalPath, err := logicalDocumentPath(cleanPath)
+	if err != nil {
+		sendJSONError(w, "Invalid path after sanitization", http.StatusBadRequest, "")
+		return
+	}
+	if !canAccessLogicalDocument(session, cfg, logicalPath) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
+		return
+	}
 
 	logger.Debug("Creating document: Title=%s, Path=%s, CleanPath=%s", req.Title, req.Path, cleanPath)
 
@@ -304,14 +326,17 @@ func CreateDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Creating document: Title=%s, Path=%s, CleanPath=%s", req.Title, req.Path, cleanPath)
 
 	// Build the file path
-	documentDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
-	fullPath := filepath.Join(documentDir, cleanPath)
+	fullPath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, logicalPath)
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
 
 	// Log the full path
 	logger.Debug("Full path: %s", fullPath)
 
 	// Create the directory if it doesn't exist
-	err := os.MkdirAll(fullPath, 0755)
+	err = os.MkdirAll(fullPath, 0755)
 	if err != nil {
 		logger.Error("Error creating directories: %v", err)
 		sendJSONError(w, "Failed to create directories", http.StatusInternalServerError, err.Error())
@@ -438,16 +463,23 @@ func DeleteDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove "/api/document" prefix from the path
-	docPath := strings.TrimPrefix(urlPath, "/api/document")
-	if docPath == "" {
+	docPath, err := logicalDocumentPath(strings.TrimPrefix(urlPath, "/api/document"))
+	if err != nil || docPath == "/" {
 		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "Document path is required")
+		return
+	}
+	if !canAccessLogicalDocument(session, cfg, docPath) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
 		return
 	}
 
 	// Build the file path
-	docPath = filepath.Clean(docPath)
-	documentDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
-	fullPath := filepath.Join(documentDir, docPath)
+	fullPath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, docPath)
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
+	relativeDocPath := strings.TrimPrefix(docPath, "/")
 
 	// Check if file exists
 	fileInfo, err := os.Stat(fullPath)
@@ -472,30 +504,30 @@ func DeleteDocumentHandler(w http.ResponseWriter, r *http.Request) {
 			sendJSONError(w, "Error deleting directory", http.StatusInternalServerError, err.Error())
 			return
 		}
-		logger.Info("User %s deleted document %s", session.Username, filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, docPath))
+		logger.Info("User %s deleted document %s", session.Username, fullPath)
 	} else {
 		// Delete the file
 		if err := os.Remove(fullPath); err != nil {
 			sendJSONError(w, "Error deleting document", http.StatusInternalServerError, err.Error())
 			return
 		}
-		logger.Info("User %s deleted document %s", session.Username, filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, docPath))
+		logger.Info("User %s deleted document %s", session.Username, fullPath)
 	}
 
 	// Also delete the corresponding versions directory
 	var versionsPath string
-	if docPath == "pages/home" {
+	if relativeDocPath == "pages/home" {
 		// For homepage, use the new path
 		versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home")
-	} else if strings.HasPrefix(docPath, "documents/") {
+	} else if strings.HasPrefix(relativeDocPath, "documents/") {
 		// Path already includes "documents/" prefix
-		versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", docPath)
+		versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", relativeDocPath)
 	} else {
 		// Add "documents/" prefix for regular documents
-		versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", docPath)
+		versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", relativeDocPath)
 		if strings.HasSuffix(fullPath, ".md") {
 			// If we're deleting a .md file, remove the .md extension from the versions path
-			versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", strings.TrimSuffix(docPath, ".md"))
+			versionsPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", strings.TrimSuffix(relativeDocPath, ".md"))
 		}
 	}
 
@@ -510,7 +542,7 @@ func DeleteDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Also delete the corresponding comments directory
-	commentsPath := filepath.Join(cfg.Wiki.RootDir, "comments", docPath)
+	commentsPath := filepath.Join(cfg.Wiki.RootDir, "comments", relativeDocPath)
 
 	// Check if comments directory exists before attempting to delete
 	if _, err := os.Stat(commentsPath); err == nil {

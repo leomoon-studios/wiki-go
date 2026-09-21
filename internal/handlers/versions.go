@@ -122,7 +122,18 @@ func VersionsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
 }
 
 // handleListVersions lists all versions for a document
-func handleListVersions(w http.ResponseWriter, _ *http.Request, cfg *config.Config, docPath string) {
+func handleListVersions(w http.ResponseWriter, r *http.Request, cfg *config.Config, docPath string) {
+	logicalPath, err := logicalDocumentPath(docPath)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
+		return
+	}
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
+		return
+	}
+	docPath = versionStoragePath(logicalPath)
+
 	// Adjust the path for the new versioning structure
 	var versionsDir string
 	if docPath == "pages/home" {
@@ -191,7 +202,18 @@ func handleListVersions(w http.ResponseWriter, _ *http.Request, cfg *config.Conf
 }
 
 // handleGetVersion retrieves the content of a specific version
-func handleGetVersion(w http.ResponseWriter, _ *http.Request, cfg *config.Config, docPath, timestamp string) {
+func handleGetVersion(w http.ResponseWriter, r *http.Request, cfg *config.Config, docPath, timestamp string) {
+	logicalPath, err := logicalDocumentPath(docPath)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
+		return
+	}
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
+		return
+	}
+	docPath = versionStoragePath(logicalPath)
+
 	// Adjust the path for the new versioning structure
 	var versionPath string
 	if docPath == "pages/home" {
@@ -234,6 +256,16 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 		sendJSONErrorVersion(w, "Method not allowed. Use POST to restore a version.", http.StatusMethodNotAllowed)
 		return
 	}
+	logicalPath, err := logicalDocumentPath(docPath)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
+		return
+	}
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
+		return
+	}
+	docPath = versionStoragePath(logicalPath)
 
 	// Set content type
 	w.Header().Set("Content-Type", "application/json")
@@ -345,4 +377,11 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+func versionStoragePath(logicalPath string) string {
+	if logicalPath == "/" {
+		return "pages/home"
+	}
+	return strings.TrimPrefix(logicalPath, "/")
 }

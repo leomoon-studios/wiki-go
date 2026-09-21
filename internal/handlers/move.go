@@ -9,6 +9,7 @@ import (
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
 	"wiki-go/internal/logger"
+	"wiki-go/internal/utils"
 )
 
 // MoveRequest represents the request to move or rename a document or category
@@ -62,9 +63,25 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		return
 	}
 
-	// Clean and normalize paths
-	moveReq.SourcePath = cleanPath(moveReq.SourcePath)
-	moveReq.TargetPath = cleanPath(moveReq.TargetPath)
+	// Canonicalize paths before authorization or filesystem access.
+	sourceLogicalPath, err := logicalDocumentPath(moveReq.SourcePath)
+	if err != nil || sourceLogicalPath == "/" {
+		sendJSONResponse(w, false, "Invalid source path", http.StatusBadRequest, "", "")
+		return
+	}
+	if !canAccessLogicalDocument(session, cfg, sourceLogicalPath) {
+		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
+		return
+	}
+	moveReq.SourcePath = strings.TrimPrefix(sourceLogicalPath, "/")
+	if moveReq.TargetPath != "" {
+		targetLogicalPath, targetErr := logicalDocumentPath(moveReq.TargetPath)
+		if targetErr != nil {
+			sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
+			return
+		}
+		moveReq.TargetPath = strings.TrimPrefix(targetLogicalPath, "/")
+	}
 
 	// If target path is empty, set it to root
 	if moveReq.TargetPath == "" && moveReq.NewSlug == "" {
@@ -88,27 +105,31 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 	// Determine if this is a rename or move operation
 	isRename := moveReq.NewSlug != ""
-	
+
 	// Check if this is a move to root operation
 	moveToRoot := false
 	sourceBase := filepath.Base(moveReq.SourcePath)
 	sourceDir := filepath.Dir(moveReq.SourcePath)
-	
+
 	// If we're moving to the root (empty target path) and the source is not already at the root
 	if moveReq.TargetPath == "" && sourceDir != "." {
 		moveToRoot = true
 		logger.Debug("Detected move to root operation: %s -> %s", moveReq.SourcePath, moveReq.NewSlug)
 	}
-	
+
 	// Determine if this is a move operation
 	isMove := moveReq.TargetPath != "" || moveToRoot
-	
+
 	logger.Debug("Operation analysis: sourceBase=%s, sourceDir=%s, moveToRoot=%v",
 		sourceBase, sourceDir, moveToRoot)
 
 	// Build the full source path
 	documentDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
-	fullSourcePath := filepath.Join(documentDir, moveReq.SourcePath)
+	fullSourcePath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, sourceLogicalPath)
+	if err != nil {
+		sendJSONResponse(w, false, "Invalid source path", http.StatusBadRequest, "", "")
+		return
+	}
 
 	// Check if source exists
 	_, err = os.Stat(fullSourcePath)
@@ -140,39 +161,56 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	} else if isMove && !isRename {
 		// Move operation (change path only)
 		sourceName := filepath.Base(moveReq.SourcePath)
-		
+
 		// Special case for moving to root
 		if moveReq.TargetPath == "" {
 			newPath = sourceName
 		} else {
 			newPath = filepath.Join(moveReq.TargetPath, sourceName)
 		}
-		
+
 		fullTargetPath = filepath.Join(documentDir, newPath)
 	} else if isMove && isRename {
 		// Both move and rename
-		
+
 		// Special case for moving to root
 		if moveReq.TargetPath == "" {
 			newPath = moveReq.NewSlug
 		} else {
 			newPath = filepath.Join(moveReq.TargetPath, moveReq.NewSlug)
 		}
-		
+
 		fullTargetPath = filepath.Join(documentDir, newPath)
 	} else {
 		// This case should not happen due to earlier validation
 		sendJSONResponse(w, false, "Either new slug or target path must be provided", http.StatusBadRequest, "", "")
 		return
 	}
-	
+
+	targetLogicalPath, err := logicalDocumentPath(newPath)
+	if err != nil {
+		sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
+		return
+	}
+	targetParentPath, err := logicalDocumentPath(filepath.ToSlash(filepath.Dir(targetLogicalPath)))
+	if err != nil || !canAccessLogicalDocument(session, cfg, targetParentPath) || !canAccessLogicalDocument(session, cfg, targetLogicalPath) {
+		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
+		return
+	}
+	newPath = strings.TrimPrefix(targetLogicalPath, "/")
+	fullTargetPath, err = utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, targetLogicalPath)
+	if err != nil {
+		sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
+		return
+	}
+
 	// Log the calculated paths
 	logger.Debug("Calculated paths: newPath=%s, fullTargetPath=%s", newPath, fullTargetPath)
 
 	// Check if target already exists, but only if it's not the same as the source
 	// We need to check if the document.md file exists at the target path
 	targetDocPath := filepath.Join(fullTargetPath, "document.md")
-	
+
 	// Skip the check if the target is the same as the source (just in a different location)
 	// This allows moving a document to the root with the same name
 	if fullTargetPath != fullSourcePath {
@@ -180,14 +218,14 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 			// Check if this is a case-only rename (e.g., "test" to "Test")
 			sourceBaseLower := strings.ToLower(filepath.Base(moveReq.SourcePath))
 			targetBaseLower := strings.ToLower(moveReq.NewSlug)
-			
+
 			// If it's not a case-only rename, then it's a conflict
 			if sourceBaseLower != targetBaseLower || filepath.Dir(fullSourcePath) == filepath.Dir(fullTargetPath) {
 				sendJSONResponse(w, false, "A document already exists at the target location", http.StatusConflict, "", "")
 				return
 			}
 		}
-		
+
 		// Also check if the directory itself exists and is not empty
 		if info, err := os.Stat(fullTargetPath); err == nil && info.IsDir() {
 			// Check if the directory is empty
@@ -212,7 +250,7 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		sendJSONResponse(w, false, "Source and target paths are the same", http.StatusBadRequest, "", "")
 		return
 	}
-	
+
 	// Move the document or category
 	if err := os.Rename(fullSourcePath, fullTargetPath); err != nil {
 		logger.Error("Error moving document: %v", err)
