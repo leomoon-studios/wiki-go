@@ -105,15 +105,26 @@ jobs:
 
       - name: Get commits since last stable tag
         id: changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Find the most recent stable tag (excluding dev/rc/beta/alpha)
           PREV_STABLE_TAG=$(git tag --sort=-v:refname | grep -v -E '(dev|rc|beta|alpha)' | head -n2 | tail -n1)
           echo "Previous stable tag: $PREV_STABLE_TAG"
-          LOG=$(git log "$PREV_STABLE_TAG"..HEAD --pretty=format:"- %s (%h by %an)")
-          echo "$LOG"
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+            echo "CHANGELOG<<EOF"
+            while IFS= read -r commit_hash; do
+              subject="$(git show -s --format=%s "$commit_hash")"
+              author_name="$(git show -s --format=%an "$commit_hash")"
+              author_login="$(gh api "repos/$GITHUB_REPOSITORY/commits/$commit_hash" --jq '.author.login // empty' 2>/dev/null || true)"
+              if [[ -n "$author_login" ]]; then
+                printf -- '- %s (`%s` by [%s](https://github.com/%s))\n' "$subject" "${commit_hash:0:7}" "$author_name" "$author_login"
+              else
+                printf -- '- %s (`%s` by %s)\n' "$subject" "${commit_hash:0:7}" "$author_name"
+              fi
+            done < <(git rev-list "$PREV_STABLE_TAG"..HEAD)
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
       - name: Create Release
         id: create_release

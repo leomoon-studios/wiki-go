@@ -77,18 +77,29 @@ jobs:
 
       - name: Get commits since last tag
         id: changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Find the most recent tag (including dev/rc/beta/alpha)
           PREV_TAG=$(git tag --sort=-v:refname | head -n2 | tail -n1)
           echo "Previous tag: $PREV_TAG"
-          LOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s (%h by %an)")
-          echo "$LOG"
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          echo "⚠️ **This is a development build and may contain bugs or incomplete features**" >> $GITHUB_ENV
-          echo "" >> $GITHUB_ENV
-          echo "Changes since $PREV_TAG:" >> $GITHUB_ENV
-          echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+            echo "CHANGELOG<<EOF"
+            echo "⚠️ **This is a development build and may contain bugs or incomplete features**"
+            echo
+            echo "Changes since $PREV_TAG:"
+            while IFS= read -r commit_hash; do
+              subject="$(git show -s --format=%s "$commit_hash")"
+              author_name="$(git show -s --format=%an "$commit_hash")"
+              author_login="$(gh api "repos/$GITHUB_REPOSITORY/commits/$commit_hash" --jq '.author.login // empty' 2>/dev/null || true)"
+              if [[ -n "$author_login" ]]; then
+                printf -- '- %s (`%s` by [%s](https://github.com/%s))\n' "$subject" "${commit_hash:0:7}" "$author_name" "$author_login"
+              else
+                printf -- '- %s (`%s` by %s)\n' "$subject" "${commit_hash:0:7}" "$author_name"
+              fi
+            done < <(git rev-list "$PREV_TAG"..HEAD)
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
       - name: Create Release
         id: create_release
