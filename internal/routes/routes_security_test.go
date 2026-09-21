@@ -144,6 +144,36 @@ func TestEditorRoutesRejectLiteralAndEncodedBackslashTraversal(t *testing.T) {
 	}
 }
 
+func TestMetadataRouteRequiresEditorRole(t *testing.T) {
+	testConfig := newRouteSecurityTestConfig(t)
+	viewerCookie := routeSessionCookie(t, testConfig, "metadata-viewer", config.RoleViewer, nil)
+	editorCookie := routeSessionCookie(t, testConfig, "metadata-editor", config.RoleEditor, nil)
+	tests := []struct {
+		name       string
+		cookie     *http.Cookie
+		wantStatus int
+	}{
+		{name: "unauthenticated", wantStatus: http.StatusForbidden},
+		{name: "viewer", cookie: viewerCookie, wantStatus: http.StatusForbidden},
+		{name: "editor", cookie: editorCookie, wantStatus: http.StatusBadRequest},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/api/links/fetch-metadata", strings.NewReader(`{"url":"http://127.0.0.1/"}`))
+			request.Header.Set("Content-Type", "application/json")
+			if test.cookie != nil {
+				request.AddCookie(test.cookie)
+			}
+			response := httptest.NewRecorder()
+			http.DefaultServeMux.ServeHTTP(response, request)
+
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d; body: %s", response.Code, test.wantStatus, response.Body.String())
+			}
+		})
+	}
+}
+
 func newRouteSecurityTestConfig(t *testing.T) *config.Config {
 	t.Helper()
 	root := t.TempDir()

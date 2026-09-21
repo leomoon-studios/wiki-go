@@ -29,6 +29,11 @@ type MetadataResponse struct {
 
 // FetchMetadataHandler handles POST /api/links/fetch-metadata requests
 func FetchMetadataHandler(w http.ResponseWriter, r *http.Request) {
+	resolver := net.DefaultResolver
+	fetchMetadataHandler(w, r, resolver, newMetadataHTTPClient(resolver, &net.Dialer{}))
+}
+
+func fetchMetadataHandler(w http.ResponseWriter, r *http.Request, resolver metadataHostnameResolver, client *http.Client) {
 	// Only allow POST requests (like all other API endpoints)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -50,13 +55,13 @@ func FetchMetadataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the initial outbound destination before creating a request.
-	if _, err := validateOutboundMetadataURL(r.Context(), targetURL, net.DefaultResolver); err != nil {
+	if _, err := validateOutboundMetadataURL(r.Context(), targetURL, resolver); err != nil {
 		respondWithError(w, "URL destination is not allowed", http.StatusBadRequest)
 		return
 	}
 
 	// Fetch metadata
-	metadata, err := fetchURLMetadata(targetURL)
+	metadata, err := fetchURLMetadataWithClient(targetURL, client)
 	if err != nil {
 		logger.Warn("Metadata fetch failed: %v", err)
 		respondWithError(w, "Failed to fetch metadata", http.StatusBadGateway)
