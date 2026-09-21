@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"wiki-go/internal/auth"
@@ -63,24 +64,24 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		return
 	}
 
-	// Canonicalize paths before authorization or filesystem access.
-	sourceLogicalPath, err := logicalDocumentPath(moveReq.SourcePath)
-	if err != nil || sourceLogicalPath == "/" {
+	// Resolve paths before authorization or filesystem access.
+	source, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, moveReq.SourcePath)
+	if err != nil {
 		sendJSONResponse(w, false, "Invalid source path", http.StatusBadRequest, "", "")
 		return
 	}
-	if !canAccessLogicalDocument(session, cfg, sourceLogicalPath) {
+	if !canAccessLogicalDocument(session, cfg, source.LogicalPath) {
 		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
 		return
 	}
-	moveReq.SourcePath = strings.TrimPrefix(sourceLogicalPath, "/")
+	moveReq.SourcePath = strings.TrimPrefix(source.LogicalPath, "/")
 	if moveReq.TargetPath != "" {
-		targetLogicalPath, targetErr := logicalDocumentPath(moveReq.TargetPath)
+		target, targetErr := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, moveReq.TargetPath)
 		if targetErr != nil {
 			sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
 			return
 		}
-		moveReq.TargetPath = strings.TrimPrefix(targetLogicalPath, "/")
+		moveReq.TargetPath = strings.TrimPrefix(target.LogicalPath, "/")
 	}
 
 	// If target path is empty, set it to root
@@ -108,8 +109,8 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 	// Check if this is a move to root operation
 	moveToRoot := false
-	sourceBase := filepath.Base(moveReq.SourcePath)
-	sourceDir := filepath.Dir(moveReq.SourcePath)
+	sourceBase := path.Base(moveReq.SourcePath)
+	sourceDir := path.Dir(moveReq.SourcePath)
 
 	// If we're moving to the root (empty target path) and the source is not already at the root
 	if moveReq.TargetPath == "" && sourceDir != "." {
@@ -123,13 +124,7 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	logger.Debug("Operation analysis: sourceBase=%s, sourceDir=%s, moveToRoot=%v",
 		sourceBase, sourceDir, moveToRoot)
 
-	// Build the full source path
-	documentDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
-	fullSourcePath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, sourceLogicalPath)
-	if err != nil {
-		sendJSONResponse(w, false, "Invalid source path", http.StatusBadRequest, "", "")
-		return
-	}
+	fullSourcePath := source.FilesystemPath
 
 	// Check if source exists
 	_, err = os.Stat(fullSourcePath)
@@ -152,24 +147,21 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 	if isRename && !isMove {
 		// Rename operation (change slug only)
-		parentDir := filepath.Dir(moveReq.SourcePath)
+		parentDir := path.Dir(moveReq.SourcePath)
 		if parentDir == "." {
 			parentDir = "" // Root directory
 		}
-		newPath = filepath.Join(parentDir, moveReq.NewSlug)
-		fullTargetPath = filepath.Join(documentDir, newPath)
+		newPath = path.Join(parentDir, moveReq.NewSlug)
 	} else if isMove && !isRename {
 		// Move operation (change path only)
-		sourceName := filepath.Base(moveReq.SourcePath)
+		sourceName := path.Base(moveReq.SourcePath)
 
 		// Special case for moving to root
 		if moveReq.TargetPath == "" {
 			newPath = sourceName
 		} else {
-			newPath = filepath.Join(moveReq.TargetPath, sourceName)
+			newPath = path.Join(moveReq.TargetPath, sourceName)
 		}
-
-		fullTargetPath = filepath.Join(documentDir, newPath)
 	} else if isMove && isRename {
 		// Both move and rename
 
@@ -177,32 +169,26 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		if moveReq.TargetPath == "" {
 			newPath = moveReq.NewSlug
 		} else {
-			newPath = filepath.Join(moveReq.TargetPath, moveReq.NewSlug)
+			newPath = path.Join(moveReq.TargetPath, moveReq.NewSlug)
 		}
-
-		fullTargetPath = filepath.Join(documentDir, newPath)
 	} else {
 		// This case should not happen due to earlier validation
 		sendJSONResponse(w, false, "Either new slug or target path must be provided", http.StatusBadRequest, "", "")
 		return
 	}
 
-	targetLogicalPath, err := logicalDocumentPath(newPath)
+	target, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, newPath)
 	if err != nil {
 		sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
 		return
 	}
-	targetParentPath, err := logicalDocumentPath(filepath.ToSlash(filepath.Dir(targetLogicalPath)))
-	if err != nil || !canAccessLogicalDocument(session, cfg, targetParentPath) || !canAccessLogicalDocument(session, cfg, targetLogicalPath) {
+	targetParentPath := path.Dir(target.LogicalPath)
+	if !canAccessLogicalDocument(session, cfg, targetParentPath) || !canAccessLogicalDocument(session, cfg, target.LogicalPath) {
 		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
 		return
 	}
-	newPath = strings.TrimPrefix(targetLogicalPath, "/")
-	fullTargetPath, err = utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, targetLogicalPath)
-	if err != nil {
-		sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
-		return
-	}
+	newPath = strings.TrimPrefix(target.LogicalPath, "/")
+	fullTargetPath = target.FilesystemPath
 
 	// Log the calculated paths
 	logger.Debug("Calculated paths: newPath=%s, fullTargetPath=%s", newPath, fullTargetPath)
@@ -216,7 +202,7 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	if fullTargetPath != fullSourcePath {
 		if _, err := os.Stat(targetDocPath); err == nil {
 			// Check if this is a case-only rename (e.g., "test" to "Test")
-			sourceBaseLower := strings.ToLower(filepath.Base(moveReq.SourcePath))
+			sourceBaseLower := strings.ToLower(path.Base(moveReq.SourcePath))
 			targetBaseLower := strings.ToLower(moveReq.NewSlug)
 
 			// If it's not a case-only rename, then it's a conflict
@@ -319,21 +305,6 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 	// Return success response with both old and new paths
 	sendJSONResponse(w, true, "Document moved successfully", http.StatusOK, newPath, moveReq.SourcePath)
-}
-
-// Helper function to clean and normalize a path
-func cleanPath(path string) string {
-	if path == "" {
-		return ""
-	}
-
-	// Clean and normalize the path
-	path = filepath.Clean(path)
-	path = strings.TrimPrefix(path, "/")
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
-
-	return path
 }
 
 // Helper function to send a JSON response

@@ -123,29 +123,17 @@ func VersionsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
 
 // handleListVersions lists all versions for a document
 func handleListVersions(w http.ResponseWriter, r *http.Request, cfg *config.Config, docPath string) {
-	logicalPath, err := logicalDocumentPath(docPath)
+	resolved, err := resolveVersionDocumentPaths(cfg, docPath)
 	if err != nil {
 		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
 		return
 	}
-	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, resolved.logicalPath) {
 		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
 		return
 	}
-	docPath = versionStoragePath(logicalPath)
-
-	// Adjust the path for the new versioning structure
-	var versionsDir string
-	if docPath == "pages/home" {
-		// For homepage, use the new path
-		versionsDir = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home")
-	} else if strings.HasPrefix(docPath, "documents/") {
-		// Path already includes "documents/" prefix
-		versionsDir = filepath.Join(cfg.Wiki.RootDir, "versions", docPath)
-	} else {
-		// Add "documents/" prefix for regular documents
-		versionsDir = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", docPath)
-	}
+	docPath = resolved.apiPath
+	versionsDir := resolved.versionsDir
 
 	// Check if versions directory exists
 	if _, err := os.Stat(versionsDir); os.IsNotExist(err) {
@@ -203,29 +191,16 @@ func handleListVersions(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 
 // handleGetVersion retrieves the content of a specific version
 func handleGetVersion(w http.ResponseWriter, r *http.Request, cfg *config.Config, docPath, timestamp string) {
-	logicalPath, err := logicalDocumentPath(docPath)
+	resolved, err := resolveVersionDocumentPaths(cfg, docPath)
 	if err != nil {
 		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
 		return
 	}
-	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, resolved.logicalPath) {
 		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
 		return
 	}
-	docPath = versionStoragePath(logicalPath)
-
-	// Adjust the path for the new versioning structure
-	var versionPath string
-	if docPath == "pages/home" {
-		// For homepage, use the new path
-		versionPath = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home", timestamp+".md")
-	} else if strings.HasPrefix(docPath, "documents/") {
-		// Path already includes "documents/" prefix
-		versionPath = filepath.Join(cfg.Wiki.RootDir, "versions", docPath, timestamp+".md")
-	} else {
-		// Add "documents/" prefix for regular documents
-		versionPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", docPath, timestamp+".md")
-	}
+	versionPath := filepath.Join(resolved.versionsDir, timestamp+".md")
 
 	// Check if version file exists
 	if _, err := os.Stat(versionPath); os.IsNotExist(err) {
@@ -256,16 +231,16 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 		sendJSONErrorVersion(w, "Method not allowed. Use POST to restore a version.", http.StatusMethodNotAllowed)
 		return
 	}
-	logicalPath, err := logicalDocumentPath(docPath)
+	resolved, err := resolveVersionDocumentPaths(cfg, docPath)
 	if err != nil {
 		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
 		return
 	}
-	if !canAccessLogicalDocument(auth.GetSession(r), cfg, logicalPath) {
+	if !canAccessLogicalDocument(auth.GetSession(r), cfg, resolved.logicalPath) {
 		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
 		return
 	}
-	docPath = versionStoragePath(logicalPath)
+	docPath = resolved.apiPath
 
 	// Set content type
 	w.Header().Set("Content-Type", "application/json")
@@ -277,27 +252,8 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 
 	logger.Debug("Restore request: docPath=%s, timestamp=%s", docPath, timestamp)
 
-	// Adjust the path for the new versioning structure
-	var versionFilePath string
-	var documentPath string
-	var versionRelativePath string
-
-	if docPath == "pages/home" {
-		// For homepage, use the new paths
-		versionFilePath = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home", timestamp+".md")
-		documentPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
-		versionRelativePath = "pages/home"
-	} else if strings.HasPrefix(docPath, "documents/") {
-		// Path already includes "documents/" prefix
-		versionFilePath = filepath.Join(cfg.Wiki.RootDir, "versions", docPath, timestamp+".md")
-		documentPath = filepath.Join(cfg.Wiki.RootDir, strings.TrimPrefix(docPath, "documents/"), "document.md")
-		versionRelativePath = docPath
-	} else {
-		// Add "documents/" prefix for regular documents
-		versionFilePath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", docPath, timestamp+".md")
-		documentPath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, docPath, "document.md")
-		versionRelativePath = "documents/" + docPath
-	}
+	versionFilePath := filepath.Join(resolved.versionsDir, timestamp+".md")
+	documentPath := filepath.Join(resolved.documentDir, "document.md")
 
 	logger.Debug("Version file path: %s", versionFilePath)
 	logger.Debug("Document path for restore: %s", documentPath)
@@ -332,19 +288,16 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 			// Create timestamp for version filename
 			newTimestamp := time.Now().Format("20060102150405") // Format: yyyymmddhhmmss
 
-			// Create versions directory path that mirrors the document path
-			versionDir := filepath.Join(cfg.Wiki.RootDir, "versions", versionRelativePath)
-
 			// Ensure versions directory exists
-			if err := os.MkdirAll(versionDir, 0755); err == nil {
+			if err := os.MkdirAll(resolved.versionsDir, 0755); err == nil {
 				// Create version file path with timestamp
-				newVersionPath := filepath.Join(versionDir, newTimestamp+".md")
+				newVersionPath := filepath.Join(resolved.versionsDir, newTimestamp+".md")
 
 				// Save the current content as a version
 				_ = os.WriteFile(newVersionPath, currentContent, 0644) // Ignore error for now
 
 				// Clean up old versions if needed
-				utils.CleanupOldVersions(versionDir, cfg.Wiki.MaxVersions)
+				utils.CleanupOldVersions(resolved.versionsDir, cfg.Wiki.MaxVersions)
 			}
 		}
 	}
@@ -379,9 +332,49 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 	json.NewEncoder(w).Encode(response)
 }
 
-func versionStoragePath(logicalPath string) string {
-	if logicalPath == "/" {
-		return "pages/home"
+type resolvedVersionPaths struct {
+	logicalPath string
+	apiPath     string
+	documentDir string
+	versionsDir string
+}
+
+func resolveVersionDocumentPaths(cfg *config.Config, documentPath string) (resolvedVersionPaths, error) {
+	initial, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, documentPath)
+	if err != nil {
+		return resolvedVersionPaths{}, err
 	}
-	return strings.TrimPrefix(logicalPath, "/")
+	storagePath := strings.TrimPrefix(initial.LogicalPath, "/")
+	if storagePath == "pages/home" {
+		documentDir, err := filepath.Abs(filepath.Join(cfg.Wiki.RootDir, "pages", "home"))
+		if err != nil {
+			return resolvedVersionPaths{}, err
+		}
+		versionsDir, err := filepath.Abs(filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home"))
+		if err != nil {
+			return resolvedVersionPaths{}, err
+		}
+		return resolvedVersionPaths{
+			logicalPath: "/",
+			apiPath:     "pages/home",
+			documentDir: documentDir,
+			versionsDir: versionsDir,
+		}, nil
+	}
+
+	storagePath = strings.TrimPrefix(storagePath, "documents/")
+	document, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, storagePath)
+	if err != nil {
+		return resolvedVersionPaths{}, err
+	}
+	versions, err := utils.ResolveRelativeDocumentPath(filepath.Join(cfg.Wiki.RootDir, "versions"), "documents", storagePath)
+	if err != nil {
+		return resolvedVersionPaths{}, err
+	}
+	return resolvedVersionPaths{
+		logicalPath: document.LogicalPath,
+		apiPath:     strings.TrimPrefix(document.LogicalPath, "/"),
+		documentDir: document.FilesystemPath,
+		versionsDir: versions.FilesystemPath,
+	}, nil
 }

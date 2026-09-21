@@ -44,32 +44,29 @@ func SourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the path from the URL, removing the /api/source prefix
-	path, err := logicalDocumentPath(strings.TrimPrefix(r.URL.Path, "/api/source"))
-	if err != nil {
-		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
-		return
-	}
-	if !canAccessLogicalDocument(session, cfg, path) {
-		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
-		return
-	}
-
+	requestPath := strings.TrimPrefix(r.URL.Path, "/api/source")
+	path := "/"
 	var docPath string
 	var dirPath string
 
 	// Special case for homepage (root path)
-	if path == "" || path == "/" {
+	if requestPath == "" || requestPath == "/" {
 		// For the homepage, we use the pages directory
 		docPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
 		dirPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home")
 	} else {
-		dirPath, err = utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+		resolved, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, strings.TrimPrefix(requestPath, "/"))
 		if err != nil {
 			sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
 			return
 		}
+		path = resolved.LogicalPath
+		dirPath = resolved.FilesystemPath
 		docPath = filepath.Join(dirPath, "document.md")
+	}
+	if !canAccessLogicalDocument(session, cfg, path) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
+		return
 	}
 
 	// Read the markdown file
@@ -142,35 +139,29 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the path from the URL, removing the /api/save prefix
-	path, err := logicalDocumentPath(strings.TrimPrefix(r.URL.Path, "/api/save"))
-	if err != nil {
-		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
-		return
-	}
-	if !canAccessLogicalDocument(session, cfg, path) {
-		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
-		return
-	}
-
+	requestPath := strings.TrimPrefix(r.URL.Path, "/api/save")
+	path := "/"
 	var docPath string
 	var relativePath string // To store path relative to the documents dir
 
 	// Special case for homepage (root path)
-	if path == "" || path == "/" {
+	if requestPath == "" || requestPath == "/" {
 		// For the homepage, we use the pages directory
 		docPath = filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
 		relativePath = "pages/home"
 	} else {
-		// Save relative path for versioning
-		relativePath = "documents/" + strings.TrimPrefix(path, "/")
-
-		docDir, resolveErr := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+		resolved, resolveErr := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, strings.TrimPrefix(requestPath, "/"))
 		if resolveErr != nil {
 			sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
 			return
 		}
-		docPath = filepath.Join(docDir, "document.md")
+		path = resolved.LogicalPath
+		relativePath = "documents/" + strings.TrimPrefix(path, "/")
+		docPath = filepath.Join(resolved.FilesystemPath, "document.md")
+	}
+	if !canAccessLogicalDocument(session, cfg, path) {
+		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
+		return
 	}
 
 	// Read the request body (new content)
