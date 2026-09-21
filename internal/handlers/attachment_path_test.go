@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -323,4 +325,136 @@ func TestRenameFileHandlerReturnsConflictForContainedDestination(t *testing.T) {
 	if response.Code != http.StatusConflict {
 		t.Fatalf("status = %d, want 409; body: %s", response.Code, response.Body.String())
 	}
+}
+
+func TestRenameFileHandlerRejectsReporterTraversalWithoutChangingFiles(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	configPath := filepath.Join(testConfig.Wiki.RootDir, "config.yaml")
+	const configContents = "users:\n  - username: admin\n"
+	if err := os.WriteFile(configPath, []byte(configContents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	documentDir := filepath.Join(testConfig.Wiki.RootDir, "documents", "foo")
+	if err := os.MkdirAll(documentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	payloadPath := filepath.Join(documentDir, "payload.txt")
+	const payloadContents = "controlled attachment"
+	if err := os.WriteFile(payloadPath, []byte(payloadContents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "source escape targeting config",
+			body: `{"currentPath":"../config.yaml","newName":"config-stolen.txt"}`,
+		},
+		{
+			name: "destination escape from attachment",
+			body: `{"currentPath":"foo/payload.txt","newName":"../../pwned.txt"}`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/api/files/rename", strings.NewReader(test.body))
+			request.AddCookie(editorCookie)
+			response := httptest.NewRecorder()
+			RenameFileHandler(response, request, testConfig)
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400; body: %s", response.Code, response.Body.String())
+			}
+		})
+	}
+
+	for path, want := range map[string]string{
+		configPath:  configContents,
+		payloadPath: payloadContents,
+	} {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("protected source %s is missing: %v", path, err)
+		}
+		if string(content) != want {
+			t.Fatalf("protected source %s changed to %q", path, content)
+		}
+	}
+	for _, unexpectedPath := range []string{
+		filepath.Join(testConfig.Wiki.RootDir, "config-stolen.txt"),
+		filepath.Join(testConfig.Wiki.RootDir, "pwned.txt"),
+		filepath.Join(testConfig.Wiki.RootDir, "documents", "config-stolen.txt"),
+	} {
+		if _, err := os.Stat(unexpectedPath); !os.IsNotExist(err) {
+			t.Fatalf("escaping destination exists at %s: %v", unexpectedPath, err)
+		}
+	}
+}
+
+func TestUploadAndDeleteUseAttachmentStorageBoundary(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	testConfig.Wiki.MaxUploadSize = 10
+	testConfig.Wiki.DisableFileUploadChecking = true
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	outsideHomepageRoot := filepath.Join(testConfig.Wiki.RootDir, "pages", "other")
+	if err := os.MkdirAll(outsideHomepageRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	protectedPath := filepath.Join(outsideHomepageRoot, "protected.txt")
+	const protectedContents = "must remain unchanged"
+	if err := os.WriteFile(protectedPath, []byte(protectedContents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	uploadRequest := attachmentUploadRequest(t, "pages/other", "uploaded.txt", "blocked upload")
+	uploadRequest.AddCookie(editorCookie)
+	uploadResponse := httptest.NewRecorder()
+	UploadFileHandler(uploadResponse, uploadRequest, testConfig)
+	if uploadResponse.Code != http.StatusBadRequest {
+		t.Fatalf("upload status = %d, want 400; body: %s", uploadResponse.Code, uploadResponse.Body.String())
+	}
+	if _, err := os.Stat(filepath.Join(outsideHomepageRoot, "uploaded.txt")); !os.IsNotExist(err) {
+		t.Fatalf("upload escaped the attachment roots: %v", err)
+	}
+
+	deleteRequest := httptest.NewRequest(http.MethodDelete, "/api/files/delete/pages/other/protected.txt", nil)
+	deleteRequest.AddCookie(editorCookie)
+	deleteResponse := httptest.NewRecorder()
+	DeleteFileHandler(deleteResponse, deleteRequest, testConfig)
+	if deleteResponse.Code != http.StatusBadRequest {
+		t.Fatalf("delete status = %d, want 400; body: %s", deleteResponse.Code, deleteResponse.Body.String())
+	}
+	content, err := os.ReadFile(protectedPath)
+	if err != nil {
+		t.Fatalf("protected file was removed: %v", err)
+	}
+	if string(content) != protectedContents {
+		t.Fatalf("protected file changed to %q", content)
+	}
+}
+
+func attachmentUploadRequest(t *testing.T, documentPath, filename, contents string) *http.Request {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("docPath", documentPath); err != nil {
+		t.Fatal(err)
+	}
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Write([]byte(contents)); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/api/files/upload", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	return request
 }

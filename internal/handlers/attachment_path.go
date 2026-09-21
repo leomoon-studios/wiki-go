@@ -20,39 +20,57 @@ type resolvedAttachmentPath struct {
 // documents root or the homepage root. The input is the storage path used by
 // attachment APIs, such as "finance/report.pdf" or "pages/home/logo.png".
 func resolveAttachmentPath(cfg *config.Config, attachmentPath string) (resolvedAttachmentPath, error) {
+	resolved, relativePath, err := resolveAttachmentStoragePath(cfg, attachmentPath)
+	if err != nil {
+		return resolvedAttachmentPath{}, err
+	}
+	if relativePath == "" {
+		return resolvedAttachmentPath{}, fmt.Errorf("attachment path does not name a file")
+	}
+	return resolved, nil
+}
+
+// resolveAttachmentDirectory applies the attachment storage boundary while
+// allowing the homepage root itself as an upload destination.
+func resolveAttachmentDirectory(cfg *config.Config, documentPath string) (resolvedAttachmentPath, error) {
+	resolved, _, err := resolveAttachmentStoragePath(cfg, documentPath)
+	return resolved, err
+}
+
+func resolveAttachmentStoragePath(cfg *config.Config, attachmentPath string) (resolvedAttachmentPath, string, error) {
 	if attachmentPath == "" {
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path is empty")
+		return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path is empty")
 	}
 
 	normalized := strings.ReplaceAll(attachmentPath, "\\", "/")
 	if isAbsoluteAttachmentPath(normalized) {
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path is absolute")
+		return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path is absolute")
 	}
 	for _, segment := range strings.Split(normalized, "/") {
 		if segment == ".." {
-			return resolvedAttachmentPath{}, fmt.Errorf("attachment path contains parent traversal")
+			return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path contains parent traversal")
 		}
 	}
 
 	canonical, err := utils.CanonicalRequestPath(normalized)
 	if err != nil {
-		return resolvedAttachmentPath{}, fmt.Errorf("canonicalize attachment path: %w", err)
+		return resolvedAttachmentPath{}, "", fmt.Errorf("canonicalize attachment path: %w", err)
 	}
 	storagePath := strings.TrimPrefix(canonical, "/")
 	if storagePath == "" {
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path is empty")
+		return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path is empty")
 	}
 
 	var allowedRoot string
 	var relativePath string
 	switch {
 	case storagePath == "pages/home":
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path does not name a file")
+		allowedRoot = filepath.Join(cfg.Wiki.RootDir, "pages", "home")
 	case strings.HasPrefix(storagePath, "pages/home/"):
 		allowedRoot = filepath.Join(cfg.Wiki.RootDir, "pages", "home")
 		relativePath = strings.TrimPrefix(storagePath, "pages/home/")
 	case strings.HasPrefix(storagePath, "pages/"):
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path is outside the homepage root")
+		return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path is outside the homepage root")
 	default:
 		allowedRoot = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 		relativePath = storagePath
@@ -60,22 +78,22 @@ func resolveAttachmentPath(cfg *config.Config, attachmentPath string) (resolvedA
 
 	rootPath, err := filepath.Abs(allowedRoot)
 	if err != nil {
-		return resolvedAttachmentPath{}, fmt.Errorf("resolve attachment root: %w", err)
+		return resolvedAttachmentPath{}, "", fmt.Errorf("resolve attachment root: %w", err)
 	}
 	filesystemPath := filepath.Join(rootPath, filepath.FromSlash(relativePath))
 	containedPath, err := filepath.Rel(rootPath, filesystemPath)
 	if err != nil {
-		return resolvedAttachmentPath{}, fmt.Errorf("resolve attachment path: %w", err)
+		return resolvedAttachmentPath{}, "", fmt.Errorf("resolve attachment path: %w", err)
 	}
 	if containedPath == ".." || strings.HasPrefix(containedPath, ".."+string(filepath.Separator)) || filepath.IsAbs(containedPath) {
-		return resolvedAttachmentPath{}, fmt.Errorf("attachment path escapes its allowed root")
+		return resolvedAttachmentPath{}, "", fmt.Errorf("attachment path escapes its allowed root")
 	}
 
 	return resolvedAttachmentPath{
 		filesystemPath: filesystemPath,
 		rootPath:       rootPath,
 		storagePath:    storagePath,
-	}, nil
+	}, relativePath, nil
 }
 
 func validateAttachmentFilename(filename string) error {

@@ -107,18 +107,17 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		return
 	}
 
-	canonicalDocPath, err := utils.CanonicalRequestPath(docPath)
+	// Special case for homepage
+	if docPath == "/" {
+		docPath = "pages/home"
+	}
+	destination, err := resolveAttachmentDirectory(cfg, docPath)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid document path."})
 		return
 	}
-	docPath = strings.TrimPrefix(canonicalDocPath, "/")
-
-	// Special case for homepage
-	if docPath == "" {
-		docPath = "pages/home"
-	}
+	docPath = destination.storagePath
 	logicalPath, err := logicalDocumentPath(docPath)
 	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
 		w.WriteHeader(http.StatusForbidden)
@@ -126,15 +125,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		return
 	}
 
-	// Determine the full filesystem path to the document's directory
-	var uploadDir string
-	if strings.HasPrefix(docPath, "pages/") {
-		// For pages directory (like homepage), don't add the documents directory
-		uploadDir = filepath.Join(cfg.Wiki.RootDir, docPath)
-	} else {
-		// For regular documents
-		uploadDir = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, docPath)
-	}
+	uploadDir := destination.filesystemPath
 
 	// Check if directory exists
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
@@ -487,40 +478,20 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	// Remove leading slash if present
 	path = strings.TrimPrefix(path, "/")
 
-	// Canonicalize before applying document authorization.
-	canonicalPath, err := utils.CanonicalRequestPath(path)
+	resolved, err := resolveAttachmentPath(cfg, path)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
 		return
 	}
-	path = strings.TrimPrefix(canonicalPath, "/")
-
-	// Verify we have a path
-	if path == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(FileResponse{
-			Success: false,
-			Message: "Invalid file path.",
-		})
-		return
-	}
-	logicalPath, err := attachmentDocumentPath(path)
+	logicalPath, err := attachmentDocumentPath(resolved.storagePath)
 	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
 	}
 
-	// Determine the full filesystem path to the file
-	var filePath string
-	if strings.HasPrefix(path, "pages/") {
-		// For pages directory (like homepage), don't add the documents directory
-		filePath = filepath.Join(cfg.Wiki.RootDir, path)
-	} else {
-		// For regular documents
-		filePath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
-	}
+	filePath := resolved.filesystemPath
 
 	// Check if file exists
 	fileInfo, err := os.Stat(filePath)
