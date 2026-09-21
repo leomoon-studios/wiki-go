@@ -62,3 +62,72 @@ func TestResolveDocumentPathStaysWithinDocumentsRoot(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveRelativeDocumentPath(t *testing.T) {
+	root := t.TempDir()
+	documentsRoot := filepath.Join(root, "documents")
+	tests := []struct {
+		name        string
+		input       string
+		wantLogical string
+		wantPath    string
+	}{
+		{
+			name:        "nested document",
+			input:       "guides/getting-started",
+			wantLogical: "/guides/getting-started",
+			wantPath:    filepath.Join(documentsRoot, "guides", "getting-started"),
+		},
+		{
+			name:        "platform separator input",
+			input:       `guides\windows-install`,
+			wantLogical: "/guides/windows-install",
+			wantPath:    filepath.Join(documentsRoot, "guides", "windows-install"),
+		},
+		{
+			name:        "repeated separator input",
+			input:       "guides//install",
+			wantLogical: "/guides/install",
+			wantPath:    filepath.Join(documentsRoot, "guides", "install"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resolved, err := ResolveRelativeDocumentPath(root, "documents", test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resolved.LogicalPath != test.wantLogical {
+				t.Errorf("LogicalPath = %q, want %q", resolved.LogicalPath, test.wantLogical)
+			}
+			if resolved.FilesystemPath != test.wantPath {
+				t.Errorf("FilesystemPath = %q, want %q", resolved.FilesystemPath, test.wantPath)
+			}
+		})
+	}
+}
+
+func TestResolveRelativeDocumentPathRejectsUnsafeInput(t *testing.T) {
+	root := t.TempDir()
+	unsafePaths := []string{
+		"",
+		".",
+		"../outside",
+		"guides/../../outside",
+		`guides\..\..\outside`,
+		"guides/%5c../../outside",
+		"guides/%2e%2e/outside",
+		"/etc/passwd",
+		`\etc\passwd`,
+		`C:\Windows\system32`,
+	}
+
+	for _, unsafePath := range unsafePaths {
+		t.Run(unsafePath, func(t *testing.T) {
+			if resolved, err := ResolveRelativeDocumentPath(root, "documents", unsafePath); err == nil {
+				t.Fatalf("ResolveRelativeDocumentPath(%q) = %+v, want error", unsafePath, resolved)
+			}
+		})
+	}
+}

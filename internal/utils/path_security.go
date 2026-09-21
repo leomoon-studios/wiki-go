@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// ResolvedDocumentPath contains the canonical URL path used for authorization
+// and the corresponding filesystem path contained by the documents root.
+type ResolvedDocumentPath struct {
+	LogicalPath    string
+	FilesystemPath string
+}
+
 // CanonicalRequestPath converts the path already decoded once by net/http into
 // the single logical form used for authorization and filesystem resolution.
 func CanonicalRequestPath(requestPath string) (string, error) {
@@ -41,6 +48,48 @@ func CanonicalRequestPath(requestPath string) (string, error) {
 	return canonical, nil
 }
 
+// ResolveRelativeDocumentPath resolves a relative URL document path below the
+// configured documents root. URL-derived paths must be accepted and
+// canonicalized here before any part of them is passed to filepath.Join.
+func ResolveRelativeDocumentPath(rootDir, documentsDir, relativePath string) (ResolvedDocumentPath, error) {
+	if relativePath == "" {
+		return ResolvedDocumentPath{}, fmt.Errorf("document path is empty")
+	}
+
+	normalized := strings.ReplaceAll(relativePath, "\\", "/")
+	if isAbsoluteRelativePath(normalized) {
+		return ResolvedDocumentPath{}, fmt.Errorf("document path is absolute")
+	}
+	for _, segment := range strings.Split(normalized, "/") {
+		if segment == ".." {
+			return ResolvedDocumentPath{}, fmt.Errorf("document path contains parent traversal")
+		}
+	}
+
+	canonical, err := CanonicalRequestPath(normalized)
+	if err != nil {
+		return ResolvedDocumentPath{}, err
+	}
+	containedRelativePath := strings.TrimPrefix(canonical, "/")
+	if containedRelativePath == "" {
+		return ResolvedDocumentPath{}, fmt.Errorf("document path is empty")
+	}
+
+	documentsRoot, err := filepath.Abs(filepath.Join(rootDir, documentsDir))
+	if err != nil {
+		return ResolvedDocumentPath{}, fmt.Errorf("resolve documents root: %w", err)
+	}
+	candidate := filepath.Join(documentsRoot, filepath.FromSlash(containedRelativePath))
+	relative, err := filepath.Rel(documentsRoot, candidate)
+	if err != nil {
+		return ResolvedDocumentPath{}, fmt.Errorf("resolve document path: %w", err)
+	}
+	if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
+		return ResolvedDocumentPath{}, fmt.Errorf("document path escapes the documents root")
+	}
+	return ResolvedDocumentPath{LogicalPath: canonical, FilesystemPath: candidate}, nil
+}
+
 // ResolveDocumentPath resolves a canonical logical path below the configured
 // documents root and verifies containment before returning a filesystem path.
 func ResolveDocumentPath(rootDir, documentsDir, logicalPath string) (string, error) {
@@ -48,20 +97,20 @@ func ResolveDocumentPath(rootDir, documentsDir, logicalPath string) (string, err
 	if err != nil {
 		return "", err
 	}
+	resolved, err := ResolveRelativeDocumentPath(rootDir, documentsDir, strings.TrimPrefix(canonical, "/"))
+	if err != nil {
+		return "", err
+	}
+	return resolved.FilesystemPath, nil
+}
 
-	documentsRoot, err := filepath.Abs(filepath.Join(rootDir, documentsDir))
-	if err != nil {
-		return "", fmt.Errorf("resolve documents root: %w", err)
+func isAbsoluteRelativePath(value string) bool {
+	if path.IsAbs(value) || filepath.IsAbs(filepath.FromSlash(value)) {
+		return true
 	}
-	candidate := filepath.Join(documentsRoot, filepath.FromSlash(strings.TrimPrefix(canonical, "/")))
-	relative, err := filepath.Rel(documentsRoot, candidate)
-	if err != nil {
-		return "", fmt.Errorf("resolve document path: %w", err)
-	}
-	if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
-		return "", fmt.Errorf("document path escapes the documents root")
-	}
-	return candidate, nil
+	return len(value) >= 3 &&
+		((value[0] >= 'A' && value[0] <= 'Z') || (value[0] >= 'a' && value[0] <= 'z')) &&
+		value[1] == ':' && value[2] == '/'
 }
 
 func containsPercentEscape(value string) bool {
