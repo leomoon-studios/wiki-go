@@ -58,19 +58,13 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Get the requested path
-	path := r.URL.Path
-	if path == "/" {
-		HomeHandler(w, r, cfg)
-		return
-	}
-
-	// Clean and decode the path
-	path = filepath.Clean(path)
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
-	decodedPath, err := url.QueryUnescape(path)
+	path, err := utils.CanonicalRequestPath(r.URL.Path)
 	if err != nil {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	if path == "/" {
+		HomeHandler(w, r, cfg)
 		return
 	}
 
@@ -100,8 +94,12 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	// Mark active navigation item
 	utils.MarkActiveNavItem(nav, path)
 
-	// Get the full filesystem path - adjust to use documents subdirectory
-	fsPath := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, decodedPath)
+	// Resolve the same canonical path used for access control below the documents root.
+	fsPath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+	if err != nil {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
 
 	// Check if path exists
 	info, err := os.Stat(fsPath)
@@ -114,7 +112,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	navItem := utils.FindNavItem(nav, path)
 	if navItem == nil {
 		navItem = &types.NavItem{
-			Title: utils.FormatDirName(filepath.Base(decodedPath)),
+			Title: utils.FormatDirName(filepath.Base(path)),
 			Path:  path,
 			IsDir: true,
 		}
@@ -154,7 +152,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 		// Use the document path for rendering to handle local file references and
 		// collect the outline from the same trusted AST conversion.
-		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), decodedPath)
+		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), path)
 		content = safehtml.FromRenderer(renderResult.HTML)
 		if !isEditMode && documentLayout != "kanban" && documentLayout != "links" {
 			chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)
@@ -258,7 +256,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 			// Only load comments if they're allowed
 			if commentsAllowed {
-				commentsList, _ = comments.GetComments(decodedPath)
+				commentsList, _ = comments.GetComments(path)
 
 				// Process comments (render markdown, format timestamps)
 				for i := range commentsList {
@@ -283,7 +281,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		CommentsAllowed:    commentsAllowed,
 		IsAuthenticated:    isAuthenticated,
 		UserRole:           userRole,
-		DocPath:            decodedPath,
+		DocPath:            path,
 		DocumentLayout:     navItem.DocumentLayout,
 		IsEditMode:         isEditMode,
 		RawContent:         rawContent, // Pass raw markdown content for edit mode

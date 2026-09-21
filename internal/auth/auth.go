@@ -6,14 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"net/http"
-	"net/url"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 	"wiki-go/internal/config"
 	"wiki-go/internal/crypto"
 	"wiki-go/internal/logger"
+	"wiki-go/internal/utils"
 )
 
 // Session represents a user session
@@ -295,17 +293,11 @@ func RequireAuth(r *http.Request, cfg *config.Config) bool {
 // CheckAccess checks if the user is allowed to access the requested path and
 // returns both the result and the session so callers don't need a second lookup.
 func CheckAccess(r *http.Request, cfg *config.Config) (*Session, bool) {
-	path := r.URL.Path
-
-	// Clean and decode the path to match PageHandler logic
-	path = filepath.Clean(path)
-	path = strings.TrimSuffix(path, "/")
-	path = strings.ReplaceAll(path, "\\", "/")
-	if decodedPath, err := url.QueryUnescape(path); err == nil {
-		path = decodedPath
-	}
-
 	session := GetSession(r)
+	path, err := utils.CanonicalRequestPath(r.URL.Path)
+	if err != nil {
+		return session, false
+	}
 	return session, CanAccessDocument(path, session, cfg)
 }
 

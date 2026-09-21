@@ -68,3 +68,36 @@ func sessionForCookie(cookie *http.Cookie) *Session {
 	request.AddCookie(cookie)
 	return GetSession(request)
 }
+
+func TestCheckAccessCanonicalizesBeforeRuleMatching(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.AccessRules = []config.AccessRule{{
+		Pattern: "/finance/**",
+		Access:  "restricted",
+		Groups:  []string{"finance"},
+	}}
+
+	tests := []struct {
+		name    string
+		path    string
+		private bool
+		want    bool
+	}{
+		{name: "normal public path", path: "/public", want: true},
+		{name: "normal private path", path: "/internal", private: true, want: false},
+		{name: "restricted path", path: "/finance/report", want: false},
+		{name: "double encoded traversal", path: "/x/%252e%252e/finance", want: false},
+		{name: "in-wiki traversal", path: "/x/../finance", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg.Wiki.Private = test.private
+			request := httptest.NewRequest(http.MethodGet, test.path, nil)
+			_, got := CheckAccess(request, cfg)
+			if got != test.want {
+				t.Fatalf("CheckAccess(%q) = %t, want %t", test.path, got, test.want)
+			}
+		})
+	}
+}
