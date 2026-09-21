@@ -10,6 +10,7 @@ import (
 
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/handlers"
 )
 
 func TestCSPMiddlewareEnforcesSameOriginScripts(t *testing.T) {
@@ -95,6 +96,54 @@ func TestPageRouteRejectsResidualEncodedTraversalBeforeFilesystemLookup(t *testi
 	}
 }
 
+func TestEditorRoutesRejectLiteralAndEncodedBackslashTraversal(t *testing.T) {
+	testConfig := newRouteSecurityTestConfig(t)
+	editorCookie := routeSessionCookie(t, testConfig, "editor", config.RoleEditor, nil)
+	externalDocument := filepath.Join(testConfig.Wiki.RootDir, "outside", "document.md")
+	if err := os.MkdirAll(filepath.Dir(externalDocument), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const canary = "ROUTE-BACKSLASH-CANARY"
+	if err := os.WriteFile(externalDocument, []byte(canary), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+	}{
+		{name: "literal source", method: http.MethodGet, path: `/api/source/..\outside`},
+		{name: "encoded source", method: http.MethodGet, path: "/api/source/..%5Coutside"},
+		{name: "literal save", method: http.MethodPost, path: `/api/save/..\outside`, body: "# Attacker overwrite"},
+		{name: "encoded save", method: http.MethodPost, path: "/api/save/..%5Coutside", body: "# Attacker overwrite"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))
+			request.AddCookie(editorCookie)
+			response := httptest.NewRecorder()
+			http.DefaultServeMux.ServeHTTP(response, request)
+
+			if response.Code < 400 || response.Code >= 500 {
+				t.Fatalf("status = %d, want client error; body: %s", response.Code, response.Body.String())
+			}
+			if strings.Contains(response.Body.String(), canary) {
+				t.Fatal("route disclosed the external document canary")
+			}
+		})
+	}
+
+	content, err := os.ReadFile(externalDocument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != canary {
+		t.Fatalf("external document changed to %q", content)
+	}
+}
+
 func newRouteSecurityTestConfig(t *testing.T) *config.Config {
 	t.Helper()
 	root := t.TempDir()
@@ -119,6 +168,7 @@ func newRouteSecurityTestConfig(t *testing.T) *config.Config {
 	if err := auth.InitSessionStore(filepath.Join(root, "sessions.json")); err != nil {
 		t.Fatal(err)
 	}
+	handlers.InitHandlers(testConfig)
 
 	previousMux := http.DefaultServeMux
 	http.DefaultServeMux = http.NewServeMux()

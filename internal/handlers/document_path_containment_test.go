@@ -153,3 +153,81 @@ func TestResolveVersionDocumentPathsPreservesDocumentsAndHomepageRoots(t *testin
 		t.Fatalf("homepage versionsDir = %q", homepage.versionsDir)
 	}
 }
+
+func TestEditorCanReadSaveMoveAndRestoreContainedDocument(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	testConfig.Wiki.MaxVersions = 10
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	originalDir := filepath.Join(testConfig.Wiki.RootDir, "documents", "alpha")
+	if err := os.MkdirAll(originalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const originalContent = "# Original document"
+	if err := os.WriteFile(filepath.Join(originalDir, "document.md"), []byte(originalContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	sourceRequest := httptest.NewRequest(http.MethodGet, "/api/source/alpha", nil)
+	sourceRequest.AddCookie(editorCookie)
+	sourceResponse := httptest.NewRecorder()
+	SourceHandler(sourceResponse, sourceRequest)
+	if sourceResponse.Code != http.StatusOK || sourceResponse.Body.String() != originalContent {
+		t.Fatalf("source status = %d, body = %q", sourceResponse.Code, sourceResponse.Body.String())
+	}
+
+	const updatedContent = "# Updated document"
+	saveRequest := httptest.NewRequest(http.MethodPost, "/api/save/alpha", strings.NewReader(updatedContent))
+	saveRequest.AddCookie(editorCookie)
+	saveResponse := httptest.NewRecorder()
+	SaveHandler(saveResponse, saveRequest)
+	if saveResponse.Code != http.StatusOK {
+		t.Fatalf("save status = %d, want 200; body: %s", saveResponse.Code, saveResponse.Body.String())
+	}
+
+	versionDir := filepath.Join(testConfig.Wiki.RootDir, "versions", "documents", "alpha")
+	versions, err := os.ReadDir(versionDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(versions) != 1 {
+		t.Fatalf("saved versions = %d, want 1", len(versions))
+	}
+	timestamp := strings.TrimSuffix(versions[0].Name(), ".md")
+
+	moveRequest := httptest.NewRequest(http.MethodPost, "/api/document/move", strings.NewReader(`{
+		"sourcePath":"alpha",
+		"targetPath":"archive",
+		"newSlug":"renamed"
+	}`))
+	moveRequest.AddCookie(editorCookie)
+	moveResponse := httptest.NewRecorder()
+	MoveDocumentHandler(moveResponse, moveRequest, testConfig)
+	if moveResponse.Code != http.StatusOK {
+		t.Fatalf("move status = %d, want 200; body: %s", moveResponse.Code, moveResponse.Body.String())
+	}
+
+	movedDocument := filepath.Join(testConfig.Wiki.RootDir, "documents", "archive", "renamed", "document.md")
+	movedContent, err := os.ReadFile(movedDocument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(movedContent) != updatedContent {
+		t.Fatalf("moved content = %q, want %q", movedContent, updatedContent)
+	}
+
+	restoreRequest := httptest.NewRequest(http.MethodPost, "/api/versions/archive/renamed/"+timestamp+"/restore", nil)
+	restoreRequest.AddCookie(editorCookie)
+	restoreResponse := httptest.NewRecorder()
+	VersionsHandler(restoreResponse, restoreRequest, testConfig)
+	if restoreResponse.Code != http.StatusOK {
+		t.Fatalf("restore status = %d, want 200; body: %s", restoreResponse.Code, restoreResponse.Body.String())
+	}
+	restoredContent, err := os.ReadFile(movedDocument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(restoredContent) != originalContent {
+		t.Fatalf("restored content = %q, want %q", restoredContent, originalContent)
+	}
+}

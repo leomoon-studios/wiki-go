@@ -111,6 +111,8 @@ Access rules define who can view specific documents or folders based on URL path
 
 The same access rules are enforced for rendered pages and all document-scoped operations, including attachment, document, move, and version APIs. An editor role grants editing capabilities only for paths that the editor can access through public, private, or group-restricted rules. Administrators retain access to every path.
 
+Document API paths are normalized once and resolved beneath the configured documents directory before any file operation. Source, save, move, and version requests reject parent traversal, absolute filesystem paths, residual encoding, and traversal written with either forward slashes or backslashes. Homepage operations use only the fixed `pages/home` location and cannot select another path under `pages`.
+
 #### Access Levels
 
 | Who can view          |       Public       |      Private       |     Restricted     |
