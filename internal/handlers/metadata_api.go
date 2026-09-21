@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -49,10 +50,9 @@ func FetchMetadataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate URL format
-	parsedURL, err := url.Parse(targetURL)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		respondWithError(w, "Invalid URL format", http.StatusBadRequest)
+	// Validate the initial outbound destination before creating a request.
+	if _, err := validateOutboundMetadataURL(r.Context(), targetURL, net.DefaultResolver); err != nil {
+		respondWithError(w, "URL destination is not allowed", http.StatusBadRequest)
 		return
 	}
 
@@ -145,7 +145,7 @@ func fetchURLMetadata(targetURL string) (*URLMetadata, error) {
 
 	// Parse HTML metadata
 	metadata := parseHTMLMetadata(htmlContent)
-	
+
 	// If no title found, generate fallback from URL
 	if metadata.Title == "" {
 		metadata.Title = generateFallbackTitle(targetURL)
@@ -158,25 +158,25 @@ func fetchURLMetadata(targetURL string) (*URLMetadata, error) {
 func convertToUTF8(body []byte, contentType string) string {
 	// First, try to detect charset from Content-Type header
 	charset := extractCharsetFromContentType(contentType)
-	
+
 	// If no charset in header, try to detect from HTML meta tags
 	if charset == "" {
 		charset = extractCharsetFromHTML(string(body))
 	}
-	
+
 	// If still no charset, assume UTF-8
 	if charset == "" {
 		charset = "utf-8"
 	}
-	
+
 	// Normalize charset name
 	charset = strings.ToLower(strings.TrimSpace(charset))
-	
+
 	// If it's already UTF-8, just return as string
 	if charset == "utf-8" || charset == "utf8" {
 		return string(body)
 	}
-	
+
 	// Handle common non-UTF-8 encodings manually
 	switch charset {
 	case "windows-1251", "cp1251":
@@ -196,14 +196,14 @@ func extractCharsetFromContentType(contentType string) string {
 	if contentType == "" {
 		return ""
 	}
-	
+
 	// Look for charset= in Content-Type header
 	charsetRegex := regexp.MustCompile(`(?i)charset\s*=\s*([^;\s]+)`)
 	matches := charsetRegex.FindStringSubmatch(contentType)
 	if len(matches) > 1 {
 		return strings.Trim(matches[1], `"'`)
 	}
-	
+
 	return ""
 }
 
@@ -214,19 +214,19 @@ func extractCharsetFromHTML(html string) string {
 	if len(html) > 2048 {
 		searchArea = html[:2048]
 	}
-	
+
 	// Pattern 1: <meta charset="windows-1251">
 	charsetRegex1 := regexp.MustCompile(`(?i)<meta[^>]*charset\s*=\s*["\']?([^"\'\s>]+)`)
 	if matches := charsetRegex1.FindStringSubmatch(searchArea); len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	// Pattern 2: <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
 	charsetRegex2 := regexp.MustCompile(`(?i)<meta[^>]*http-equiv\s*=\s*["\']?content-type["\']?[^>]*content\s*=\s*["\'][^"\']*charset\s*=\s*([^"\'\s;]+)`)
 	if matches := charsetRegex2.FindStringSubmatch(searchArea); len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	return ""
 }
 
@@ -253,10 +253,10 @@ func convertWindows1251ToUTF8(data []byte) string {
 		0x0440, 0x0441, 0x0442, 0x0443, 0x0444, 0x0445, 0x0446, 0x0447,
 		0x0448, 0x0449, 0x044A, 0x044B, 0x044C, 0x044D, 0x044E, 0x044F,
 	}
-	
+
 	var result strings.Builder
 	result.Grow(len(data) * 2) // Pre-allocate for efficiency
-	
+
 	for _, b := range data {
 		if b < 128 {
 			// ASCII characters (0-127) are the same in Windows-1251 and UTF-8
@@ -267,7 +267,7 @@ func convertWindows1251ToUTF8(data []byte) string {
 			result.WriteRune(unicode)
 		}
 	}
-	
+
 	return result.String()
 }
 
@@ -276,11 +276,11 @@ func convertISO88591ToUTF8(data []byte) string {
 	// ISO-8859-1 is a subset of Unicode, so conversion is direct
 	var result strings.Builder
 	result.Grow(len(data))
-	
+
 	for _, b := range data {
 		result.WriteRune(rune(b))
 	}
-	
+
 	return result.String()
 }
 
@@ -293,10 +293,10 @@ func convertWindows1252ToUTF8(data []byte) string {
 		0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
 		0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178,
 	}
-	
+
 	var result strings.Builder
 	result.Grow(len(data))
-	
+
 	for _, b := range data {
 		if b < 128 {
 			// ASCII characters
@@ -310,7 +310,7 @@ func convertWindows1252ToUTF8(data []byte) string {
 			result.WriteRune(rune(b))
 		}
 	}
-	
+
 	return result.String()
 }
 
@@ -320,7 +320,7 @@ func parseHTMLMetadata(html string) *URLMetadata {
 
 	// Extract title (try multiple methods)
 	metadata.Title = extractMetaTitle(html)
-	
+
 	// Extract description (try multiple methods)
 	metadata.Description = extractMetaDescription(html)
 
@@ -384,7 +384,7 @@ func extractMetaProperty(html, property string) string {
 	if !strings.Contains(strings.ToLower(html), strings.ToLower(property)) {
 		return ""
 	}
-	
+
 	// SIMPLE APPROACH: Just look for the exact pattern
 	// <meta property="og:title" content="The Furniture Center" />
 	simplePattern := fmt.Sprintf(`<meta property="%s" content="([^"]*)"`, regexp.QuoteMeta(property))
@@ -392,7 +392,7 @@ func extractMetaProperty(html, property string) string {
 	if matches := simpleRegex.FindStringSubmatch(html); len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	// Try case-insensitive version
 	ciPattern := fmt.Sprintf(`(?i)<meta property="%s" content="([^"]*)"`, regexp.QuoteMeta(property))
 	ciRegex := regexp.MustCompile(ciPattern)
@@ -409,14 +409,14 @@ func extractMetaName(html, name string) string {
 	if !strings.Contains(strings.ToLower(html), strings.ToLower(name)) {
 		return ""
 	}
-	
+
 	// Try multiple case variations since some sites use "Description" instead of "description"
 	nameVariations := []string{
-		name,                    // exact case (e.g., "description")
-		strings.Title(name),     // title case (e.g., "Description") 
-		strings.ToUpper(name),   // upper case (e.g., "DESCRIPTION")
+		name,                  // exact case (e.g., "description")
+		strings.Title(name),   // title case (e.g., "Description")
+		strings.ToUpper(name), // upper case (e.g., "DESCRIPTION")
 	}
-	
+
 	for _, nameVar := range nameVariations {
 		// More flexible pattern that handles attributes in any order and additional attributes
 		// Matches: <meta name="Description" content="..." /> or <meta id="..." name="Description" content="..." />
@@ -425,7 +425,7 @@ func extractMetaName(html, name string) string {
 		if matches := flexibleRegex.FindStringSubmatch(html); len(matches) > 1 {
 			return matches[1]
 		}
-		
+
 		// Also try content before name (some sites have different attribute order)
 		altOrderPattern := fmt.Sprintf(`(?i)<meta[^>]*content\s*=\s*["\']([^"\']*)["\'][^>]*name\s*=\s*["\']%s["\']`, regexp.QuoteMeta(nameVar))
 		altOrderRegex := regexp.MustCompile(altOrderPattern)
@@ -474,7 +474,7 @@ func generateFallbackTitle(targetURL string) string {
 			lastPart = regexp.MustCompile(`\.(html|htm|php|asp|aspx|jsp)$`).ReplaceAllString(lastPart, "")
 			lastPart = strings.ReplaceAll(lastPart, "-", " ")
 			lastPart = strings.ReplaceAll(lastPart, "_", " ")
-			
+
 			// Capitalize words
 			words := strings.Fields(lastPart)
 			for i, word := range words {
@@ -482,7 +482,7 @@ func generateFallbackTitle(targetURL string) string {
 					words[i] = strings.ToUpper(word[:1]) + word[1:]
 				}
 			}
-			
+
 			if title := strings.Join(words, " "); len(title) > 2 {
 				return title
 			}
@@ -492,7 +492,7 @@ func generateFallbackTitle(targetURL string) string {
 	// Fallback to domain name
 	hostname := parsedURL.Hostname()
 	hostname = strings.TrimPrefix(hostname, "www.")
-	
+
 	if hostname != "" {
 		domainParts := strings.Split(hostname, ".")
 		if len(domainParts) > 0 && domainParts[0] != "" {
