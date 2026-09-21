@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -82,6 +83,30 @@ func validateAttachmentFilename(filename string) error {
 		return fmt.Errorf("invalid attachment filename")
 	}
 	return nil
+}
+
+func resolveAttachmentRenameDestination(source resolvedAttachmentPath, filename string) (resolvedAttachmentPath, error) {
+	if err := validateAttachmentFilename(filename); err != nil {
+		return resolvedAttachmentPath{}, err
+	}
+	if source.filesystemPath == "" || source.rootPath == "" || source.storagePath == "" {
+		return resolvedAttachmentPath{}, fmt.Errorf("source attachment path is incomplete")
+	}
+
+	filesystemPath := filepath.Join(filepath.Dir(source.filesystemPath), filename)
+	containedPath, err := filepath.Rel(source.rootPath, filesystemPath)
+	if err != nil {
+		return resolvedAttachmentPath{}, fmt.Errorf("resolve attachment destination: %w", err)
+	}
+	if containedPath == ".." || strings.HasPrefix(containedPath, ".."+string(filepath.Separator)) || filepath.IsAbs(containedPath) {
+		return resolvedAttachmentPath{}, fmt.Errorf("attachment destination escapes its allowed root")
+	}
+
+	return resolvedAttachmentPath{
+		filesystemPath: filesystemPath,
+		rootPath:       source.rootPath,
+		storagePath:    path.Join(path.Dir(source.storagePath), filename),
+	}, nil
 }
 
 func isAbsoluteAttachmentPath(attachmentPath string) bool {

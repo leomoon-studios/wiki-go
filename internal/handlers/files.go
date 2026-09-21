@@ -1194,75 +1194,39 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	// Debug incoming request
 	logger.Debug("Rename request received - CurrentPath: %s, NewName: %s", renameReq.CurrentPath, renameReq.NewName)
 
-	// Clean and normalize the path
-	canonicalPath, err := utils.CanonicalRequestPath(renameReq.CurrentPath)
+	source, err := resolveAttachmentPath(cfg, renameReq.CurrentPath)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
 		return
 	}
-	path := strings.TrimPrefix(canonicalPath, "/")
-	sourceLogicalPath, err := attachmentDocumentPath(path)
+	sourceLogicalPath, err := attachmentDocumentPath(source.storagePath)
 	if err != nil || !canAccessLogicalDocument(session, cfg, sourceLogicalPath) {
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
 	}
 
-	// Extract directory and filename
-	dir := filepath.Dir(path)
-	filename := filepath.Base(path)
-	newPath := filepath.Join(dir, renameReq.NewName)
-	destinationLogicalPath, err := attachmentDocumentPath(filepath.ToSlash(newPath))
-	if err != nil || !canAccessLogicalDocument(session, cfg, destinationLogicalPath) {
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
+	destination, err := resolveAttachmentRenameDestination(source, renameReq.NewName)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid destination filename."})
 		return
 	}
 
-	// Log paths for debugging
-	logger.Debug("Path components: path=%s, dir=%s, filename=%s, newPath=%s", path, dir, filename, newPath)
+	logger.Debug("Resolved rename paths: source=%s, destination=%s", source.filesystemPath, destination.filesystemPath)
 
-	// Determine file paths based on two possible locations
-	var currentFilePath, newFilePath string
-	var fileFound bool
-
-	// Try the documents directory first (most common case)
-	currentDocumentsPath := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
-	if fileExists(currentDocumentsPath) {
-		currentFilePath = currentDocumentsPath
-		newFilePath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, newPath)
-		fileFound = true
-		logger.Debug("File found in documents path: %s", currentFilePath)
-	}
-
-	// If not found in documents, try pages directory
-	if !fileFound && strings.HasPrefix(path, "pages/") {
-		currentPagesPath := filepath.Join(cfg.Wiki.RootDir, path)
-		if fileExists(currentPagesPath) {
-			currentFilePath = currentPagesPath
-			newFilePath = filepath.Join(cfg.Wiki.RootDir, newPath)
-			fileFound = true
-			logger.Debug("File found in pages path: %s", currentFilePath)
-		}
-	}
-
-	// If file not found in either location, check if the target file already exists
-	// which could mean the file was already renamed
-	if !fileFound {
-		// Check if the destination file already exists with the new name
-		possibleNewPathInDocuments := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, newPath)
-		possibleNewPathInPages := filepath.Join(cfg.Wiki.RootDir, newPath)
-
-		if fileExists(possibleNewPathInDocuments) ||
-			(strings.HasPrefix(newPath, "pages/") && fileExists(possibleNewPathInPages)) {
+	// If the source is missing but the contained destination exists, the same
+	// rename request was already completed.
+	if !fileExists(source.filesystemPath) {
+		if fileExists(destination.filesystemPath) {
 			// The file with the new name already exists, likely was already renamed
-			logger.Debug("File already appears to have been renamed to: %s", newPath)
+			logger.Debug("File already appears to have been renamed to: %s", destination.storagePath)
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(FileResponse{
 				Success: true,
 				Message: "File already renamed.",
-				URL:     "/api/files/" + newPath,
+				URL:     "/api/files/" + destination.storagePath,
 			})
 			return
 		}
@@ -1278,10 +1242,10 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Log the full paths for debugging
-	logger.Debug("Renaming file: %s -> %s", currentFilePath, newFilePath)
+	logger.Debug("Renaming file: %s -> %s", source.filesystemPath, destination.filesystemPath)
 
 	// Check if target already exists
-	if _, err := os.Stat(newFilePath); err == nil {
+	if _, err := os.Stat(destination.filesystemPath); err == nil {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
@@ -1291,7 +1255,7 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Rename the file
-	err = os.Rename(currentFilePath, newFilePath)
+	err = os.Rename(source.filesystemPath, destination.filesystemPath)
 	if err != nil {
 		logger.Error("Error renaming file: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -1303,11 +1267,9 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Create URL for the renamed file
-	urlPath := filepath.Join("/api/files", newPath)
-	// Replace backslashes with forward slashes for URLs
-	urlPath = strings.ReplaceAll(urlPath, "\\", "/")
+	urlPath := "/api/files/" + destination.storagePath
 
-	logger.Debug("File renamed successfully: %s -> %s", currentFilePath, newFilePath)
+	logger.Debug("File renamed successfully: %s -> %s", source.filesystemPath, destination.filesystemPath)
 	logger.Debug("URL path: %s", urlPath)
 
 	// Return success response

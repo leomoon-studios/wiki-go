@@ -92,6 +92,37 @@ func TestResolveAttachmentPathRejectsEscapingPaths(t *testing.T) {
 	}
 }
 
+func TestResolveAttachmentRenameDestinationStaysInSourceDirectory(t *testing.T) {
+	testConfig := &config.Config{}
+	testConfig.Wiki.RootDir = t.TempDir()
+	testConfig.Wiki.DocumentsDir = "documents"
+	source, err := resolveAttachmentPath(testConfig, "finance/reports/original.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	destination, err := resolveAttachmentRenameDestination(source, "quarterly_report-final.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPath := filepath.Join(testConfig.Wiki.RootDir, "documents", "finance", "reports", "quarterly_report-final.pdf")
+	if destination.filesystemPath != wantPath {
+		t.Fatalf("filesystemPath = %q, want %q", destination.filesystemPath, wantPath)
+	}
+	if destination.rootPath != source.rootPath {
+		t.Fatalf("rootPath = %q, want source root %q", destination.rootPath, source.rootPath)
+	}
+	if destination.storagePath != "finance/reports/quarterly_report-final.pdf" {
+		t.Fatalf("storagePath = %q, want same document directory", destination.storagePath)
+	}
+
+	for _, unsafeName := range []string{"../config.yaml", `..\config.yaml`, "nested/report.pdf"} {
+		if resolved, err := resolveAttachmentRenameDestination(source, unsafeName); err == nil {
+			t.Errorf("resolveAttachmentRenameDestination(%q) = %+v, want error", unsafeName, resolved)
+		}
+	}
+}
+
 func TestValidateAttachmentFilename(t *testing.T) {
 	for _, filename := range []string{
 		"report.pdf",
@@ -178,5 +209,118 @@ func TestRenameFileHandlerAcceptsValidFilename(t *testing.T) {
 				t.Fatalf("original attachment still exists: %v", err)
 			}
 		})
+	}
+}
+
+func TestRenameFileHandlerRenamesHomepageAttachmentWithinHomepageRoot(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	homeDir := filepath.Join(testConfig.Wiki.RootDir, "pages", "home")
+	if err := os.MkdirAll(homeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(homeDir, "original.png"), []byte("homepage attachment"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/api/files/rename", strings.NewReader(`{
+		"currentPath":"pages/home/original.png",
+		"newName":"renamed.png"
+	}`))
+	request.AddCookie(editorCookie)
+	response := httptest.NewRecorder()
+	RenameFileHandler(response, request, testConfig)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", response.Code, response.Body.String())
+	}
+	if _, err := os.Stat(filepath.Join(homeDir, "renamed.png")); err != nil {
+		t.Fatalf("renamed homepage attachment missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(homeDir, "original.png")); !os.IsNotExist(err) {
+		t.Fatalf("original homepage attachment still exists: %v", err)
+	}
+}
+
+func TestRenameFileHandlerAuthorizesBeforeCheckingSourceExistence(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	testConfig.AccessRules = []config.AccessRule{{
+		Pattern: "/finance/**",
+		Access:  "restricted",
+		Groups:  []string{"finance"},
+	}}
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	financeDir := filepath.Join(testConfig.Wiki.RootDir, "documents", "finance")
+	if err := os.MkdirAll(financeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(financeDir, "existing.pdf"), []byte("restricted"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, sourceName := range []string{"existing.pdf", "missing.pdf"} {
+		t.Run(sourceName, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/api/files/rename", strings.NewReader(`{
+				"currentPath":"finance/`+sourceName+`",
+				"newName":"renamed.pdf"
+			}`))
+			request.AddCookie(editorCookie)
+			response := httptest.NewRecorder()
+			RenameFileHandler(response, request, testConfig)
+
+			if response.Code != http.StatusForbidden {
+				t.Fatalf("status = %d, want 403; body: %s", response.Code, response.Body.String())
+			}
+		})
+	}
+}
+
+func TestRenameFileHandlerRejectsEscapingSourcePath(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/files/rename", strings.NewReader(`{
+		"currentPath":"../config.yaml",
+		"newName":"renamed.yaml"
+	}`))
+	request.AddCookie(editorCookie)
+	response := httptest.NewRecorder()
+	RenameFileHandler(response, request, testConfig)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestRenameFileHandlerReturnsConflictForContainedDestination(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	documentDir := filepath.Join(testConfig.Wiki.RootDir, "documents", "public")
+	if err := os.MkdirAll(documentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range map[string]string{
+		"source.pdf":      "source",
+		"destination.pdf": "destination",
+	} {
+		if err := os.WriteFile(filepath.Join(documentDir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/api/files/rename", strings.NewReader(`{
+		"currentPath":"public/source.pdf",
+		"newName":"destination.pdf"
+	}`))
+	request.AddCookie(editorCookie)
+	response := httptest.NewRecorder()
+	RenameFileHandler(response, request, testConfig)
+
+	if response.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body: %s", response.Code, response.Body.String())
 	}
 }
