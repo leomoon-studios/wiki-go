@@ -109,6 +109,8 @@ Groups work in conjunction with access rules to restrict document visibility.
 
 Access rules define who can view specific documents or folders based on URL path patterns.
 
+The same access rules are enforced for rendered pages and all document-scoped operations, including attachment, document, move, and version APIs. An editor role grants editing capabilities only for paths that the editor can access through public, private, or group-restricted rules. Administrators retain access to every path.
+
 #### Access Levels
 
 | Who can view          |       Public       |      Private       |     Restricted     |
