@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 	"wiki-go/internal/logger"
 )
 
@@ -59,7 +58,8 @@ func FetchMetadataHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch metadata
 	metadata, err := fetchURLMetadata(targetURL)
 	if err != nil {
-		respondWithError(w, fmt.Sprintf("Failed to fetch metadata: %v", err), http.StatusInternalServerError)
+		logger.Warn("Metadata fetch failed: %v", err)
+		respondWithError(w, "Failed to fetch metadata", http.StatusBadGateway)
 		return
 	}
 
@@ -83,18 +83,13 @@ type URLMetadata struct {
 
 // fetchURLMetadata fetches and parses HTML metadata from a URL
 func fetchURLMetadata(targetURL string) (*URLMetadata, error) {
-	// Create HTTP client with timeout
-	client := &http.Client{
-		Timeout: 2 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			// Allow up to 5 redirects
-			if len(via) >= 5 {
-				return fmt.Errorf("too many redirects")
-			}
-			return nil
-		},
-	}
+	return fetchURLMetadataWithClient(targetURL, newMetadataHTTPClient(net.DefaultResolver, &net.Dialer{}))
+}
 
+func fetchURLMetadataWithClient(targetURL string, client *http.Client) (*URLMetadata, error) {
+	if client == nil {
+		return nil, fmt.Errorf("metadata HTTP client is unavailable")
+	}
 	// Create request with proper headers
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {

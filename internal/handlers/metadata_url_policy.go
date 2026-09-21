@@ -48,11 +48,19 @@ func validateOutboundMetadataURL(ctx context.Context, rawURL string, resolver me
 		return nil, fmt.Errorf("metadata URL port is empty")
 	}
 
+	if _, err := resolveAllowedMetadataAddresses(ctx, hostname, resolver); err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
+}
+
+func resolveAllowedMetadataAddresses(ctx context.Context, hostname string, resolver metadataHostnameResolver) ([]net.IPAddr, error) {
 	if literalIP := net.ParseIP(hostname); literalIP != nil {
 		if isProhibitedMetadataAddress(literalIP) {
 			return nil, fmt.Errorf("metadata URL resolves to a prohibited address")
 		}
-		return parsedURL, nil
+		return []net.IPAddr{{IP: literalIP}}, nil
 	}
 	if !isValidMetadataHostname(hostname) {
 		return nil, fmt.Errorf("metadata URL hostname is malformed")
@@ -73,8 +81,7 @@ func validateOutboundMetadataURL(ctx context.Context, rawURL string, resolver me
 			return nil, fmt.Errorf("metadata URL resolves to a prohibited address")
 		}
 	}
-
-	return parsedURL, nil
+	return addresses, nil
 }
 
 func isProhibitedMetadataAddress(ip net.IP) bool {
