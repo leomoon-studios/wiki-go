@@ -35,6 +35,13 @@ Wiki-Go includes several security features:
 - **Login Rate Limiting**: Built-in protection against brute force attacks by temporarily banning IP addresses after multiple failed login attempts, with exponential backoff.
 - **Session Revocation**: Security-sensitive account changes revoke the affected user's active sessions in memory and persistent storage.
 - **Trusted Proxy Boundary**: Forwarded client IP headers are ignored unless the direct proxy is explicitly trusted.
+- **Log Record Integrity**: Control characters from untrusted values are escaped at the centralized logging boundary so one logging call cannot forge additional records or terminal output.
+
+## Security Logging
+
+Wiki-Go formats log messages and neutralizes carriage returns, newlines, Unicode line separators, and terminal control characters before writing each record. This boundary applies consistently to debug, informational, warning, error, and fatal logs, including formatted and wrapped errors.
+
+Centralized neutralization protects log structure, but it does not make secrets safe to log. Callers must never include passwords, session tokens or token hashes, cookies, authorization headers, API keys, uploaded file contents, or other credential material in log messages. Non-secret request paths, usernames, filenames, network errors, and configuration values may be logged when operationally useful because control characters are escaped at the logging boundary.
 
 ## Markdown and Content Rendering Security
 

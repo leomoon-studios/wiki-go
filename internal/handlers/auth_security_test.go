@@ -107,9 +107,15 @@ func TestLoginThrottlingIgnoresSpoofedForwardingHeaders(t *testing.T) {
 	if response := login("198.51.100.1"); response.Code != http.StatusUnauthorized {
 		t.Fatalf("first login status = %d, want 401; body: %s", response.Code, response.Body.String())
 	}
+	waitForLoginBanPersistence(t, testConfig, true)
+	banStatePath := filepath.Join(testConfig.Wiki.RootDir, "temp", "login_ban.json")
+	if err := os.Remove(banStatePath); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
 	if response := login("198.51.100.2"); response.Code != http.StatusTooManyRequests {
 		t.Fatalf("second login status = %d, want 429; body: %s", response.Code, response.Body.String())
 	}
+	waitForLoginBanPersistence(t, testConfig, true)
 }
 
 func TestLoginHandlerNeutralizesUsernameLogInjection(t *testing.T) {

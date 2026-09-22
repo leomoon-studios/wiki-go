@@ -260,7 +260,7 @@ func ClearSession(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 				}
 			}
 		} else {
-			logger.Warn("Session not found during logout for token hash: %s", hashedToken)
+			logger.Warn("Session not found during logout")
 		}
 		mu.Unlock()
 	}

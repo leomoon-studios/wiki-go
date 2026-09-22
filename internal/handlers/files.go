@@ -968,7 +968,7 @@ func debugFileValidation(fileContent []byte, filename string, detected, expected
 	logger.Debug("File Validation Debug (%s):", filename)
 	logger.Debug("  - Detected MIME: %s", detected)
 	logger.Debug("  - Expected MIME: %s", expected)
-	logger.Debug("  - Content starts with: %x", fileContent[:min(16, len(fileContent))])
+	logger.Debug("  - Content size: %d bytes", len(fileContent))
 
 	// For Office files, try to show ZIP contents
 	if ext == ".docx" || ext == ".xlsx" || ext == ".pptx" {
@@ -982,15 +982,7 @@ func debugFileValidation(fileContent []byte, filename string, detected, expected
 			if err != nil {
 				logger.Debug("  - Failed to open as ZIP: %v", err)
 			} else {
-				logger.Debug("  - ZIP contents:")
-				for i, f := range zipReader.File {
-					if i < 10 { // Limit to first 10 files
-						logger.Debug("    * %s", f.Name)
-					} else if i == 10 {
-						logger.Debug("    * ... (more files)")
-						break
-					}
-				}
+				logger.Debug("  - ZIP entries: %d", len(zipReader.File))
 			}
 		} else {
 			logger.Debug("  - Missing ZIP signature!")

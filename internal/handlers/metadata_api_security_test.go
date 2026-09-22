@@ -99,6 +99,7 @@ func TestMetadataHandlerRejectsProhibitedDestinationsWithoutDialing(t *testing.T
 }
 
 func TestMetadataHandlerDoesNotDiscloseConnectionFailure(t *testing.T) {
+	logOutput := captureHandlerLogs(t)
 	resolver := staticMetadataResolver{addresses: map[string][]net.IPAddr{
 		"internal-name.example": {{IP: net.ParseIP("192.0.2.80")}},
 	}}
@@ -108,7 +109,7 @@ func TestMetadataHandlerDoesNotDiscloseConnectionFailure(t *testing.T) {
 	response := httptest.NewRecorder()
 	fetchMetadataHandler(
 		response,
-		metadataHandlerRequest("http://internal-name.example:8443/private-service"),
+		metadataHandlerRequest("http://internal-name.example:8443/private-service?token=QUERY-SECRET"),
 		resolver,
 		newMetadataHTTPClient(resolver, dialer),
 	)
@@ -124,6 +125,9 @@ func TestMetadataHandlerDoesNotDiscloseConnectionFailure(t *testing.T) {
 		if strings.Contains(body, secret) {
 			t.Errorf("response disclosed %q: %s", secret, body)
 		}
+	}
+	if strings.Contains(logOutput.String(), "QUERY-SECRET") || strings.Contains(logOutput.String(), "token=") {
+		t.Fatalf("log output disclosed URL query credentials: %q", logOutput.String())
 	}
 }
 

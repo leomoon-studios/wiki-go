@@ -3,6 +3,7 @@ package handlers
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -63,7 +64,7 @@ func fetchMetadataHandler(w http.ResponseWriter, r *http.Request, resolver metad
 	// Fetch metadata
 	metadata, err := fetchURLMetadataWithClient(targetURL, client)
 	if err != nil {
-		logger.Warn("Metadata fetch failed: %v", err)
+		logger.Warn("Metadata fetch failed: %v", metadataErrorForLog(err))
 		respondWithError(w, "Failed to fetch metadata", http.StatusBadGateway)
 		return
 	}
@@ -113,7 +114,7 @@ func fetchURLMetadataWithClient(targetURL string, client *http.Client) (*URLMeta
 	// Perform request
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch URL: %v", err)
+		return nil, fmt.Errorf("failed to fetch URL: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -152,6 +153,19 @@ func fetchURLMetadataWithClient(targetURL string, client *http.Client) (*URLMeta
 	}
 
 	return metadata, nil
+}
+
+func metadataErrorForLog(err error) error {
+	for {
+		var requestError *url.Error
+		if !errors.As(err, &requestError) {
+			return err
+		}
+		if requestError.Err == nil {
+			return errors.New("metadata request failed")
+		}
+		err = requestError.Err
+	}
 }
 
 // convertToUTF8 converts the HTML content to UTF-8 if it's in a different encoding

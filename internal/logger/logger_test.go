@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -91,6 +92,65 @@ func TestLogFormattingRemainsReadable(t *testing.T) {
 	const want = "[INFO] user alice made 3 attempts: outer: inner\n"
 	if output.String() != want {
 		t.Fatalf("output = %q, want %q", output.String(), want)
+	}
+}
+
+func TestErrorsCannotCreateAdditionalLogRecords(t *testing.T) {
+	var output bytes.Buffer
+	originalWriter := log.Writer()
+	originalFlags := log.Flags()
+	originalPrefix := log.Prefix()
+	originalLevel := currentLevel
+	log.SetOutput(&output)
+	log.SetFlags(0)
+	log.SetPrefix("")
+	Init("debug")
+	t.Cleanup(func() {
+		log.SetOutput(originalWriter)
+		log.SetFlags(originalFlags)
+		log.SetPrefix(originalPrefix)
+		currentLevel = originalLevel
+	})
+
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "wrapped error",
+			err:  fmt.Errorf("outer operation: %w", errors.New("inner failure\n[FORGED]")),
+		},
+		{
+			name: "filesystem error",
+			err: &os.PathError{
+				Op:   "open",
+				Path: "/tmp/document\n[FORGED]",
+				Err:  os.ErrPermission,
+			},
+		},
+		{
+			name: "network error",
+			err: &net.OpError{
+				Op:  "dial",
+				Net: "tcp",
+				Err: errors.New("connection refused\n[FORGED]"),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			output.Reset()
+			Error("operation failed: %v", test.err)
+			if strings.Count(output.String(), "\n") != 1 {
+				t.Fatalf("physical line count = %d, want 1; output: %q", strings.Count(output.String(), "\n"), output.String())
+			}
+			if strings.Contains(output.String(), "\n[FORGED]") {
+				t.Fatalf("error created a forged log record: %q", output.String())
+			}
+			if !strings.Contains(output.String(), `\n[FORGED]`) {
+				t.Fatalf("escaped error text is missing: %q", output.String())
+			}
+		})
 	}
 }
 
