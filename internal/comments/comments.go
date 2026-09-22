@@ -121,7 +121,9 @@ func DeleteComment(commentID string, documentPath string, userIsAdmin bool) erro
 
 // Helper function to validate comment ID format (timestamp_username.md)
 func isValidCommentID(id string) bool {
-	// Check file extension
+	if id == "" || filepath.Base(id) != id || strings.ContainsAny(id, `/\\`) || hasCommentFilenameControlCharacter(id) {
+		return false
+	}
 	if !strings.HasSuffix(id, ".md") {
 		return false
 	}
@@ -132,7 +134,12 @@ func isValidCommentID(id string) bool {
 		return false
 	}
 
-	// Validate timestamp is in YYYYMMDDhhmmss format (14 digits)
+	username := parts[1]
+	if username == "" || username == "." || username == ".." || sanitizeUsername(username) != username {
+		return false
+	}
+
+	// Validate timestamp is in YYYYMMDDhhmmss format (14 digits).
 	timestamp := parts[0]
 	return len(timestamp) == 14 && isNumeric(timestamp)
 }
