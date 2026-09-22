@@ -96,6 +96,38 @@ func TestPageRouteRejectsResidualEncodedTraversalBeforeFilesystemLookup(t *testi
 	}
 }
 
+func TestPageRouteRejectsEncodedBackslashTraversalBeforeFilesystemLookup(t *testing.T) {
+	testConfig := newRouteSecurityTestConfig(t)
+	adminCookie := routeSessionCookie(t, testConfig, "admin", config.RoleAdmin, nil)
+	canary := "ROUTE-EXTERNAL-BACKSLASH-CANARY"
+	externalDocument := filepath.Join(testConfig.Wiki.RootDir, "outside", "document.md")
+	if err := os.MkdirAll(filepath.Dir(externalDocument), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(externalDocument, []byte(canary), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/..%5Coutside", nil)
+	request.AddCookie(adminCookie)
+	response := httptest.NewRecorder()
+	http.DefaultServeMux.ServeHTTP(response, request)
+
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303; body: %s", response.Code, response.Body.String())
+	}
+	if strings.Contains(response.Body.String(), canary) {
+		t.Fatal("route disclosed the external document canary")
+	}
+	content, err := os.ReadFile(externalDocument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != canary {
+		t.Fatalf("external document changed to %q", content)
+	}
+}
+
 func TestEditorRoutesRejectLiteralAndEncodedBackslashTraversal(t *testing.T) {
 	testConfig := newRouteSecurityTestConfig(t)
 	editorCookie := routeSessionCookie(t, testConfig, "editor", config.RoleEditor, nil)

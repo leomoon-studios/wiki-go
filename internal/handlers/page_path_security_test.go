@@ -52,6 +52,64 @@ func TestPageHandlerDoesNotDiscloseDoubleEncodedTraversalTarget(t *testing.T) {
 	}
 }
 
+func TestPageHandlerDoesNotDiscloseBackslashTraversalTarget(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	canary := "EXTERNAL-BACKSLASH-DOCUMENT-CANARY"
+	externalDocument := filepath.Join(testConfig.Wiki.RootDir, "outside", "document.md")
+	if err := os.MkdirAll(filepath.Dir(externalDocument), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(externalDocument, []byte(canary), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	requests := []struct {
+		name   string
+		target string
+	}{
+		{name: "literal backslash", target: `/..\outside`},
+		{name: "encoded backslash", target: "/..%5Coutside"},
+		{name: "reporter depth encoded backslash", target: "/..%5C..%5C..%5C..%5C..%5Ctmp%5Ccanary_pg"},
+	}
+	users := []struct {
+		name   string
+		cookie *http.Cookie
+	}{
+		{name: "anonymous"},
+		{name: "viewer", cookie: sessionCookieForUser(t, testConfig, "viewer", config.RoleViewer)},
+		{name: "editor", cookie: sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)},
+		{name: "administrator", cookie: sessionCookieForUser(t, testConfig, "admin", config.RoleAdmin)},
+	}
+	for _, requestTest := range requests {
+		for _, user := range users {
+			t.Run(requestTest.name+"/"+user.name, func(t *testing.T) {
+				request := httptest.NewRequest(http.MethodGet, requestTest.target, nil)
+				if user.cookie != nil {
+					request.AddCookie(user.cookie)
+				}
+				response := httptest.NewRecorder()
+				PageHandler(response, request, testConfig)
+
+				if response.Code != http.StatusBadRequest {
+					t.Fatalf("status = %d, want 400; body: %s", response.Code, response.Body.String())
+				}
+				if strings.Contains(response.Body.String(), canary) {
+					t.Fatal("response disclosed the external document canary")
+				}
+			})
+		}
+	}
+
+	content, err := os.ReadFile(externalDocument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != canary {
+		t.Fatalf("external document changed to %q", content)
+	}
+}
+
 func TestRestrictedDocumentAccessAllowsFinanceGroupAndAdministrators(t *testing.T) {
 	testConfig := installUserSessionTestConfig(t, nil)
 	testConfig.Wiki.DocumentsDir = "documents"
