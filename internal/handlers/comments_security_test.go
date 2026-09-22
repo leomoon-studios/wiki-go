@@ -163,6 +163,126 @@ func TestCommentHandlersRejectInvalidDocumentPaths(t *testing.T) {
 	}
 }
 
+func TestDeleteCommentHandlerRejectsReportedTraversalPayloads(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	adminCookie := sessionCookieForUser(t, testConfig, "admin", config.RoleAdmin)
+
+	const commentID = "99999999999999_admin.md"
+	canaryPath := filepath.Join(testConfig.Wiki.RootDir, "outside", commentID)
+	if err := os.MkdirAll(filepath.Dir(canaryPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const canaryContent = "EXTERNAL-COMMENT-DELETION-CANARY"
+	if err := os.WriteFile(canaryPath, []byte(canaryContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name   string
+		target string
+	}{
+		{
+			name:   "reporter encoded forward slash payload",
+			target: "/api/comments/delete/..%2f..%2f..%2f..%2f..%2ftmp/" + commentID,
+		},
+		{
+			name:   "literal forward slash traversal",
+			target: "/api/comments/delete/../outside/" + commentID,
+		},
+		{
+			name:   "double encoded forward slash traversal",
+			target: "/api/comments/delete/..%252foutside/" + commentID,
+		},
+		{
+			name:   "literal backslash traversal",
+			target: `/api/comments/delete/..\outside/` + commentID,
+		},
+		{
+			name:   "encoded backslash traversal",
+			target: "/api/comments/delete/..%5coutside/" + commentID,
+		},
+		{
+			name:   "double encoded backslash traversal",
+			target: "/api/comments/delete/..%255coutside/" + commentID,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodDelete, test.target, nil)
+			request.AddCookie(adminCookie)
+			response := httptest.NewRecorder()
+			DeleteCommentHandler(response, request)
+
+			if response.Code < 400 || response.Code >= 500 {
+				t.Fatalf("status = %d, want a client error; body: %s", response.Code, response.Body.String())
+			}
+			if strings.Contains(response.Body.String(), canaryPath) || strings.Contains(response.Body.String(), testConfig.Wiki.RootDir) {
+				t.Fatalf("response disclosed a filesystem location: %s", response.Body.String())
+			}
+			content, err := os.ReadFile(canaryPath)
+			if err != nil {
+				t.Fatalf("external canary was removed: %v", err)
+			}
+			if string(content) != canaryContent {
+				t.Fatalf("external canary content = %q, want %q", content, canaryContent)
+			}
+		})
+	}
+}
+
+func TestDeleteCommentRouteRequiresAdministrator(t *testing.T) {
+	testConfig := installUserSessionTestConfig(t, nil)
+	testConfig.Wiki.DocumentsDir = "documents"
+	viewerCookie := sessionCookieForUser(t, testConfig, "viewer", config.RoleViewer)
+	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
+	adminCookie := sessionCookieForUser(t, testConfig, "admin", config.RoleAdmin)
+
+	const commentID = "99999999999999_admin.md"
+	commentPath := filepath.Join(testConfig.Wiki.RootDir, "comments", "guides", "start", commentID)
+	if err := os.MkdirAll(filepath.Dir(commentPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(commentPath, []byte("contained comment"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/comments/delete/", DeleteCommentHandler)
+	target := "/api/comments/delete/guides/start/" + commentID
+	tests := []struct {
+		name       string
+		cookie     *http.Cookie
+		wantStatus int
+	}{
+		{name: "anonymous", wantStatus: http.StatusUnauthorized},
+		{name: "viewer", cookie: viewerCookie, wantStatus: http.StatusForbidden},
+		{name: "editor", cookie: editorCookie, wantStatus: http.StatusForbidden},
+		{name: "administrator", cookie: adminCookie, wantStatus: http.StatusOK},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodDelete, target, nil)
+			if test.cookie != nil {
+				request.AddCookie(test.cookie)
+			}
+			response := httptest.NewRecorder()
+			mux.ServeHTTP(response, request)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d; body: %s", response.Code, test.wantStatus, response.Body.String())
+			}
+			_, err := os.Stat(commentPath)
+			if test.wantStatus == http.StatusOK {
+				if !os.IsNotExist(err) {
+					t.Fatalf("administrator deletion left the contained comment in place: %v", err)
+				}
+			} else if err != nil {
+				t.Fatalf("unauthorized request changed the contained comment: %v", err)
+			}
+		})
+	}
+}
+
 func writeCommentTestDocument(t *testing.T, filename string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
