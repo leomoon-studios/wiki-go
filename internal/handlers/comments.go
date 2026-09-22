@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,6 +23,51 @@ type CommentRequest struct {
 type CommentResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
+}
+
+type commentDocument struct {
+	logicalPath string
+	filePath    string
+}
+
+func resolveCommentDocument(rawPath string) (commentDocument, error) {
+	if rawPath == "" {
+		return commentDocument{}, fmt.Errorf("document path is empty")
+	}
+	logicalPath, err := logicalDocumentPath(rawPath)
+	if err != nil {
+		return commentDocument{}, err
+	}
+	if logicalPath == "/" {
+		return commentDocument{
+			logicalPath: logicalPath,
+			filePath:    filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md"),
+		}, nil
+	}
+	documentDir, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, logicalPath)
+	if err != nil {
+		return commentDocument{}, err
+	}
+	return commentDocument{
+		logicalPath: logicalPath,
+		filePath:    filepath.Join(documentDir, "document.md"),
+	}, nil
+}
+
+func commentsRoot() string {
+	return filepath.Join(cfg.Wiki.RootDir, "comments")
+}
+
+func requireCommentDocumentAccess(w http.ResponseWriter, session *auth.Session, logicalPath string) bool {
+	if auth.CanAccessDocument(logicalPath, session, cfg) {
+		return true
+	}
+	if session == nil {
+		sendJSONError(w, "Authentication required", http.StatusUnauthorized, "")
+	} else {
+		sendJSONError(w, "Document access denied", http.StatusForbidden, "")
+	}
+	return false
 }
 
 // AddCommentHandler handles requests to add a comment to a document
@@ -51,26 +97,27 @@ func AddCommentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the document path from the request
-	docPath := strings.TrimPrefix(r.URL.Path, "/api/comments/add/")
-	if docPath == "" {
+	rawDocPath := strings.TrimPrefix(r.URL.Path, "/api/comments/add/")
+	if rawDocPath == "" {
 		sendJSONError(w, "Document path is required", http.StatusBadRequest, "")
 		return
 	}
+	document, err := resolveCommentDocument(rawDocPath)
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
+	if !requireCommentDocumentAccess(w, session, document.logicalPath) {
+		return
+	}
 
-	// Clean and normalize the path
-	docPath = utils.SanitizePath(docPath)
-
-	// Check if the document exists
-	documentDir := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
-	fullDocPath := filepath.Join(documentDir, docPath, "document.md")
-
-	if _, err := os.Stat(fullDocPath); os.IsNotExist(err) {
+	if _, err := os.Stat(document.filePath); os.IsNotExist(err) {
 		sendJSONError(w, "Document not found", http.StatusNotFound, "")
 		return
 	}
 
 	// Read document content to check if comments are allowed
-	content, err := os.ReadFile(fullDocPath)
+	content, err := os.ReadFile(document.filePath)
 	if err != nil {
 		sendJSONError(w, "Failed to read document", http.StatusInternalServerError, err.Error())
 		return
@@ -96,7 +143,7 @@ func AddCommentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add the comment
-	err = comments.AddComment(docPath, req.Content, session.Username)
+	err = comments.AddComment(commentsRoot(), document.logicalPath, req.Content, session.Username)
 	if err != nil {
 		sendJSONError(w, "Failed to add comment", http.StatusInternalServerError, err.Error())
 		return
@@ -129,29 +176,24 @@ func GetCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Authentication: Require login if the wiki is private
-	if !auth.RequireAuth(r, cfg) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Authentication required",
-		})
-		return
-	}
-
 	// Get the document path from the request
-	docPath := strings.TrimPrefix(r.URL.Path, "/api/comments/")
-	if docPath == "" {
+	rawDocPath := strings.TrimPrefix(r.URL.Path, "/api/comments/")
+	if rawDocPath == "" {
 		sendJSONError(w, "Document path is required", http.StatusBadRequest, "")
 		return
 	}
-
-	// Clean and normalize the path
-	docPath = utils.SanitizePath(docPath)
+	document, err := resolveCommentDocument(rawDocPath)
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
+	session := auth.GetSession(r)
+	if !requireCommentDocumentAccess(w, session, document.logicalPath) {
+		return
+	}
 
 	// Get comments for the document
-	commentsList, err := comments.GetComments(docPath)
+	commentsList, err := comments.GetComments(commentsRoot(), document.logicalPath)
 	if err != nil {
 		sendJSONError(w, "Failed to get comments", http.StatusInternalServerError, err.Error())
 		return
@@ -210,10 +252,15 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	// Last element is the comment ID
 	commentID := parts[len(parts)-1]
 	// Everything else is the document path
-	docPath := strings.Join(parts[:len(parts)-1], "/")
+	rawDocPath := strings.Join(parts[:len(parts)-1], "/")
+	document, err := resolveCommentDocument(rawDocPath)
+	if err != nil {
+		sendJSONError(w, "Invalid document path", http.StatusBadRequest, "")
+		return
+	}
 
 	// Delete the comment
-	err := comments.DeleteComment(commentID, docPath, true)
+	err = comments.DeleteComment(commentsRoot(), commentID, document.logicalPath, true)
 	if err != nil {
 		sendJSONError(w, "Failed to delete comment", http.StatusInternalServerError, err.Error())
 		return

@@ -127,6 +127,7 @@ func TestIsValidCommentIDMatchesGeneratedFilenameShape(t *testing.T) {
 	}
 	for _, commentID := range []string{
 		"999_admin.md",
+		"+0260921123456_admin.md",
 		"20260921123456_.md",
 		"20260921123456_../admin.md",
 		"20260921123456_admin.md/extra",

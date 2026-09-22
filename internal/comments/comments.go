@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -23,8 +22,8 @@ type Comment struct {
 	FormattedTime string        // Formatted timestamp for display
 }
 
-// AddComment creates a new comment for a document
-func AddComment(documentPath, content, username string) error {
+// AddComment creates a new comment for a document.
+func AddComment(commentsRoot, documentPath, content, username string) error {
 	// Generate timestamp in YYYYMMDDhhmmss format
 	timestamp := time.Now().Format("20060102150405")
 
@@ -33,22 +32,29 @@ func AddComment(documentPath, content, username string) error {
 
 	// Create comment filename with sanitized username
 	filename := fmt.Sprintf("%s_%s.md", timestamp, safeUsername)
+	resolved, err := resolveCommentFile(commentsRoot, documentPath, filename)
+	if err != nil {
+		return fmt.Errorf("resolve comment path: %w", err)
+	}
 
 	// Ensure comment directory exists
-	commentDir := filepath.Join("data/comments", documentPath)
-	if err := os.MkdirAll(commentDir, 0755); err != nil {
+	if err := os.MkdirAll(resolved.directoryPath, 0755); err != nil {
 		return fmt.Errorf("failed to create comment directory: %w", err)
 	}
 
 	// Write comment content to file
-	return os.WriteFile(filepath.Join(commentDir, filename), []byte(content), 0644)
+	return os.WriteFile(resolved.filePath, []byte(content), 0644)
 }
 
-// GetComments retrieves all comments for a document
-func GetComments(documentPath string) ([]Comment, error) {
+// GetComments retrieves all comments for a document.
+func GetComments(commentsRoot, documentPath string) ([]Comment, error) {
+	resolved, err := resolveCommentDirectory(commentsRoot, documentPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve comment directory: %w", err)
+	}
+
 	// Read comment directory
-	commentDir := filepath.Join("data/comments", documentPath)
-	files, err := os.ReadDir(commentDir)
+	files, err := os.ReadDir(resolved.directoryPath)
 	if os.IsNotExist(err) {
 		return []Comment{}, nil // No comments yet
 	}
@@ -59,7 +65,7 @@ func GetComments(documentPath string) ([]Comment, error) {
 	// Process each comment file
 	comments := []Comment{}
 	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
+		if !file.IsDir() && isValidCommentID(file.Name()) {
 			// Parse filename to get timestamp and username
 			parts := strings.SplitN(strings.TrimSuffix(file.Name(), ".md"), "_", 2)
 			if len(parts) != 2 {
@@ -80,7 +86,11 @@ func GetComments(documentPath string) ([]Comment, error) {
 			}
 
 			// Read comment content
-			content, err := os.ReadFile(filepath.Join(commentDir, file.Name()))
+			commentPath, err := resolveCommentFile(commentsRoot, documentPath, file.Name())
+			if err != nil {
+				continue
+			}
+			content, err := os.ReadFile(commentPath.filePath)
 			if err != nil {
 				continue // Can't read file
 			}
@@ -103,20 +113,19 @@ func GetComments(documentPath string) ([]Comment, error) {
 	return comments, nil
 }
 
-// DeleteComment deletes a comment if the user is an admin
-func DeleteComment(commentID string, documentPath string, userIsAdmin bool) error {
+// DeleteComment deletes a comment if the user is an admin.
+func DeleteComment(commentsRoot, commentID, documentPath string, userIsAdmin bool) error {
 	if !userIsAdmin {
 		return errors.New("only admins can delete comments")
 	}
 
-	// Validate the comment ID to ensure it's safe
-	if !isValidCommentID(commentID) {
-		return errors.New("invalid comment ID")
+	resolved, err := resolveCommentFile(commentsRoot, documentPath, commentID)
+	if err != nil {
+		return fmt.Errorf("resolve comment path: %w", err)
 	}
 
 	// Delete the comment file
-	commentPath := filepath.Join("data/comments", documentPath, commentID)
-	return os.Remove(commentPath)
+	return os.Remove(resolved.filePath)
 }
 
 // Helper function to validate comment ID format (timestamp_username.md)
@@ -146,8 +155,15 @@ func isValidCommentID(id string) bool {
 
 // isNumeric checks if a string contains only digits
 func isNumeric(s string) bool {
-	_, err := strconv.ParseInt(s, 10, 64)
-	return err == nil
+	if s == "" {
+		return false
+	}
+	for _, character := range s {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // parseTimestampToUnix converts a YYYYMMDDhhmmss timestamp to Unix timestamp

@@ -256,7 +256,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 			// Only load comments if they're allowed
 			if commentsAllowed {
-				commentsList, _ = comments.GetComments(path)
+				commentsList, _ = comments.GetComments(filepath.Join(cfg.Wiki.RootDir, "comments"), path)
 
 				// Process comments (render markdown, format timestamps)
 				for i := range commentsList {
