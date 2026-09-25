@@ -40,9 +40,10 @@ cmd
 *.md
 **/*.md
 !demo-site-files/**/*.md
-# except README and SECURITY
+# except repository documentation
 !README.md
 !SECURITY.md
+!CHANGELOG.md
 # for quick python tests
 /.venv
 
