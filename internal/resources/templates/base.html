@@ -18,7 +18,7 @@
     <!-- Open Graph properties -->
     <meta property="og:title" content="{{.Config.Wiki.Title}}" />
     {{if eq .CurrentDir.Path "/"}}
-        <meta property="og:description" content="{{.Config.Wiki.Notice}}" />
+        <meta property="og:description" content="{{processShortcodes .Config.Wiki.Notice}}" />
         <meta property="og:type" content="website" />
     {{else}}
         <meta property="og:description" content="{{.CurrentDir.Title}}" />
