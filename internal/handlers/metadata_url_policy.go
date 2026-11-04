@@ -13,12 +13,17 @@ type metadataHostnameResolver interface {
 	LookupIPAddr(context.Context, string) ([]net.IPAddr, error)
 }
 
-var metadataProhibitedNetworks = []*net.IPNet{
-	mustParseMetadataNetwork("169.254.0.0/16"),
-	mustParseMetadataNetwork("100.64.0.0/10"),
-	mustParseMetadataNetwork("168.63.129.16/32"),
-	mustParseMetadataNetwork("fd00:ec2::254/128"),
-}
+var (
+	metadataNAT64WellKnownNetwork = mustParseMetadataNetwork("64:ff9b::/96")
+
+	metadataProhibitedNetworks = []*net.IPNet{
+		mustParseMetadataNetwork("169.254.0.0/16"),
+		mustParseMetadataNetwork("100.64.0.0/10"),
+		mustParseMetadataNetwork("168.63.129.16/32"),
+		mustParseMetadataNetwork("fd00:ec2::254/128"),
+		mustParseMetadataNetwork("64:ff9b:1::/48"),
+	}
+)
 
 // validateOutboundMetadataURL validates the initial destination before a
 // metadata request is created. Connection-time and redirect validation reuse
@@ -88,12 +93,26 @@ func isProhibitedMetadataAddress(ip net.IP) bool {
 	if ip == nil || !ip.IsGlobalUnicast() || ip.IsUnspecified() || ip.IsLoopback() || ip.IsMulticast() || ip.IsInterfaceLocalMulticast() || ip.IsLinkLocalMulticast() || ip.IsLinkLocalUnicast() || ip.IsPrivate() {
 		return true
 	}
+	if embeddedIPv4 := embeddedIPv4FromNAT64WellKnownAddress(ip); embeddedIPv4 != nil && isProhibitedMetadataAddress(embeddedIPv4) {
+		return true
+	}
 	for _, prohibitedNetwork := range metadataProhibitedNetworks {
 		if prohibitedNetwork.Contains(ip) {
 			return true
 		}
 	}
 	return false
+}
+
+func embeddedIPv4FromNAT64WellKnownAddress(ip net.IP) net.IP {
+	if !metadataNAT64WellKnownNetwork.Contains(ip) {
+		return nil
+	}
+	ip = ip.To16()
+	if ip == nil {
+		return nil
+	}
+	return net.IPv4(ip[12], ip[13], ip[14], ip[15])
 }
 
 func isValidMetadataHostname(hostname string) bool {

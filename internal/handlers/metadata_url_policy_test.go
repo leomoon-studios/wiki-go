@@ -103,3 +103,56 @@ func TestValidateOutboundMetadataURLRejectsProhibitedDestinations(t *testing.T) 
 		})
 	}
 }
+
+func TestEmbeddedIPv4FromNAT64WellKnownAddress(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		want    string
+	}{
+		{name: "NAT64 loopback", address: "64:ff9b::7f00:1", want: "127.0.0.1"},
+		{name: "NAT64 metadata", address: "64:ff9b::a9fe:a9fe", want: "169.254.169.254"},
+		{name: "native IPv6", address: "2001:db8::1"},
+		{name: "IPv4", address: "192.0.2.10"},
+		{name: "invalid address"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := embeddedIPv4FromNAT64WellKnownAddress(net.ParseIP(test.address))
+			if test.want == "" {
+				if got != nil {
+					t.Fatalf("embeddedIPv4FromNAT64WellKnownAddress(%q) = %s, want nil", test.address, got)
+				}
+				return
+			}
+			if got == nil || got.String() != test.want {
+				t.Fatalf("embeddedIPv4FromNAT64WellKnownAddress(%q) = %v, want %s", test.address, got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsProhibitedMetadataAddressHandlesIPv4IPv6Translation(t *testing.T) {
+	tests := []struct {
+		name       string
+		address    string
+		prohibited bool
+	}{
+		{name: "NAT64 loopback", address: "64:ff9b::7f00:1", prohibited: true},
+		{name: "NAT64 private", address: "64:ff9b::a00:1", prohibited: true},
+		{name: "NAT64 cloud metadata", address: "64:ff9b::a9fe:a9fe", prohibited: true},
+		{name: "NAT64 public", address: "64:ff9b::808:808", prohibited: false},
+		{name: "local-use translation", address: "64:ff9b:1::808:808", prohibited: true},
+		{name: "IPv4-mapped metadata", address: "::ffff:169.254.169.254", prohibited: true},
+		{name: "native public IPv6", address: "2001:db8::1", prohibited: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isProhibitedMetadataAddress(net.ParseIP(test.address)); got != test.prohibited {
+				t.Fatalf("isProhibitedMetadataAddress(%q) = %t, want %t", test.address, got, test.prohibited)
+			}
+		})
+	}
+}
