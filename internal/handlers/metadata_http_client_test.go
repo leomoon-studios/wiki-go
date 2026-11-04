@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -68,14 +69,51 @@ func TestMetadataHTTPClientRejectsDNSRebindingBeforeDial(t *testing.T) {
 	}
 }
 
-func TestMetadataHTTPClientRejectsRedirectToProhibitedDestination(t *testing.T) {
+func TestMetadataHTTPClientRejectsNAT64DestinationAtConnectionTime(t *testing.T) {
+	const prohibitedAddress = "64:ff9b::a9fe:a9fe"
+	targetURL := "http://[" + prohibitedAddress + "]:8080/metadata"
+
+	var dialCalls atomic.Int32
+	dialer := metadataDialFunc(func(context.Context, string, string) (net.Conn, error) {
+		dialCalls.Add(1)
+		return nil, fmt.Errorf("prohibited destination was dialed")
+	})
+	_, err := fetchURLMetadataWithClient(targetURL, newMetadataHTTPClient(staticMetadataResolver{}, dialer))
+	if err == nil {
+		t.Fatal("metadata fetch succeeded for a prohibited NAT64 destination")
+	}
+	if dialCalls.Load() != 0 {
+		t.Fatalf("underlying dialer was called %d times", dialCalls.Load())
+	}
+}
+
+func TestMetadataHTTPClientRejectsProhibitedRedirectDestinations(t *testing.T) {
+	client := newMetadataHTTPClient(staticMetadataResolver{}, &net.Dialer{})
+	for _, targetURL := range []string{
+		"http://127.0.0.1/metadata",
+		"http://[64:ff9b::a9fe:a9fe]/metadata",
+		"http://[64:ff9b:1::808:808]/metadata",
+	} {
+		t.Run(targetURL, func(t *testing.T) {
+			parsedURL, err := url.Parse(targetURL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := client.CheckRedirect(&http.Request{URL: parsedURL}, nil); err == nil {
+				t.Fatalf("redirect to %q was allowed", targetURL)
+			}
+		})
+	}
+}
+
+func TestMetadataHTTPClientRejectsRedirectToNAT64Destination(t *testing.T) {
 	const allowedPort = "8080"
 	const blockedPort = "9090"
+	const blockedAddress = "64:ff9b::a9fe:a9fe"
 	var blockedRequests atomic.Int32
 	var allowedRequests atomic.Int32
 	resolver := staticMetadataResolver{addresses: map[string][]net.IPAddr{
 		"allowed.example": {{IP: net.ParseIP("192.0.2.50")}},
-		"blocked.example": {{IP: net.ParseIP("127.0.0.1")}},
 	}}
 	var dialedAddressesMu sync.Mutex
 	var dialedAddresses []string
@@ -83,7 +121,7 @@ func TestMetadataHTTPClientRejectsRedirectToProhibitedDestination(t *testing.T) 
 		dialedAddressesMu.Lock()
 		dialedAddresses = append(dialedAddresses, address)
 		dialedAddressesMu.Unlock()
-		if address == net.JoinHostPort("127.0.0.1", blockedPort) {
+		if address == net.JoinHostPort(blockedAddress, blockedPort) {
 			blockedRequests.Add(1)
 			return nil, fmt.Errorf("prohibited destination was dialed")
 		}
@@ -100,7 +138,7 @@ func TestMetadataHTTPClientRejectsRedirectToProhibitedDestination(t *testing.T) 
 			}
 			request.Body.Close()
 			allowedRequests.Add(1)
-			fmt.Fprintf(serverConnection, "HTTP/1.1 302 Found\r\nLocation: http://blocked.example:%s/metadata\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", blockedPort)
+			fmt.Fprintf(serverConnection, "HTTP/1.1 302 Found\r\nLocation: http://[%s]:%s/metadata\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", blockedAddress, blockedPort)
 		}()
 		return clientConnection, nil
 	})

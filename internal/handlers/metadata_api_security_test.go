@@ -73,6 +73,10 @@ func TestMetadataHandlerRejectsProhibitedDestinationsWithoutDialing(t *testing.T
 		{name: "loopback", targetURL: "http://127.0.0.1/admin"},
 		{name: "private network", targetURL: "http://10.20.30.40/admin"},
 		{name: "metadata service", targetURL: "http://169.254.169.254/latest/meta-data/"},
+		{name: "NAT64 loopback", targetURL: "http://[64:ff9b::7f00:1]/admin"},
+		{name: "NAT64 private network", targetURL: "http://[64:ff9b::a00:1]/admin"},
+		{name: "NAT64 metadata service", targetURL: "http://[64:ff9b::a9fe:a9fe]/latest/meta-data/"},
+		{name: "local-use translation", targetURL: "http://[64:ff9b:1::808:808]/admin"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

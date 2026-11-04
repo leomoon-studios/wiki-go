@@ -31,6 +31,7 @@ func TestValidateOutboundMetadataURLAllowsPublicDestinations(t *testing.T) {
 		"http://public.example:8080/",
 		"http://198.51.100.20/resource",
 		"https://[2001:db8::20]/resource",
+		"https://[64:ff9b::808:808]/resource",
 	}
 	for _, targetURL := range tests {
 		t.Run(targetURL, func(t *testing.T) {
@@ -53,6 +54,11 @@ func TestValidateOutboundMetadataURLRejectsProhibitedDestinations(t *testing.T) 
 			"mixed.example": {
 				{IP: net.ParseIP("192.0.2.30")},
 				{IP: net.ParseIP("192.168.1.10")},
+			},
+			"nat64-metadata.example": {{IP: net.ParseIP("64:ff9b::a9fe:a9fe")}},
+			"nat64-mixed.example": {
+				{IP: net.ParseIP("192.0.2.31")},
+				{IP: net.ParseIP("64:ff9b::a9fe:a9fe")},
 			},
 			"empty.example": {},
 		},
@@ -88,9 +94,15 @@ func TestValidateOutboundMetadataURLRejectsProhibitedDestinations(t *testing.T) 
 		{name: "IPv6 link local", targetURL: "http://[fe80::1]/"},
 		{name: "IPv6 unique local", targetURL: "http://[fd12:3456::1]/"},
 		{name: "AWS metadata IPv6", targetURL: "http://[fd00:ec2::254]/latest/meta-data/"},
+		{name: "NAT64 loopback", targetURL: "http://[64:ff9b::7f00:1]/"},
+		{name: "NAT64 private", targetURL: "http://[64:ff9b::a00:1]/"},
+		{name: "NAT64 cloud metadata", targetURL: "http://[64:ff9b::a9fe:a9fe]/latest/meta-data/"},
+		{name: "local-use translation", targetURL: "http://[64:ff9b:1::808:808]/"},
 		{name: "DNS loopback", targetURL: "http://localhost.example/"},
 		{name: "DNS private", targetURL: "http://private.example/"},
 		{name: "mixed DNS answers", targetURL: "http://mixed.example/"},
+		{name: "DNS NAT64 metadata", targetURL: "http://nat64-metadata.example/"},
+		{name: "mixed DNS NAT64 answers", targetURL: "http://nat64-mixed.example/"},
 		{name: "empty DNS answers", targetURL: "http://empty.example/"},
 		{name: "DNS failure", targetURL: "http://failure.example/"},
 	}
