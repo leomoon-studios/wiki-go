@@ -72,6 +72,8 @@
   "settings.copyright_notice": "إشعار حقوق النشر",
   "settings.timezone": "المنطقة الزمنية",
   "settings.language_description": "اللغة المستخدمة في واجهة المستخدم",
+  "settings.log_level": "مستوى السجل",
+  "settings.log_level_description": "يتحكم في رسائل السجل التي تُكتب في وحدة التحكم (debug, info, warn, error)",
   "settings.document_versions": "إصدارات المستند",
   "settings.document_versions_description": "عدد الإصدارات التي يجب الاحتفاظ بها لكل مستند. اضبط على 0 لتعطيل الإصدارات.",
   "settings.max_upload_size": "الحد الأقصى لحجم ملف الرفع",

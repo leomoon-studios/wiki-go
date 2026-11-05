@@ -72,6 +72,8 @@
   "settings.copyright_notice": "Oznámení o autorských právech",
   "settings.timezone": "Časové pásmo",
   "settings.language_description": "Jazyk pro uživatelské rozhraní",
+  "settings.log_level": "Úroveň protokolování",
+  "settings.log_level_description": "Určuje, které zprávy protokolu se zapisují do konzole (debug, info, warn, error)",
   "settings.document_versions": "Verze dokumentů",
   "settings.document_versions_description": "Počet verzí k uchování na dokument. Nastavte na 0 pro vypnutí verzování.",
   "settings.max_upload_size": "Maximální velikost nahrávaného souboru",
