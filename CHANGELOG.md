@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.9.3](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.3) (2026-11-07)
+
+- Fix year shortcode in Open Graph description ([b3cf5ff](https://github.com/leomoon-studios/wiki-go/commit/b3cf5ff82f3a8f31b038101929b6b299c90b41e3))
+- feat(locale): add Esperanto locale ([af71b10](https://github.com/leomoon-studios/wiki-go/commit/af71b10925c4cf105b69990ec703663261096a02))
+- Change release title ([e15a109](https://github.com/leomoon-studios/wiki-go/commit/e15a109565a24007f783d5738fc4a4d070c49294))
+- Update to golang 1.27.3 ([5430ba6](https://github.com/leomoon-studios/wiki-go/commit/5430ba6403d78a74373d08c40cde3510dc09c145))
+- security: harden metadata NAT64 policy ([6f1b206](https://github.com/leomoon-studios/wiki-go/commit/6f1b206f3ef80a614fb57e550fa37eddde0784d1))
+- test: cover metadata NAT64 enforcement ([37136fb](https://github.com/leomoon-studios/wiki-go/commit/37136fbe29a0a2598d3bffa9ca5a3fbc72af846f))
+- ci: test pull requests and locale contracts ([12dc5b1](https://github.com/leomoon-studios/wiki-go/commit/12dc5b1bbc545cea97a18cadd49a3b5e55c62e38))
+- Merge pull request #194 from blfpd/locale-eo ([4b5aca7](https://github.com/leomoon-studios/wiki-go/commit/4b5aca735e169be13bb8a54999d1e8e1ecaa817d))
+- Update docker file to use updated golang image ([88adfe4](https://github.com/leomoon-studios/wiki-go/commit/88adfe46b01327804de267b8a9a5d2ca04f28aa3))
+
 ## [v1.9.2](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.2) (2026-09-21)
 
 - ci: link authors in release history ([3a4c07d](https://github.com/leomoon-studios/wiki-go/commit/3a4c07d842e31144ad1aef58ba54dfd43274da2f))
