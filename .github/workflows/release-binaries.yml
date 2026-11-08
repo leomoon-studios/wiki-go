@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Fetch all history for proper versioning
 
@@ -34,7 +34,7 @@ jobs:
           sed -i 's/const DEBUG_MODE = true;/const DEBUG_MODE = false;/' internal/resources/static/js/debug-toggle.js
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod  # Use version from go.mod
           check-latest: true
