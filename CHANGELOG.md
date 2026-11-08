@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.9.4](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.4) (2026-11-08)
+
+- Update CHANGELOG.md ([ddfab90](https://github.com/leomoon-studios/wiki-go/commit/ddfab90e77e65e621353e0b38d77383fbbabe280))
+- Update screenshot ([032e246](https://github.com/leomoon-studios/wiki-go/commit/032e246e42f360644eca2c8b341ec6e53247c695))
+- ci: upgrade actions to Node 24 ([ebdc86b](https://github.com/leomoon-studios/wiki-go/commit/ebdc86b74e6b51d73bbdfb43c9752d0fe8e1ec3a))
+- security: propagate stats render access context ([ff7ede2](https://github.com/leomoon-studios/wiki-go/commit/ff7ede2299713d8f75e6137f9870e943c49369e2))
+- security: filter stats by document access ([298d84c](https://github.com/leomoon-studios/wiki-go/commit/298d84cfbfd69e786ed20b0573c565a9ab4a4a7e))
+- test: cover stats shortcode authorization ([9de7eab](https://github.com/leomoon-studios/wiki-go/commit/9de7eabf8cdec8b4430d045c0140ef373fe59b8b))
+
 ## [v1.9.3](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.3) (2026-11-07)
 
 - Fix year shortcode in Open Graph description ([b3cf5ff](https://github.com/leomoon-studios/wiki-go/commit/b3cf5ff82f3a8f31b038101929b6b299c90b41e3))
