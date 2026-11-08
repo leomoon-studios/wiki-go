@@ -1,5 +1,5 @@
 # Build stage
-FROM docker.io/library/golang:1.26.5-alpine3.24 AS builder
+FROM docker.io/library/golang:1.27.3-alpine3.24 AS builder
 
 RUN apk add --no-cache build-base git gcc musl-dev && rm -rf /var/cache/apk/*
 
@@ -13,7 +13,7 @@ ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -installsuffix cgo -ldflags="-s -w -X 'wiki-go/internal/version.Version=${VERSION}'" -o wiki-go .
 
 # Final stage
-FROM docker.io/library/alpine:3.23
+FROM docker.io/library/alpine:3.24
 
 RUN apk add --no-cache bash ca-certificates curl linux-pam tzdata && rm -rf /var/cache/apk/*
 
