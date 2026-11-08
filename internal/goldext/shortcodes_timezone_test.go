@@ -66,14 +66,14 @@ func TestRenderRecentEditsUsesWikiTimezone(t *testing.T) {
 
 	SetWikiTimezone("Asia/Tokyo") // UTC+9
 	var buf strings.Builder
-	renderRecentEditsFromDir(&buf, dir, 5)
+	renderRecentEditsFromDir(&buf, dir, 5, func(string) bool { return true })
 	if !strings.Contains(buf.String(), "2024-06-01 19:00") {
 		t.Fatalf("expected JST-formatted time in output, got: %s", buf.String())
 	}
 
 	SetWikiTimezone("UTC")
 	buf.Reset()
-	renderRecentEditsFromDir(&buf, dir, 5)
+	renderRecentEditsFromDir(&buf, dir, 5, func(string) bool { return true })
 	if !strings.Contains(buf.String(), "2024-06-01 10:00") {
 		t.Fatalf("expected UTC-formatted time in output, got: %s", buf.String())
 	}

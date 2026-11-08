@@ -194,27 +194,17 @@ func (r *trustedNodeRenderer) renderStatsBlock(writer util.BufWriter, _ []byte, 
 	}
 	stats := node.(*StatsBlock)
 	var output strings.Builder
-	// Until stats traversal applies the predicate per document, omit filesystem
-	// results for every caller rather than exposing unfiltered metadata.
-	if stats.Mode == StatsDocumentCount {
-		_, _ = writer.WriteString("<div class=\"wiki-stats doc-count\"></div>\n")
-		return ast.WalkSkipChildren, nil
-	}
-	if stats.Mode == StatsRecentEdits {
-		_, _ = writer.WriteString("<div class=\"wiki-stats recent-edits\"></div>\n")
-		return ast.WalkSkipChildren, nil
-	}
 	switch stats.Mode {
 	case StatsDocumentCount:
 		if stats.Folder != "*" && stats.Folder != "all" && !validStatsFolder(stats.Folder) {
 			return ast.WalkSkipChildren, nil
 		}
-		renderDocumentCount(&output, stats.Folder)
+		renderDocumentCount(&output, stats.Folder, r.canAccess)
 	case StatsRecentEdits:
 		if stats.RecentCount < 1 || stats.RecentCount > 100 {
 			return ast.WalkSkipChildren, nil
 		}
-		renderRecentEdits(&output, stats.RecentCount)
+		renderRecentEditsFromDir(&output, DocumentsRoot(), stats.RecentCount, r.canAccess)
 	default:
 		_, _ = writer.WriteString("<p>")
 		_, _ = writer.Write(util.EscapeHTML([]byte(stats.Original)))
@@ -226,7 +216,7 @@ func (r *trustedNodeRenderer) renderStatsBlock(writer util.BufWriter, _ []byte, 
 }
 
 // renderDocumentCount renders the document count HTML
-func renderDocumentCount(w *strings.Builder, countParam string) {
+func renderDocumentCount(w *strings.Builder, countParam string, canAccess DocumentAccessPredicate) {
 	var count int
 	var title string
 	var description string
@@ -236,13 +226,13 @@ func renderDocumentCount(w *strings.Builder, countParam string) {
 
 	// Count all documents (using * or all as wildcard)
 	if countParam == "*" || countParam == "all" {
-		count = countDocuments(docsDir)
+		count = countDocuments(docsDir, docsDir, canAccess)
 		title = "Total Documents"
 		description = "Total number of documents in the wiki"
 	} else {
 		// Count documents in a specific folder
 		folderPath := filepath.Join(docsDir, countParam)
-		count = countDocuments(folderPath)
+		count = countDocuments(docsDir, folderPath, canAccess)
 		title = "Documents in " + formatDirName(countParam)
 		description = "Number of documents in the " + formatDirName(countParam) + " section"
 	}
@@ -257,15 +247,10 @@ func renderDocumentCount(w *strings.Builder, countParam string) {
 	w.WriteString("</div>\n")
 }
 
-// renderRecentEdits renders the recent edits HTML
-func renderRecentEdits(w *strings.Builder, count int) {
-	renderRecentEditsFromDir(w, DocumentsRoot(), count)
-}
-
 // renderRecentEditsFromDir is the testable core of renderRecentEdits and
 // renders the list of recent edits from a given documents directory.
-func renderRecentEditsFromDir(w *strings.Builder, dirPath string, count int) {
-	docs := getRecentDocuments(dirPath, count)
+func renderRecentEditsFromDir(w *strings.Builder, dirPath string, count int, canAccess DocumentAccessPredicate) {
+	docs := getRecentDocuments(dirPath, count, canAccess)
 
 	w.WriteString("<div class=\"wiki-stats recent-edits\">\n")
 	w.WriteString("<h4>Recently Edited Documents</h4>\n")
@@ -298,7 +283,7 @@ func renderRecentEditsFromDir(w *strings.Builder, dirPath string, count int) {
 }
 
 // countDocuments counts the number of document.md files in a directory
-func countDocuments(dirPath string) int {
+func countDocuments(root, dirPath string, canAccess DocumentAccessPredicate) int {
 	count := 0
 
 	// Check if the directory exists
@@ -313,7 +298,7 @@ func countDocuments(dirPath string) int {
 		}
 
 		// Count only document.md files
-		if !info.IsDir() && filepath.Base(path) == "document.md" {
+		if !info.IsDir() && filepath.Base(path) == "document.md" && statsDocumentAllowed(root, path, canAccess) {
 			count++
 		}
 
@@ -324,7 +309,7 @@ func countDocuments(dirPath string) int {
 }
 
 // getRecentDocuments returns the most recently modified documents
-func getRecentDocuments(dirPath string, count int) []Document {
+func getRecentDocuments(dirPath string, count int, canAccess DocumentAccessPredicate) []Document {
 	var docs []Document
 
 	// Check if the directory exists
@@ -339,7 +324,7 @@ func getRecentDocuments(dirPath string, count int) []Document {
 		}
 
 		// Process only document.md files
-		if !info.IsDir() && filepath.Base(path) == "document.md" {
+		if !info.IsDir() && filepath.Base(path) == "document.md" && statsDocumentAllowed(dirPath, path, canAccess) {
 			// Get the document directory
 			docDir := filepath.Dir(path)
 
@@ -380,6 +365,20 @@ func getRecentDocuments(dirPath string, count int) []Document {
 	}
 
 	return docs
+}
+
+func statsDocumentAllowed(root, filePath string, canAccess DocumentAccessPredicate) bool {
+	if canAccess == nil {
+		return false
+	}
+	rel, err := filepath.Rel(root, filepath.Dir(filePath))
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return false
+	}
+	if rel == "." {
+		return canAccess("/")
+	}
+	return canAccess("/" + filepath.ToSlash(rel))
 }
 
 // extractDocumentTitle extracts the first H1 title from a markdown file
