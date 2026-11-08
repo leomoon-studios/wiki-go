@@ -152,7 +152,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 		// Use the document path for rendering to handle local file references and
 		// collect the outline from the same trusted AST conversion.
-		renderResult := utils.RenderMarkdownWithPathResult(string(mdContent), path)
+		renderResult := utils.RenderMarkdownWithAccess(string(mdContent), path, func(p string) bool { return auth.CanAccessDocument(p, session, cfg) })
 		content = safehtml.FromRenderer(renderResult.HTML)
 		if !isEditMode && documentLayout != "kanban" && documentLayout != "links" {
 			chapterHeadings = chapterHeadingsForPage(renderResult.Headings, renderResult.HasInlineTOC)

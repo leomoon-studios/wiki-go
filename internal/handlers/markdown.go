@@ -39,15 +39,14 @@ func RenderMarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the document path from the query parameter
 	docPath := r.URL.Query().Get("path")
 	sourceLines := r.URL.Query().Get("source_lines") == "1"
+	canAccess := func(path string) bool { return cfg != nil && auth.CanAccessDocument(path, session, cfg) }
 
 	// Use the utility function to render markdown to HTML with the document path
 	var html []byte
 	if sourceLines {
-		html = utils.RenderMarkdownWithSourceLines(string(markdown), docPath)
-	} else if docPath != "" {
-		html = utils.RenderMarkdownWithPath(string(markdown), docPath)
+		html = utils.RenderMarkdownWithSourceLinesAndAccess(string(markdown), docPath, canAccess)
 	} else {
-		html = utils.RenderMarkdown(string(markdown))
+		html = utils.RenderMarkdownWithAccess(string(markdown), docPath, canAccess).HTML
 	}
 
 	// Set content type to HTML

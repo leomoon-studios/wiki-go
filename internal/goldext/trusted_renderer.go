@@ -17,12 +17,20 @@ var TrustedNodes = &trustedNodesExtension{}
 
 type trustedNodesExtension struct {
 	documentPath string
+	canAccess    DocumentAccessPredicate
 }
+
+// DocumentAccessPredicate decides whether a logical document path is visible.
+type DocumentAccessPredicate func(string) bool
 
 // TrustedNodesForDocument returns the trusted-node extension with a fallback
 // document path for renderers that cannot pass a Goldmark parser context.
 func TrustedNodesForDocument(documentPath string) goldmark.Extender {
 	return &trustedNodesExtension{documentPath: documentPath}
+}
+
+func TrustedNodesForDocumentWithAccess(documentPath string, canAccess DocumentAccessPredicate) goldmark.Extender {
+	return &trustedNodesExtension{documentPath: documentPath, canAccess: canAccess}
 }
 
 func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
@@ -38,12 +46,12 @@ func (e *trustedNodesExtension) Extend(markdown goldmark.Markdown) {
 	)
 	markdown.Renderer().AddOptions(
 		renderer.WithNodeRenderers(
-			util.Prioritized(&trustedNodeRenderer{}, 100),
+			util.Prioritized(&trustedNodeRenderer{canAccess: e.canAccess}, 100),
 		),
 	)
 }
 
-type trustedNodeRenderer struct{}
+type trustedNodeRenderer struct{ canAccess DocumentAccessPredicate }
 
 func (r *trustedNodeRenderer) RegisterFuncs(registerer renderer.NodeRendererFuncRegisterer) {
 	registerer.Register(KindTrustedBlock, r.renderBlock)

@@ -194,6 +194,16 @@ func (r *trustedNodeRenderer) renderStatsBlock(writer util.BufWriter, _ []byte, 
 	}
 	stats := node.(*StatsBlock)
 	var output strings.Builder
+	// Until stats traversal applies the predicate per document, omit filesystem
+	// results for every caller rather than exposing unfiltered metadata.
+	if stats.Mode == StatsDocumentCount {
+		_, _ = writer.WriteString("<div class=\"wiki-stats doc-count\"></div>\n")
+		return ast.WalkSkipChildren, nil
+	}
+	if stats.Mode == StatsRecentEdits {
+		_, _ = writer.WriteString("<div class=\"wiki-stats recent-edits\"></div>\n")
+		return ast.WalkSkipChildren, nil
+	}
 	switch stats.Mode {
 	case StatsDocumentCount:
 		if stats.Folder != "*" && stats.Folder != "all" && !validStatsFolder(stats.Folder) {

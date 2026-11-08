@@ -76,6 +76,11 @@ func RenderMarkdownWithPath(md string, docPath string) []byte {
 // RenderMarkdownWithPathResult converts Markdown and returns the document
 // outline produced by that exact conversion.
 func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResult {
+	return RenderMarkdownWithAccess(md, docPath, nil)
+}
+
+// RenderMarkdownWithAccess renders with request-specific document access.
+func RenderMarkdownWithAccess(md string, docPath string, canAccess goldext.DocumentAccessPredicate) MarkdownRenderResult {
 	// Check for frontmatter
 	metadata, contentWithoutFrontmatter, hasFrontmatter := frontmatter.Parse(md)
 
@@ -101,7 +106,7 @@ func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResul
 			contentWithoutFrontmatter,
 			preprocessors,
 			nil,
-			goldext.TrustedNodesForDocument(docPath),
+			goldext.TrustedNodesForDocumentWithAccess(docPath, canAccess),
 		)
 		return MarkdownRenderResult{HTML: []byte(kanbanHTML)}
 	}
@@ -137,7 +142,7 @@ func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResul
 			extension.DefinitionList,  // Enable definition lists
 			extension.GFM,             // GitHub Flavored Markdown
 			goldext.OnePasswordIgnore, // Add data-1p-ignore to code blocks
-			goldext.TrustedNodes,      // Render typed Wiki-Go extension nodes
+			goldext.TrustedNodesForDocumentWithAccess(docPath, canAccess),
 			// MathJax is now handled via client-side JavaScript
 		),
 		// Parser options
@@ -180,7 +185,11 @@ var blockTagRe = regexp.MustCompile(`(?i)<(h[1-6]|pre|blockquote|table|hr|ol|ul)
 // It works by scanning the raw markdown for block boundaries and annotating
 // the rendered HTML with the corresponding line numbers via a post-process pass.
 func RenderMarkdownWithSourceLines(md string, docPath string) []byte {
-	html := RenderMarkdownWithPath(md, docPath)
+	return RenderMarkdownWithSourceLinesAndAccess(md, docPath, nil)
+}
+
+func RenderMarkdownWithSourceLinesAndAccess(md string, docPath string, canAccess goldext.DocumentAccessPredicate) []byte {
+	html := RenderMarkdownWithAccess(md, docPath, canAccess).HTML
 	return []byte(injectSourceLines(string(html), md))
 }
 

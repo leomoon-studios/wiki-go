@@ -580,7 +580,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 	// Render the Markdown and collect the outline from the same trusted AST
 	// conversion. Preserve the homepage's existing empty document path.
-	renderResult := utils.RenderMarkdownWithPathResult(string(content), "")
+	renderResult := utils.RenderMarkdownWithAccess(string(content), "", func(p string) bool { return auth.CanAccessDocument(p, session, cfg) })
 	renderedContent := safehtml.FromRenderer(renderResult.HTML)
 	var chapterHeadings []types.ChapterHeading
 	if !isEditMode {
