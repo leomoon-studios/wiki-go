@@ -85,6 +85,11 @@ func TestSearchTitleRanking(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &apiResults); err != nil || len(apiResults) == 0 || apiResults[0].Path != "/c-title" {
 		t.Fatalf("ranked API results = %+v, error = %v", apiResults, err)
 	}
+	postResponse := httptest.NewRecorder()
+	SearchHandler(postResponse, httptest.NewRequest(http.MethodPost, "/api/search", strings.NewReader(`{"query":"alpha beta"}`)), cfg)
+	if postResponse.Code != response.Code || postResponse.Body.String() != response.Body.String() {
+		t.Fatalf("ranked GET/POST mismatch: GET %d %s; POST %d %s", response.Code, response.Body.String(), postResponse.Code, postResponse.Body.String())
+	}
 
 	pageResponse := httptest.NewRecorder()
 	SearchPageHandler(pageResponse, httptest.NewRequest(http.MethodGet, "/api/search/page?q=alpha+beta", nil), cfg)

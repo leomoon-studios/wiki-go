@@ -12,6 +12,7 @@
 @newuser_username = newuser
 @newuser_password = test
 @newuser_role = viewer
+@session_token = REPLACE_WITH_LOGIN_SESSION_TOKEN
 
 ### Authentication
 
@@ -29,6 +30,32 @@ Content-Type: application/json
 #### Check auth status
 GET {{ base_url }}/api/check-auth
 Accept: application/json
+
+### Search
+
+#### Search with a URL-encoded space (public wiki)
+GET {{ base_url }}/api/search?q=quick%20start
+Accept: application/json
+
+#### Search for a literal plus sign (C++)
+GET {{ base_url }}/api/search?q=C%2B%2B
+Accept: application/json
+
+#### Search for an exact phrase
+GET {{ base_url }}/api/search?q=%22release%20notes%22
+Accept: application/json
+
+#### Search a private wiki after login
+# Copy the session_token value from the login response cookie into @session_token above.
+GET {{ base_url }}/api/search?q=internal%20guide
+Accept: application/json
+Cookie: session_token={{session_token}}
+
+#### Existing JSON POST search remains supported
+POST {{ base_url }}/api/search
+Content-Type: application/json
+
+{"query":"release notes"}
 
 ### Profile
 

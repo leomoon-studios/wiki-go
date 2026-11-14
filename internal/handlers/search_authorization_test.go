@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -60,6 +61,15 @@ func TestSearchAuthorization(t *testing.T) {
 				SearchHandler(response, request, cfg)
 				if response.Code != http.StatusOK {
 					t.Fatalf("status = %d", response.Code)
+				}
+				getRequest := httptest.NewRequest(http.MethodGet, "/api/search?q="+url.QueryEscape(query), nil)
+				if tc.cookie != nil {
+					getRequest.AddCookie(tc.cookie)
+				}
+				getResponse := httptest.NewRecorder()
+				SearchHandler(getResponse, getRequest, cfg)
+				if getResponse.Code != response.Code || getResponse.Body.String() != response.Body.String() || getResponse.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatalf("GET/POST search mismatch for %q: GET %d %s; POST %d %s", query, getResponse.Code, getResponse.Body.String(), response.Code, response.Body.String())
 				}
 				var results []SearchResult
 				if err := json.Unmarshal(response.Body.Bytes(), &results); err != nil {

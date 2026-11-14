@@ -17,6 +17,7 @@ func TestSearchRequestContract(t *testing.T) {
 	root := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	writeChapterLinksDocument(t, filepath.Join(root, "public", "document.md"), "# Visible\nunique-needle")
 	writeChapterLinksDocument(t, filepath.Join(root, "private", "document.md"), "# Hidden\nunique-needle")
+	writeChapterLinksDocument(t, filepath.Join(root, "encoded", "document.md"), "# Literal%2B\nURL decoding control")
 	cfg.AccessRules = []config.AccessRule{{Pattern: "/private", Access: "private"}}
 	viewer := sessionCookieForUser(t, cfg, "viewer", config.RoleViewer)
 
@@ -45,6 +46,13 @@ func TestSearchRequestContract(t *testing.T) {
 	}
 	if len(results) != 1 || results[0].Path != "/public" {
 		t.Fatalf("anonymous results = %+v", results)
+	}
+	encoded := request(http.MethodGet, "/api/search?q=Literal%252B", "", nil)
+	if encoded.Code != http.StatusOK || !strings.Contains(encoded.Body.String(), `"path":"/encoded"`) {
+		t.Fatalf("query was decoded more than once: %d %s", encoded.Code, encoded.Body.String())
+	}
+	if query, err := searchQueryFromURL("q=C%2B%2B"); err != nil || query != "C++" {
+		t.Fatalf("literal plus decode = %q, %v", query, err)
 	}
 	if private := request(http.MethodGet, "/api/search?q=unique-needle", "", viewer); private.Code != http.StatusOK || !strings.Contains(private.Body.String(), `"path":"/private"`) {
 		t.Fatalf("authenticated search = %d %s", private.Code, private.Body.String())
