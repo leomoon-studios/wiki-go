@@ -51,6 +51,7 @@ func TestCSPMiddlewareEnforcesSameOriginScripts(t *testing.T) {
 
 func TestRootSearchRoute(t *testing.T) {
 	cfg := newRouteSecurityTestConfig(t)
+	cfg.Server.PublicURL = "https://wiki.example"
 	doc := filepath.Join(cfg.Wiki.RootDir, "documents", "public", "document.md")
 	if err := os.MkdirAll(filepath.Dir(doc), 0o755); err != nil {
 		t.Fatal(err)
@@ -78,6 +79,14 @@ func TestRootSearchRoute(t *testing.T) {
 		if tc.target == "/?search=needle" && !strings.Contains(w.Body.String(), "ROUTE_SEARCH_CANARY") {
 			t.Fatal("root search did not render results")
 		}
+		if tc.status == http.StatusOK && !strings.Contains(w.Body.String(), `rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml"`) {
+			t.Fatalf("%s: missing OpenSearch discovery link", tc.target)
+		}
+	}
+	descriptor := httptest.NewRecorder()
+	http.DefaultServeMux.ServeHTTP(descriptor, httptest.NewRequest(http.MethodGet, "/opensearch.xml", nil))
+	if descriptor.Code != http.StatusOK || !strings.Contains(descriptor.Body.String(), "https://wiki.example/?search={searchTerms}") {
+		t.Fatalf("search provider = %d %s", descriptor.Code, descriptor.Body.String())
 	}
 	cfg.Wiki.Private = true
 	w := httptest.NewRecorder()

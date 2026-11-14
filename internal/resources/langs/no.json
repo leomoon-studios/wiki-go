@@ -210,6 +210,7 @@
 
   "search.results_title": "Søkeresultater",
   "search.no_results": "Ingen resultater funnet.",
+  "search.public_url_error": "Søkeleverandøren krever en gyldig offentlig URL.",
 
   "comments.title": "Kommentarer",
   "comments.write_placeholder": "Skriv en kommentar...",

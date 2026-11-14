@@ -210,6 +210,7 @@
 
   "search.results_title": "검색 결과",
   "search.no_results": "결과가 없습니다.",
+  "search.public_url_error": "검색 공급자에 유효한 공개 URL이 필요합니다.",
 
   "comments.title": "댓글",
   "comments.write_placeholder": "댓글 작성...",

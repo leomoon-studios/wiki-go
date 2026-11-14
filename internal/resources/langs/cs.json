@@ -210,6 +210,7 @@
 
   "search.results_title": "Výsledky vyhledávání",
   "search.no_results": "Nebyly nalezeny žádné výsledky.",
+  "search.public_url_error": "Poskytovatel vyhledávání vyžaduje platnou veřejnou URL.",
 
   "comments.title": "Komentáře",
   "comments.write_placeholder": "Napište komentář...",

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{.Config.Wiki.Language}}" data-allow-insecure="{{.Config.Server.AllowInsecureCookies}}">
 <head>
+    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="{{.Config.Wiki.Title}}">
     <title>{{if .CurrentDir.Title}}{{if ne .CurrentDir.Path "/"}}{{.CurrentDir.Title}} - {{end}}{{.Config.Wiki.Title}}{{else}}{{.Config.Wiki.Title}}{{end}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="user-role" content="{{.UserRole}}">

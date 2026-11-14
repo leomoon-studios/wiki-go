@@ -210,6 +210,7 @@
 
   "search.results_title": "खोज परिणाम",
   "search.no_results": "कोई परिणाम नहीं मिला।",
+  "search.public_url_error": "खोज प्रदाता को एक मान्य सार्वजनिक URL की आवश्यकता है।",
 
   "comments.title": "टिप्पणियाँ",
   "comments.write_placeholder": "टिप्पणी लिखें...",

@@ -210,6 +210,7 @@
 
   "search.results_title": "Risultati della ricerca",
   "search.no_results": "Nessun risultato trovato.",
+  "search.public_url_error": "Il provider di ricerca richiede un URL pubblico valido.",
 
   "comments.title": "Commenti",
   "comments.write_placeholder": "Scrivi un commento...",

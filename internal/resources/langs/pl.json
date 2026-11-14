@@ -210,6 +210,7 @@
 
   "search.results_title": "Wyniki wyszukiwania",
   "search.no_results": "Nie znaleziono wyników.",
+  "search.public_url_error": "Dostawca wyszukiwania wymaga prawidłowego publicznego adresu URL.",
 
   "comments.title": "Komentarze",
   "comments.write_placeholder": "Napisz komentarz...",

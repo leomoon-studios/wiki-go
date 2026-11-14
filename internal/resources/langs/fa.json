@@ -210,6 +210,7 @@
 
   "search.results_title": "نتایج جستجو",
   "search.no_results": "نتیجه‌ای یافت نشد.",
+  "search.public_url_error": "ارائه‌دهنده جستجو به یک نشانی عمومی معتبر نیاز دارد.",
 
   "comments.title": "نظرات",
   "comments.write_placeholder": "نظر خود را بنویسید...",

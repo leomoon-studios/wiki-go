@@ -66,6 +66,8 @@ If you're running Wiki-Go without SSL/HTTPS and experiencing login issues, you n
 - **Breadcrumb Navigation**: Clear path visualization for easy navigation
 - **Sidebar Navigation**: Quick access to document hierarchy
 
+Browsers that support OpenSearch can discover `/opensearch.xml` and add the wiki as a search engine. Provider searches open the bookmarkable `/?search=...` page. Sitemap and provider URLs are derived from the request; when using a reverse proxy, configure `server.trusted_proxies` so forwarded host and HTTPS information are recognized. Optionally, set `server.public_url` in `data/config.yaml` to a fixed public origin such as `https://wiki.example.com` or `https://wiki.example.com:8443`. On a private wiki, search still requires login and results follow the user's document access rules. A bookmarked search does not grant access to its results.
+
 ### User Experience
 - **Responsive Design**: Works on desktop and mobile devices
 - **Dark/Light Theme**: Toggle between dark and light modes

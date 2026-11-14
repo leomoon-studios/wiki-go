@@ -44,8 +44,9 @@ var (
 // Config represents the server configuration
 type Config struct {
 	Server struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Host      string `yaml:"host"`
+		Port      int    `yaml:"port"`
+		PublicURL string `yaml:"public_url"`
 		// When set to true, allows cookies to be sent over non-HTTPS connections.
 		// WARNING: Only enable this in trusted environments like a homelab
 		// where HTTPS is not available. This reduces security by allowing
@@ -177,6 +178,7 @@ func LoadConfig(path string) (*Config, error) {
 				GetConfigTemplate(),
 				config.Server.Host,
 				config.Server.Port,
+				config.Server.PublicURL,
 				config.Server.AllowInsecureCookies,
 				formatYAMLStringList(config.Server.TrustedProxies),
 				config.Server.SSL,
@@ -244,6 +246,8 @@ func GetConfigTemplate() string {
 	return `server:
     host: "%s"
     port: %d
+    # Public origin used for sitemap links and the browser search provider, for example https://wiki.example.com.
+    public_url: %q
     # When set to true, allows cookies to be sent over non-HTTPS connections.
     # WARNING: Only enable this in trusted environments like a homelab
     # where HTTPS is not available. This reduces security by allowing
@@ -329,7 +333,7 @@ func FormatAccessRuleEntry(rule AccessRule) string {
 func formatYAMLStringList(values []string) string {
 	quoted := make([]string, 0, len(values))
 	for _, value := range values {
-		encoded, err := yaml.Marshal(value)
+		encoded, err := yaml.Marshal(&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: yaml.DoubleQuotedStyle})
 		if err != nil {
 			continue
 		}
@@ -363,6 +367,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		GetConfigTemplate(),
 		cfg.Server.Host,
 		cfg.Server.Port,
+		cfg.Server.PublicURL,
 		cfg.Server.AllowInsecureCookies,
 		formatYAMLStringList(cfg.Server.TrustedProxies),
 		cfg.Server.SSL,

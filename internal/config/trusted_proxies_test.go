@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -14,6 +15,9 @@ func TestSaveConfigPreservesTrustedProxies(t *testing.T) {
 	var output bytes.Buffer
 	if err := SaveConfig(cfg, &output); err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), `trusted_proxies: ["127.0.0.1", "10.0.0.0/8", "2001:db8::/32"]`) {
+		t.Fatalf("trusted proxy entries should remain quoted: %s", output.String())
 	}
 
 	var decoded Config

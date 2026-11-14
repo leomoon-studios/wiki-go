@@ -210,6 +210,7 @@
 
   "search.results_title": "Arama Sonuçları",
   "search.no_results": "Sonuç bulunamadı.",
+  "search.public_url_error": "Arama sağlayıcısı geçerli bir herkese açık URL gerektirir.",
 
   "comments.title": "Yorumlar",
   "comments.write_placeholder": "Bir yorum yazın...",

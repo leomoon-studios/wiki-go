@@ -210,6 +210,7 @@
 
   "search.results_title": "نتائج البحث",
   "search.no_results": "لم يتم العثور على نتائج.",
+  "search.public_url_error": "يتطلب مزود البحث عنوان URL عاماً صالحاً.",
 
   "comments.title": "التعليقات",
   "comments.write_placeholder": "اكتب تعليقًا...",

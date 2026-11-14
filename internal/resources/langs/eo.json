@@ -210,6 +210,7 @@
 
   "search.results_title": "Serĉrezultoj",
   "search.no_results": "Neniu rezulto trovita.",
+  "search.public_url_error": "La serĉprovizanto bezonas validan publikan URL.",
 
   "comments.title": "Komentoj",
   "comments.write_placeholder": "Skribu komenton…",

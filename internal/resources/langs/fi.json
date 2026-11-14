@@ -210,6 +210,7 @@
 
   "search.results_title": "Hakutulokset",
   "search.no_results": "Ei tuloksia.",
+  "search.public_url_error": "Hakupalvelu vaatii kelvollisen julkisen URL-osoitteen.",
 
   "comments.title": "Kommentit",
   "comments.write_placeholder": "Kirjoita kommentti...",

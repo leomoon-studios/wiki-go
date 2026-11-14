@@ -210,6 +210,7 @@
 
   "search.results_title": "תוצאות חיפוש",
   "search.no_results": "לא נמצאו תוצאות.",
+  "search.public_url_error": "ספק החיפוש דורש כתובת URL ציבורית תקינה.",
 
   "comments.title": "תגובות",
   "comments.write_placeholder": "כתוב תגובה...",

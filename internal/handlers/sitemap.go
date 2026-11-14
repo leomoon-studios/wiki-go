@@ -25,8 +25,8 @@ type SitemapURL struct {
 }
 
 type Sitemap struct {
-	XMLName xml.Name    `xml:"urlset"`
-	XMLNS   string      `xml:"xmlns,attr"`
+	XMLName xml.Name     `xml:"urlset"`
+	XMLNS   string       `xml:"xmlns,attr"`
 	URLs    []SitemapURL `xml:"url"`
 }
 
@@ -64,7 +64,11 @@ func SitemapHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) 
 	isXML := strings.HasSuffix(r.URL.Path, ".xml")
 
 	// Get base URL for the sitemap
-	baseURL := getBaseURL(r, cfg)
+	baseURL, err := getBaseURL(r, cfg)
+	if err != nil {
+		http.Error(w, "Sitemap requires a valid public URL", http.StatusServiceUnavailable)
+		return
+	}
 
 	// Get current user role for conditional display in HTML sitemap
 	userRole := ""
@@ -145,13 +149,13 @@ func renderHTMLSitemap(w http.ResponseWriter, r *http.Request, pages []SitemapPa
 
 	// Create the sitemap page data
 	sitemapData := SitemapPage{
-		Title:        fmt.Sprintf("Sitemap - %s", cfg.Wiki.Title),
-		Config:       cfg,
-		BaseURL:      baseURL,
-		Pages:        pages,
-		Categories:   categories,
-		UserRole:     userRole,
-		HomeCategory: homeCategory,
+		Title:          fmt.Sprintf("Sitemap - %s", cfg.Wiki.Title),
+		Config:         cfg,
+		BaseURL:        baseURL,
+		Pages:          pages,
+		Categories:     categories,
+		UserRole:       userRole,
+		HomeCategory:   homeCategory,
 		BackToHome:     i18n.Translate("nav.back_to_home"),
 		SitemapTitle:   i18n.Translate("sitemap.title"),
 		XMLSitemap:     i18n.Translate("sitemap.xml_sitemap"),
@@ -299,20 +303,6 @@ func getDocumentTitle(filePath string) string {
 }
 
 // getBaseURL constructs the base URL from request and config
-func getBaseURL(r *http.Request, cfg *config.Config) string {
-	scheme := "http"
-	if cfg.Server.SSL || r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
-	}
-
-	host := r.Host
-	if host == "" {
-		// Fallback to configuration
-		host = cfg.Server.Host
-		if cfg.Server.Port != 80 && cfg.Server.Port != 443 {
-			host = fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-		}
-	}
-
-	return fmt.Sprintf("%s://%s", scheme, host)
+func getBaseURL(r *http.Request, cfg *config.Config) (string, error) {
+	return requestPublicOrigin(r, cfg)
 }

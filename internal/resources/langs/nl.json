@@ -210,6 +210,7 @@
 
   "search.results_title": "Zoekresultaten",
   "search.no_results": "Geen resultaten gevonden.",
+  "search.public_url_error": "De zoekprovider vereist een geldige openbare URL.",
 
   "comments.title": "Reacties",
   "comments.write_placeholder": "Schrijf een reactie...",

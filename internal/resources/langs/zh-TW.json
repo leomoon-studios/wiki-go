@@ -210,6 +210,7 @@
 
   "search.results_title": "搜尋結果",
   "search.no_results": "未找到結果。",
+  "search.public_url_error": "搜尋提供者需要有效的公開網址。",
 
   "comments.title": "評論",
   "comments.write_placeholder": "撰寫評論...",

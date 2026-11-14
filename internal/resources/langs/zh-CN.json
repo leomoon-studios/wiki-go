@@ -210,6 +210,7 @@
 
   "search.results_title": "搜索结果",
   "search.no_results": "未找到结果。",
+  "search.public_url_error": "搜索提供程序需要有效的公共网址。",
 
   "comments.title": "评论",
   "comments.write_placeholder": "写评论...",

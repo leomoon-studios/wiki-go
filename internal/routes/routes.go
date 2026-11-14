@@ -363,6 +363,9 @@ func SetupRoutes(cfg *config.Config) {
 	mux.HandleFunc("/api/comments/", handlers.GetCommentsHandler)
 
 	// Search handler with wrapper to include config
+	mux.HandleFunc("/opensearch.xml", func(w http.ResponseWriter, r *http.Request) {
+		handlers.OpenSearchHandler(w, r, cfg)
+	})
 	mux.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
 		handlers.SearchHandler(w, r, cfg)
 	})
