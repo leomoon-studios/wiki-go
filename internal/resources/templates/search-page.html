@@ -1,0 +1,29 @@
+{{define "search-page"}}
+<section class="search-page" data-search-page="true" dir="auto">
+    <h1>{{t "common.search"}}</h1>
+    <form class="search-page-form" method="get" action="/" role="search">
+        <label for="search-page-query">{{t "common.search"}}</label>
+        <div class="search-page-form-row">
+            <input id="search-page-query" type="search" name="search" value="{{.SearchQuery}}" autocomplete="off">
+        </div>
+    </form>
+    {{if .SearchError}}
+    <p class="search-page-error" role="alert">Invalid search query.</p>
+    {{end}}
+    <div class="search-page-results" aria-live="polite">
+        {{if .SearchSubmitted}}
+            {{if .SearchResults}}
+                {{range .SearchResults}}
+                <article class="search-result-item">
+                    <a class="search-result-title" href="{{.Path}}">{{.Title}}</a>
+                    <div class="search-result-path">{{.Path}}</div>
+                    <p class="search-result-excerpt">{{.Excerpt}}</p>
+                </article>
+                {{end}}
+            {{else}}
+                <p class="empty-message">{{t "search.no_results"}}</p>
+            {{end}}
+        {{end}}
+    </div>
+</section>
+{{end}}

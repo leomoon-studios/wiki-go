@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="/static/css/theme.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/layout.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/navigation.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/search.css?={{getVersion}}">
+    <link rel="stylesheet" href="/static/css/search.css?v={{getVersion}}-2">
     <link rel="stylesheet" href="/static/css/buttons.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/dialog.css?={{getVersion}}">
     <link rel="stylesheet" href="/static/css/access-rules.css?={{getVersion}}">
@@ -211,6 +211,9 @@
                 {{end}}
             </div>
         </div>
+        {{if .IsSearchPage}}
+            {{template "search-page" .}}
+        {{else}}
         {{if .Content}}
             {{if .IsEditMode}}
             <!-- Edit mode: Show textarea with raw markdown content -->
@@ -249,10 +252,13 @@
             {{if not .Config.Wiki.DisableComments}}
                 {{template "comments" .}}
             {{end}}
+        {{end}}
         <footer class="footer">
+            {{if not .IsSearchPage}}
             <div class="footer-last-modified">
                 {{t "footer.last_edited"}}: {{formatTime .LastModified .Config.Wiki.Timezone "2006-01-02 15:04:05"}}
             </div>
+            {{end}}
             <div>
                 {{t "footer.powered_by"}} <a href="https://github.com/leomoon-studios/wiki-go" class="footer-powered" target="_blank">LeoMoon Wiki-Go</a> <span class="version" {{if eq .UserRole "admin"}}style="display: inline !important"{{else}}style="display: none !important"{{end}}>{{getVersion}}</span>
             </div>
@@ -260,16 +266,6 @@
     </div>
 
     {{template "chapter-links" .}}
-
-    <div class="search-results" dir="auto">
-        <div class="search-results-header">
-            <div class="search-results-title">{{t "search.results_title"}}</div>
-            <button class="search-close" aria-label="Close search results">
-                <i class="fa fa-times"></i>
-            </button>
-        </div>
-        <div class="search-results-content"></div>
-    </div>
 
     <script src="/static/js/dialog-system.js?={{getVersion}}"></script>
     <script src="/static/js/file-utilities.js?={{getVersion}}"></script>
@@ -307,7 +303,7 @@
 
     <script src="/static/js/markdown-table-editor.js?={{getVersion}}"></script>
     {{end}}
-    <script src="/static/js/search.js?={{getVersion}}" defer></script>
+    <script src="/static/js/search.js?v={{getVersion}}-5" defer></script>
     <script src="/static/js/move-document.js?={{getVersion}}" defer></script>
     <script src="/static/js/import-manager.js?={{getVersion}}" defer></script>
     <script src="/static/js/i18n.js?={{getVersion}}"></script>

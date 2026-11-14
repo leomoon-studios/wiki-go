@@ -1,176 +1,111 @@
-/**
- * search.js - Handles search functionality for Wiki-Go
- */
+// Search from the sidebar opens the bookmarkable results page after a short pause.
+(function() {
+    let timer;
+    let request;
+    let sequence = 0;
 
-// Search module using IIFE to avoid polluting global namespace
-const WikiSearch = (function() {
-    // DOM elements
-    let searchBox;
-    let searchResults;
-    let searchResultsContent;
-    let searchClose;
-
-    // Variables
-    let searchTimeout;
-
-    /**
-     * Initialize search functionality
-     */
-    function init() {
-        // Get DOM elements
-        searchBox = document.querySelector('.search-box');
-        searchResults = document.querySelector('.search-results');
-        searchResultsContent = document.querySelector('.search-results-content');
-        searchClose = document.querySelector('.search-close');
-
-        // Add event listeners
-        bindEvents();
+    function urlFor(path, query, key = 'q') {
+        const url = new URL(path, window.location.origin);
+        url.searchParams.set(key, query);
+        return url.pathname + url.search;
     }
 
-    /**
-     * Bind all event listeners
-     */
-    function bindEvents() {
-        // Search input handler
-        searchBox.addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-
-            const query = e.target.value.trim();
-            if (!query) {
-                searchResults.classList.remove('active');
-                return;
-            }
-
-            searchTimeout = setTimeout(() => {
-                performSearch(query);
-            }, 300);
-        });
-
-        // Close search results
-        searchClose.addEventListener('click', function() {
-            searchResults.classList.remove('active');
-            searchBox.value = '';
-        });
-
-        // Escape key is now handled by keyboard-shortcuts.js
-    }
-
-    /**
-     * Perform search query against the API
-     * @param {string} query - The search query
-     */
-    async function performSearch(query) {
-        try {
-            const response = await fetch('/api/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query })
-            });
-
-            if (!response.ok) {
-                throw new Error('Search failed');
-            }
-
-            const results = await response.json();
-
-            // Make sure results is always an array
-            const resultsArray = Array.isArray(results) ? results : [];
-
-            // Display results (or no results message if empty)
-            displaySearchResults(resultsArray, query);
-        } catch (error) {
-            console.error('Search error:', error);
-            WikiDOM.message(searchResultsContent, 'empty-message', 'An error occurred while searching. Please try again.');
-        }
-    }
-
-    /**
-     * Display search results in the UI
-     * @param {Array} results - Search results from the API
-     * @param {string} query - The original search query
-     */
-    function displaySearchResults(results, query) {
-        searchResults.classList.add('active');
-
-        // Make sure results is an array and check if it's empty
+    function renderResults(container, results, query) {
         if (!Array.isArray(results) || results.length === 0) {
-            WikiDOM.message(searchResultsContent, 'empty-message', window.i18n ? window.i18n.t('search.no_results') : 'No results found.');
+            WikiDOM.message(container, 'empty-message', window.i18n ? window.i18n.t('search.no_results') : 'No results found.');
             return;
         }
-
-        // Create regex pattern for highlighting
-        const terms = [];
-        let match;
-        const quotedRegex = /"([^"]+)"/g;
-        const remainingTerms = query.split(/\s+/)
-            .filter(term => term && !term.startsWith('NOT') && !term.includes('"'));
-
-        // Extract quoted phrases first
-        while ((match = quotedRegex.exec(query)) !== null) {
-            terms.push(match[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        }
-
-        // Add remaining individual terms
-        terms.push(...remainingTerms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-
-        // Create pattern that matches whole phrases and individual terms
-        const pattern = terms.length > 0 ? new RegExp(`(${terms.join('|')})`, 'gi') : null;
+        const terms = query.match(/"[^"]+"|\S+/g) || [];
+        const pattern = terms.length ? new RegExp('(' + terms.map(term => term.replace(/^"|"$/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi') : null;
         const fragment = document.createDocumentFragment();
-
         results.forEach(result => {
-            const item = WikiDOM.element('div', 'search-result-item');
+            const item = WikiDOM.element('article', 'search-result-item');
             const title = WikiDOM.element('a', 'search-result-title');
-            const resultPath = String(result?.path ?? '');
-            title.href = WikiDOM.localURL(resultPath);
+            const path = String(result?.path ?? '');
+            title.href = WikiDOM.localURL(path);
             WikiDOM.appendHighlightedText(title, result?.title, pattern);
-
-            const pathElement = WikiDOM.element('div', 'search-result-path', resultPath);
+            const pathElement = WikiDOM.element('div', 'search-result-path', path);
             const excerpt = WikiDOM.element('div', 'search-result-excerpt');
             WikiDOM.appendHighlightedText(excerpt, result?.excerpt, pattern);
-
             item.append(title, pathElement, excerpt);
             fragment.appendChild(item);
         });
-
-        searchResultsContent.replaceChildren(fragment);
+        container.replaceChildren(fragment);
     }
 
-    // Hide search results function for keyboard shortcuts
-    function hideSearchResults() {
-        if (searchResults) {
-            searchResults.classList.remove('active');
-            if (searchBox) {
-                searchBox.value = '';
+    document.addEventListener('DOMContentLoaded', function() {
+        const box = document.querySelector('.search-box');
+        const form = document.querySelector('.search-form');
+        const page = document.querySelector('.search-page');
+        const pageInput = document.querySelector('#search-page-query');
+        const pageForm = document.querySelector('.search-page-form');
+        const results = document.querySelector('.search-page-results');
+        if (!box || !form) return;
+
+        function cancelPending() {
+            clearTimeout(timer);
+            sequence++;
+            if (request) request.abort();
+        }
+
+        async function updatePage(query, historyMode) {
+            cancelPending();
+            const current = sequence;
+            const destination = urlFor('/', query, 'search');
+            if (historyMode && destination !== window.location.pathname + window.location.search) {
+                window.history[historyMode](null, '', destination);
+            }
+            box.value = query;
+            pageInput.value = query;
+            const error = document.querySelector('.search-page-error');
+            if (error) error.remove();
+            if (!query.trim()) {
+                results.replaceChildren();
+                return;
+            }
+            request = new AbortController();
+            try {
+                const response = await fetch(urlFor('/api/search', query), {signal: request.signal});
+                if (!response.ok) throw new Error('Search failed');
+                const matches = await response.json();
+                if (current === sequence) renderResults(results, matches, query);
+            } catch (error) {
+                if (current === sequence && error.name !== 'AbortError') {
+                    WikiDOM.message(results, 'empty-message', 'An error occurred while searching. Please try again.');
+                }
             }
         }
-    }
 
-    // Public API
-    return {
-        init: init,
-        // Export additional methods that might be needed by other modules
-        performSearch: performSearch,
-        hideSearchResults: hideSearchResults
-    };
+        function schedule(input) {
+            cancelPending();
+            const query = input.value;
+            if (page) {
+                if (input === box) pageInput.value = query;
+                else box.value = query;
+            }
+            timer = setTimeout(function() {
+                if (page) updatePage(query, 'replaceState');
+                else if (query.trim()) window.location.assign(urlFor('/', query, 'search'));
+            }, 300);
+        }
+
+        box.addEventListener('input', () => schedule(box));
+        form.addEventListener('submit', function(event) {
+            cancelPending();
+            if (page) {
+                event.preventDefault();
+                updatePage(box.value, 'pushState');
+            }
+        });
+        if (page && pageForm && pageInput && results) {
+            pageInput.addEventListener('input', () => schedule(pageInput));
+            pageForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                updatePage(pageInput.value, 'pushState');
+            });
+            window.addEventListener('popstate', function() {
+                updatePage(new URL(window.location.href).searchParams.get('search') || '', null);
+            });
+        }
+    });
 })();
-
-// Create window.Search for compatibility with keyboard-shortcuts.js
-window.Search = {
-    hideSearchResults: function() {
-        const searchResults = document.querySelector('.search-results');
-        const searchBox = document.querySelector('.search-box');
-        if (searchResults) {
-            searchResults.classList.remove('active');
-            if (searchBox) {
-                searchBox.value = '';
-            }
-        }
-    }
-};
-
-// Initialize search when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    WikiSearch.init();
-});

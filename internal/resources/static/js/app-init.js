@@ -29,23 +29,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply full width content if setting is enabled
     if (window.WikiConfig.disableContentMaxWidth) {
         document.querySelector('.content')?.classList.add('full-width-content');
-        document.querySelector('.search-results')?.classList.add('full-width-content');
     }
 
     // Update content width when settings change
     // This will be triggered after settings are updated
     document.addEventListener('settings-updated', function() {
         const contentElement = document.querySelector('.content');
-        const searchResultsElement = document.querySelector('.search-results');
         const disableMaxWidth = document.querySelector('meta[name="disable-content-max-width"]')?.getAttribute('content') === 'true';
 
         if (disableMaxWidth) {
             contentElement?.classList.add('full-width-content');
-            searchResultsElement?.classList.add('full-width-content');
             document.documentElement.style.setProperty('--content-max-width', 'none');
         } else {
             contentElement?.classList.remove('full-width-content');
-            searchResultsElement?.classList.remove('full-width-content');
             document.documentElement.style.removeProperty('--content-max-width');
         }
     });

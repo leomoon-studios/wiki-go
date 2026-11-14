@@ -39,3 +39,6 @@ jobs:
 
       - name: Test login redirects
         run: node --test tests/login_redirect_test.js
+
+      - name: Test search UI
+        run: node --test tests/search_ui_test.js

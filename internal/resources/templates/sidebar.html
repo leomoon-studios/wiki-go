@@ -14,7 +14,9 @@
             <div class="title-text">{{.Config.Wiki.Title}}</div>
         </a>
         <div class="search-container">
-            <input type="text" class="search-box" placeholder='{{t "common.search"}}...' aria-label="{{t "common.search"}}">
+            <form class="search-form" method="get" action="/" role="search">
+                <input type="search" class="search-box" name="search" value="{{if .IsSearchPage}}{{.SearchQuery}}{{end}}" placeholder='{{t "common.search"}}...' aria-label="{{t "common.search"}}" {{if .IsSearchPage}}autofocus{{end}}>
+            </form>
         </div>
     </div>
     <div class="nav-items" data-always-open="{{.Navigation.AlwaysOpen}}">

@@ -107,6 +107,7 @@ func TestSearchPageContract(t *testing.T) {
 	root := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	writeChapterLinksDocument(t, filepath.Join(root, "public", "document.md"), "# Visible\nneedle")
 	writeChapterLinksDocument(t, filepath.Join(root, "secret", "document.md"), "# SECRET_TITLE\nneedle SECRET_EXCERPT")
+	writeChapterLinksDocument(t, filepath.Join(root, "unsafe", "document.md"), "# <img src=x onerror=alert(1)>\nmarker <svg onload=alert(1)>")
 	cfg.AccessRules = []config.AccessRule{{Pattern: "/secret", Access: "private"}}
 	viewer := sessionCookieForUser(t, cfg, "viewer", config.RoleViewer)
 
@@ -124,42 +125,49 @@ func TestSearchPageContract(t *testing.T) {
 		return w
 	}
 
-	for _, target := range []string{"/api/search/page", "/api/search/page?q="} {
+	for _, target := range []string{"/", "/?search="} {
 		response := request(http.MethodGet, target, nil)
-		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `name="q"`) || strings.Contains(response.Body.String(), "SECRET_TITLE") {
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `name="search"`) || !strings.Contains(response.Body.String(), `class="sidebar"`) || strings.Contains(response.Body.String(), "SECRET_TITLE") {
 			t.Fatalf("empty search %s = %d %s", target, response.Code, response.Body.String())
 		}
 	}
-	response := request(http.MethodGet, "/api/search/page?q=needle", nil)
-	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `href="/public"`) || strings.Contains(response.Body.String(), "SECRET_TITLE") || strings.Contains(response.Body.String(), "SECRET_EXCERPT") {
+	response := request(http.MethodGet, "/?search=needle", nil)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `href="/public"`) || strings.Contains(response.Body.String(), `href="/secret"`) || strings.Contains(response.Body.String(), "SECRET_TITLE") || strings.Contains(response.Body.String(), "SECRET_EXCERPT") {
 		t.Fatalf("anonymous HTML search = %d %s", response.Code, response.Body.String())
 	}
-	response = request(http.MethodGet, "/api/search/page?q=needle", viewer)
+	response = request(http.MethodGet, "/?search=needle", viewer)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "SECRET_TITLE") {
 		t.Fatalf("authenticated HTML search = %d %s", response.Code, response.Body.String())
 	}
-	response = request(http.MethodGet, "/api/search/page?q=%3Cscript%3E", nil)
+	response = request(http.MethodGet, "/?search=%3Cscript%3E", nil)
 	if response.Code != http.StatusOK || strings.Contains(response.Body.String(), `<script>`) || !strings.Contains(response.Body.String(), `value="&lt;script&gt;"`) {
 		t.Fatalf("unsafe HTML query = %d %s", response.Code, response.Body.String())
+	}
+	response = request(http.MethodGet, "/?search=marker", nil)
+	if response.Code != http.StatusOK || strings.Contains(response.Body.String(), `<img src=x`) || strings.Contains(response.Body.String(), `<svg onload`) || !strings.Contains(response.Body.String(), `&lt;img src=x`) || !strings.Contains(response.Body.String(), `&lt;svg onload`) {
+		t.Fatalf("unsafe HTML result = %d %s", response.Code, response.Body.String())
 	}
 	for _, tc := range []struct {
 		method, target string
 		status         int
 	}{
-		{http.MethodGet, "/api/search/page?q=one&q=two", http.StatusBadRequest},
-		{http.MethodPost, "/api/search/page", http.StatusMethodNotAllowed},
+		{http.MethodGet, "/?search=one&search=two", http.StatusBadRequest},
+		{http.MethodPost, "/", http.StatusMethodNotAllowed},
 	} {
 		response := request(tc.method, tc.target, nil)
 		if response.Code != tc.status {
 			t.Fatalf("%s %s = %d, want %d", tc.method, tc.target, response.Code, tc.status)
 		}
+		if tc.status == http.StatusBadRequest && !strings.Contains(response.Body.String(), `class="search-page-error"`) {
+			t.Fatalf("search page omitted error state: %s", response.Body.String())
+		}
 	}
 	cfg.Wiki.Private = true
-	response = request(http.MethodGet, "/api/search/page?q=needle%20two", nil)
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/login?redirect=%2Fapi%2Fsearch%2Fpage%3Fq%3Dneedle%2520two" || strings.Contains(response.Body.String(), "SECRET_TITLE") {
+	response = request(http.MethodGet, "/?search=needle%20two", nil)
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/login?redirect=%2F%3Fsearch%3Dneedle%2520two" || strings.Contains(response.Body.String(), "SECRET_TITLE") {
 		t.Fatalf("private search redirect = %d %s, body=%s", response.Code, response.Header().Get("Location"), response.Body.String())
 	}
-	response = request(http.MethodGet, "/api/search/page?q=needle", viewer)
+	response = request(http.MethodGet, "/?search=needle", viewer)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "SECRET_TITLE") {
 		t.Fatalf("private authenticated page = %d %s", response.Code, response.Body.String())
 	}

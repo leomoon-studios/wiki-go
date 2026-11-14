@@ -366,9 +366,6 @@ func SetupRoutes(cfg *config.Config) {
 	mux.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
 		handlers.SearchHandler(w, r, cfg)
 	})
-	mux.HandleFunc("/api/search/page", func(w http.ResponseWriter, r *http.Request) {
-		handlers.SearchPageHandler(w, r, cfg)
-	})
 
 	// Settings API - Admin only
 	mux.HandleFunc("/api/settings/wiki", adminMiddleware(handlers.WikiSettingsHandler))
@@ -460,6 +457,16 @@ func SetupRoutes(cfg *config.Config) {
 
 	// Home page and other pages
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			for _, part := range strings.Split(r.URL.RawQuery, "&") {
+				key, _, _ := strings.Cut(part, "=")
+				decoded, err := url.QueryUnescape(key)
+				if err == nil && decoded == "search" {
+					handlers.SearchPageHandler(w, r, cfg)
+					return
+				}
+			}
+		}
 		// Check if authentication is required
 		session, allowed := auth.CheckAccess(r, cfg)
 		if !allowed {

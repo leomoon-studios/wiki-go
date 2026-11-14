@@ -1,47 +1,20 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/i18n"
+	"wiki-go/internal/types"
+	"wiki-go/internal/utils"
 )
 
-const searchPagePath = "/api/search/page"
+const searchPagePath = "/"
 
-var searchPageTemplate = template.Must(template.New("search-page").Parse(`<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Search - {{.SiteTitle}}</title>
-<link rel="stylesheet" href="/static/css/theme.css">
-<link rel="stylesheet" href="/static/css/layout.css">
-<link rel="stylesheet" href="/static/css/search.css">
-</head>
-<body>
-<main>
-<h1>Search</h1>
-<form method="get" action="/api/search/page" role="search">
-<label for="search-query">Search this wiki</label>
-<input id="search-query" type="search" name="q" value="{{.Query}}">
-<button type="submit">Search</button>
-</form>
-{{if .Searched}}
-{{if .Results}}
-<ul class="search-page-results">
-{{range .Results}}<li><a href="{{.Path}}">{{.Title}}</a><p>{{.Excerpt}}</p></li>{{end}}
-</ul>
-{{else}}<p>No results found.</p>{{end}}
-{{end}}
-</main>
-</body>
-</html>`))
-
-// SearchPageHandler renders a bookmarkable search without JavaScript.
+// SearchPageHandler renders a bookmarkable search in the standard wiki layout.
 func SearchPageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if r.Method != http.MethodGet {
@@ -60,23 +33,43 @@ func SearchPageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		return
 	}
 
-	query, err := searchQueryFromURL(r.URL.RawQuery)
+	nav, err := utils.BuildNavigation(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		http.Error(w, "Failed to build navigation", http.StatusInternalServerError)
 		return
 	}
+	nav = utils.FilterNavigation(nav, func(path string) bool {
+		return auth.CanAccessDocument(path, session, cfg)
+	})
+
+	query, queryErr := searchQueryParam(r.URL.RawQuery, "search")
 	results := []SearchResult{}
-	if strings.TrimSpace(query) != "" {
+	searched := queryErr == nil && strings.TrimSpace(query) != ""
+	if searched {
 		results = performSearch(query, session, cfg)
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := searchPageTemplate.Execute(w, struct {
-		SiteTitle string
-		Query     string
-		Searched  bool
-		Results   []SearchResult
-	}{SiteTitle: cfg.Wiki.Title, Query: query, Searched: strings.TrimSpace(query) != "", Results: results}); err != nil {
-		http.Error(w, "Failed to render search page", http.StatusInternalServerError)
+	role := ""
+	if session != nil {
+		role = session.Role
 	}
+	data := &types.PageData{
+		IsSearchPage:       true,
+		SearchQuery:        query,
+		SearchSubmitted:    searched,
+		SearchError:        queryErr != nil,
+		SearchResults:      results,
+		Navigation:         &types.NavTree{Root: nav, AlwaysOpen: cfg.Wiki.AlwaysOpenChildrenInSidebar},
+		Breadcrumbs:        []types.BreadcrumbItem{{Title: "Home", Path: "/"}, {Title: "Search", Path: searchPagePath, IsLast: true}},
+		Config:             cfg,
+		CurrentDir:         &types.NavItem{Title: "Search", Path: "/?search="},
+		AvailableLanguages: i18n.GetAvailableLanguages(),
+		IsAuthenticated:    session != nil,
+		UserRole:           role,
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if queryErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	renderTemplate(w, data)
 }

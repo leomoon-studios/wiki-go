@@ -44,8 +44,20 @@ type ChapterHeading struct {
 	Children []ChapterHeading
 }
 
+// SearchResult is a filtered wiki document returned by search.
+type SearchResult struct {
+	Title   string `json:"title"`
+	Path    string `json:"path"`
+	Excerpt string `json:"excerpt"`
+}
+
 // PageData represents the data passed to the template
 type PageData struct {
+	IsSearchPage       bool
+	SearchQuery        string
+	SearchSubmitted    bool
+	SearchError        bool
+	SearchResults      []SearchResult
 	Navigation         *NavTree
 	Content            template.HTML
 	DirContent         template.HTML

@@ -49,6 +49,44 @@ func TestCSPMiddlewareEnforcesSameOriginScripts(t *testing.T) {
 	}
 }
 
+func TestRootSearchRoute(t *testing.T) {
+	cfg := newRouteSecurityTestConfig(t)
+	doc := filepath.Join(cfg.Wiki.RootDir, "documents", "public", "document.md")
+	if err := os.MkdirAll(filepath.Dir(doc), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(doc, []byte("# ROUTE_SEARCH_CANARY\nneedle"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		target string
+		status int
+		search bool
+	}{
+		{"/", http.StatusOK, false},
+		{"/?mode=view", http.StatusOK, false},
+		{"/?search=needle", http.StatusOK, true},
+		{"/?search=", http.StatusOK, true},
+		{"/?%73earch=needle", http.StatusOK, true},
+		{"/?search=one&search=two", http.StatusBadRequest, true},
+	} {
+		w := httptest.NewRecorder()
+		http.DefaultServeMux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, tc.target, nil))
+		if w.Code != tc.status || strings.Contains(w.Body.String(), `data-search-page="true"`) != tc.search {
+			t.Fatalf("%s: status=%d search=%t", tc.target, w.Code, strings.Contains(w.Body.String(), `data-search-page="true"`))
+		}
+		if tc.target == "/?search=needle" && !strings.Contains(w.Body.String(), "ROUTE_SEARCH_CANARY") {
+			t.Fatal("root search did not render results")
+		}
+	}
+	cfg.Wiki.Private = true
+	w := httptest.NewRecorder()
+	http.DefaultServeMux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/?search=needle", nil))
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/login?redirect=%2F%3Fsearch%3Dneedle" {
+		t.Fatalf("private search redirect = %d %q", w.Code, w.Header().Get("Location"))
+	}
+}
+
 func TestPageRouteUsesOneCanonicalPathForAccessAndFilesystemLookup(t *testing.T) {
 	testConfig := newRouteSecurityTestConfig(t)
 	financeDocument := filepath.Join(testConfig.Wiki.RootDir, "documents", "finance", "document.md")

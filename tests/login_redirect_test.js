@@ -54,6 +54,7 @@ test('successful login stays on the wiki origin', async t => {
         ['missing', '', '/'],
         ['empty', '?redirect=', '/'],
         ['local path with query and fragment', '?redirect=%2Ffinance%2Freport%3Fview%3Dfull%23summary', '/finance/report?view=full#summary'],
+        ['private search return with encoded query', '?redirect=%2F%3Fsearch%3Dcaf%25C3%25A9%252Bnotes', '/?search=caf%C3%A9%2Bnotes'],
         ['normalized local path', '?redirect=%2Fa%2F..%2Fb', '/b'],
     ];
     for (const [name, search, expected] of cases) {

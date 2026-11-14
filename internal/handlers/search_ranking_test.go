@@ -92,7 +92,7 @@ func TestSearchTitleRanking(t *testing.T) {
 	}
 
 	pageResponse := httptest.NewRecorder()
-	SearchPageHandler(pageResponse, httptest.NewRequest(http.MethodGet, "/api/search/page?q=alpha+beta", nil), cfg)
+	SearchPageHandler(pageResponse, httptest.NewRequest(http.MethodGet, "/?search=alpha+beta", nil), cfg)
 	if pageResponse.Code != http.StatusOK || strings.Contains(pageResponse.Body.String(), "SECRET_TITLE") || strings.Contains(pageResponse.Body.String(), `href="/b-title"`) {
 		t.Fatalf("restricted HTML title leaked: %d %s", pageResponse.Code, pageResponse.Body.String())
 	}

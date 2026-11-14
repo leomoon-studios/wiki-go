@@ -614,7 +614,6 @@ function handleEscapeKey(e) {
     const isAccessRuleDialogOpen = document.querySelector('.access-rule-dialog')?.classList.contains('active');
     const isMoveDocDialogOpen = document.querySelector('.move-document-dialog')?.classList.contains('active');
     const isAddLinkDialogOpen = document.querySelector('.add-link-dialog')?.classList.contains('active');
-    const isSearchResultsOpen = document.querySelector('.search-results')?.classList.contains('active');
     const isActionsMenuOpen = document.querySelector('.page-actions-menu')?.classList.contains('active');
     const isEditing = mainContent && mainContent.classList.contains('editing');
 
@@ -674,10 +673,6 @@ function handleEscapeKey(e) {
                 dialog.classList.remove('active');
             }
         }
-        e.preventDefault();
-    } else if (isSearchResultsOpen) {
-        // Close search results
-        window.Search.hideSearchResults();
         e.preventDefault();
     } else if (isActionsMenuOpen) {
         // Close actions menu

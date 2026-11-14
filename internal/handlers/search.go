@@ -13,6 +13,7 @@ import (
 
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/types"
 	"wiki-go/internal/utils"
 )
 
@@ -20,11 +21,7 @@ type SearchRequest struct {
 	Query string `json:"query"`
 }
 
-type SearchResult struct {
-	Title   string `json:"title"`
-	Path    string `json:"path"`
-	Excerpt string `json:"excerpt"`
-}
+type SearchResult = types.SearchResult
 
 func SearchHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	w.Header().Set("Cache-Control", "private, no-store")
@@ -67,14 +64,18 @@ func SearchHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 }
 
 func searchQueryFromURL(rawQuery string) (string, error) {
+	return searchQueryParam(rawQuery, "q")
+}
+
+func searchQueryParam(rawQuery, key string) (string, error) {
 	params, err := url.ParseQuery(rawQuery)
-	if err != nil || len(params["q"]) > 1 {
+	if err != nil || len(params[key]) > 1 {
 		return "", errors.New("invalid search query")
 	}
-	if len(params["q"]) == 0 {
+	if len(params[key]) == 0 {
 		return "", nil
 	}
-	return params["q"][0], nil
+	return params[key][0], nil
 }
 
 func performSearch(query string, session *auth.Session, cfg *config.Config) []SearchResult {
