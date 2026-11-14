@@ -29,5 +29,13 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run tests
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Run Go tests
         run: go test ./...
+
+      - name: Test login redirects
+        run: node --test tests/login_redirect_test.js

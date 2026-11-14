@@ -2,6 +2,24 @@
 (function() {
     'use strict';
 
+    function safeLoginDestination(destination) {
+        if (!destination || !destination.startsWith('/') || destination.startsWith('//') ||
+            destination.startsWith('/\\') || /[\x00-\x1f\x7f]/.test(destination)) {
+            return '/';
+        }
+
+        try {
+            const url = new URL(destination, window.location.origin);
+            if ((url.protocol !== 'http:' && url.protocol !== 'https:') ||
+                url.origin !== window.location.origin || url.pathname.startsWith('//')) {
+                return '/';
+            }
+            return url.pathname + url.search + url.hash;
+        } catch (_error) {
+            return '/';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const loginForm = document.getElementById('loginForm');
         const errorMessage = document.getElementById('loginError');
@@ -37,7 +55,7 @@
                 if (response.ok) {
                     const params = new URLSearchParams(window.location.search);
                     const destination = params.get('redirect');
-                    window.location.href = destination && destination.startsWith('/') ? destination : '/';
+                    window.location.href = safeLoginDestination(destination);
                     return;
                 }
 
