@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"wiki-go/internal/auth"
@@ -77,8 +78,14 @@ func searchQueryFromURL(rawQuery string) (string, error) {
 }
 
 func performSearch(query string, session *auth.Session, cfg *config.Config) []SearchResult {
-	var results []SearchResult
+	type rankedResult struct {
+		SearchResult
+		titleMatch bool
+	}
+	var ranked []rankedResult
 	searchTerms := parseSearchQuery(query)
+	hasPositiveTerms := len(searchTerms.ExactPhrases) > 0 || len(searchTerms.IncludeWords) > 0
+	positiveTerms := SearchTerms{ExactPhrases: searchTerms.ExactPhrases, IncludeWords: searchTerms.IncludeWords}
 
 	// Full path to the documents directory
 	docsPath := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
@@ -105,14 +112,14 @@ func performSearch(query string, session *auth.Session, cfg *config.Config) []Se
 				return nil
 			}
 
-			if matches := matchContent(string(content), searchTerms); matches {
-				title := extractTitle(string(content))
-				excerpt := extractExcerpt(string(content), searchTerms)
+			text := string(content)
+			if matchContent(text, searchTerms) {
+				title, hasTitle := extractTitle(text)
+				excerpt := extractExcerpt(text, searchTerms)
 
-				results = append(results, SearchResult{
-					Title:   title,
-					Path:    urlPath,
-					Excerpt: excerpt,
+				ranked = append(ranked, rankedResult{
+					SearchResult: SearchResult{Title: title, Path: urlPath, Excerpt: excerpt},
+					titleMatch:   hasTitle && hasPositiveTerms && matchContent(title, positiveTerms),
 				})
 			}
 		}
@@ -123,6 +130,16 @@ func performSearch(query string, session *auth.Session, cfg *config.Config) []Se
 		return []SearchResult{}
 	}
 
+	sort.Slice(ranked, func(i, j int) bool {
+		if ranked[i].titleMatch != ranked[j].titleMatch {
+			return ranked[i].titleMatch
+		}
+		return ranked[i].Path < ranked[j].Path
+	})
+	results := make([]SearchResult, len(ranked))
+	for i, result := range ranked {
+		results[i] = result.SearchResult
+	}
 	return results
 }
 
@@ -219,14 +236,17 @@ func matchContent(content string, terms SearchTerms) bool {
 	return true
 }
 
-func extractTitle(content string) string {
+func extractTitle(content string) (string, bool) {
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
 		if strings.HasPrefix(line, "# ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "# "))
+			if title := strings.TrimSpace(strings.TrimPrefix(line, "# ")); title != "" {
+				return title, true
+			}
+			return "Untitled", false
 		}
 	}
-	return "Untitled"
+	return "Untitled", false
 }
 
 func extractExcerpt(content string, terms SearchTerms) string {
