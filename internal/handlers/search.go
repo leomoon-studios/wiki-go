@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
+	"wiki-go/internal/utils"
 )
 
 type SearchRequest struct {
@@ -52,15 +54,12 @@ func performSearch(query string, session *auth.Session, cfg *config.Config) []Se
 			return err
 		}
 
-		// Only process markdown files
-		if !info.IsDir() && strings.HasSuffix(strings.ToLower(path), ".md") {
-			// Compute the document's URL path first for access checking
-			cleanPath := path
-			cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
-			prefix := strings.ReplaceAll(docsPath, "\\", "/") + "/"
-			cleanPath = strings.TrimPrefix(cleanPath, prefix)
-			cleanPath = strings.TrimSuffix(strings.Replace(cleanPath, "document.md", "", 1), ".md")
-			urlPath := "/" + cleanPath
+		// Only document.md represents a wiki page; other Markdown files are attachments.
+		if info.Mode().IsRegular() && info.Name() == "document.md" {
+			urlPath, err := searchDocumentPath(docsPath, path)
+			if err != nil {
+				return nil
+			}
 
 			// Skip documents the user cannot access
 			if !auth.CanAccessDocument(urlPath, session, cfg) {
@@ -91,6 +90,22 @@ func performSearch(query string, session *auth.Session, cfg *config.Config) []Se
 	}
 
 	return results
+}
+
+// searchDocumentPath returns the page identity corresponding to a document file.
+func searchDocumentPath(documentsRoot, filePath string) (string, error) {
+	if filepath.Base(filePath) != "document.md" {
+		return "", fmt.Errorf("not a document file")
+	}
+	relative, err := filepath.Rel(documentsRoot, filepath.Dir(filePath))
+	if err != nil || relative == "." || relative == ".." || filepath.IsAbs(relative) || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("document is outside the searchable documents root")
+	}
+	logicalPath, err := utils.CanonicalRequestPath(filepath.ToSlash(relative))
+	if err != nil || logicalPath == "/" || strings.TrimPrefix(logicalPath, "/") != filepath.ToSlash(relative) {
+		return "", fmt.Errorf("invalid search document path")
+	}
+	return logicalPath, nil
 }
 
 type SearchTerms struct {
