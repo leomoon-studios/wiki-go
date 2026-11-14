@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,22 +26,54 @@ type SearchResult struct {
 }
 
 func SearchHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
-	if r.Method != http.MethodPost {
+	w.Header().Set("Cache-Control", "private, no-store")
+
+	var query string
+	switch r.Method {
+	case http.MethodGet:
+		var err error
+		query, err = searchQueryFromURL(r.URL.RawQuery)
+		if err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+	case http.MethodPost:
+		var req SearchRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+		query = req.Query
+	default:
+		w.Header().Set("Allow", "GET, POST")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req SearchRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+	session := auth.GetSession(r)
+	if cfg.Wiki.Private && session == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	session := auth.GetSession(r)
-	results := performSearch(req.Query, session, cfg)
+	results := []SearchResult{}
+	if strings.TrimSpace(query) != "" {
+		results = performSearch(query, session, cfg)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
+}
+
+func searchQueryFromURL(rawQuery string) (string, error) {
+	params, err := url.ParseQuery(rawQuery)
+	if err != nil || len(params["q"]) > 1 {
+		return "", errors.New("invalid search query")
+	}
+	if len(params["q"]) == 0 {
+		return "", nil
+	}
+	return params["q"][0], nil
 }
 
 func performSearch(query string, session *auth.Session, cfg *config.Config) []SearchResult {

@@ -75,9 +75,6 @@ const WikiSearch = (function() {
 
             const results = await response.json();
 
-            // Add console log to debug the response
-            console.log('Search results:', results);
-
             // Make sure results is always an array
             const resultsArray = Array.isArray(results) ? results : [];
 

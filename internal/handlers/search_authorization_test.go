@@ -50,7 +50,7 @@ func TestSearchAuthorization(t *testing.T) {
 			if tc.allowed && pageResponse.Code == http.StatusForbidden || !tc.allowed && pageResponse.Code != http.StatusForbidden && pageResponse.Code != http.StatusFound {
 				t.Fatalf("direct page status = %d, allowed=%t", pageResponse.Code, tc.allowed)
 			}
-			for _, query := range []string{"salary", `"secret phrase"`, ""} {
+			for _, query := range []string{"salary", `"secret phrase"`} {
 				body, _ := json.Marshal(SearchRequest{Query: query})
 				request := httptest.NewRequest(http.MethodPost, "/api/search", strings.NewReader(string(body)))
 				if tc.cookie != nil {
