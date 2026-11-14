@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.9.5](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.5) (2026-11-13)
+
+- docs: update changelog for v1.9.4 ([f6a82ae](https://github.com/leomoon-studios/wiki-go/commit/f6a82ae2d2ac85af8b6b6198e5b1ae51a4c64a57))
+- security: restrict post-login redirects to same origin ([398d1d9](https://github.com/leomoon-studios/wiki-go/commit/398d1d9bb583035891dca162dca81b22e6135dfa))
+- security: enforce canonical search authorization ([3a09602](https://github.com/leomoon-studios/wiki-go/commit/3a096022a87ad35e0405a5ec87bdb60cea06c34b))
+
 ## [v1.9.4](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.4) (2026-11-08)
 
 - Update CHANGELOG.md ([ddfab90](https://github.com/leomoon-studios/wiki-go/commit/ddfab90e77e65e621353e0b38d77383fbbabe280))
