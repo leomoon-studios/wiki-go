@@ -42,3 +42,6 @@ jobs:
 
       - name: Test search UI
         run: node --test tests/search_ui_test.js
+
+      - name: Test safe DOM rendering
+        run: node --test tests/xss_dom_test.js

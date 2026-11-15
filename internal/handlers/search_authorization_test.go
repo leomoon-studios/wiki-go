@@ -14,7 +14,7 @@ import (
 
 func TestSearchAuthorization(t *testing.T) {
 	cfg := installUserSessionTestConfig(t, nil)
-	cfg.Wiki.DocumentsDir = "documents"
+	cfg.Wiki.DocumentsDir = "custom-documents"
 	root := filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir)
 	writeChapterLinksDocument(t, filepath.Join(root, "hr", "payroll", "document.md"), "# SECRET_TITLE\nsalary secret phrase SECRET_EXCERPT")
 	writeChapterLinksDocument(t, filepath.Join(root, "public", "document.md"), "# PUBLIC_TITLE\nsalary secret phrase PUBLIC_EXCERPT")
@@ -98,6 +98,30 @@ func TestSearchAuthorization(t *testing.T) {
 				}
 				if foundSecret != tc.allowed || !foundPublic || !foundDirectory {
 					t.Fatalf("query %q: secret=%t public=%t directory=%t; results=%s", query, foundSecret, foundPublic, foundDirectory, response.Body.String())
+				}
+				htmlRequest := httptest.NewRequest(http.MethodGet, "/?search="+url.QueryEscape(query), nil)
+				if tc.cookie != nil {
+					htmlRequest.AddCookie(tc.cookie)
+				}
+				htmlResponse := httptest.NewRecorder()
+				SearchPageHandler(htmlResponse, htmlRequest, cfg)
+				html := htmlResponse.Body.String()
+				if htmlResponse.Code != http.StatusOK || htmlResponse.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatalf("HTML search status = %d", htmlResponse.Code)
+				}
+				if strings.Contains(html, "SECRET_TITLE") != tc.allowed || strings.Contains(strings.ToLower(html), "secret_excerpt") != tc.allowed || strings.Contains(html, `class="search-result-title" href="/hr/payroll"`) != tc.allowed {
+					t.Fatalf("HTML search authorization mismatch: %s", html)
+				}
+				if strings.Contains(html, "ATTACHMENT_CANARY") || strings.Count(html, `class="search-result-item"`) != len(results) {
+					t.Fatalf("HTML results differ from authorized JSON results: %s", html)
+				}
+				last := -1
+				for _, result := range results {
+					position := strings.Index(html, `class="search-result-title" href="`+result.Path+`"`)
+					if position <= last {
+						t.Fatalf("HTML search ordering differs from JSON: %s", html)
+					}
+					last = position
 				}
 			}
 		})
