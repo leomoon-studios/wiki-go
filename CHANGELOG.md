@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- feat: add secure bookmarkable search and title-prioritized results ([4ffc32a](https://github.com/leomoon-studios/wiki-go/commit/4ffc32a), [158cfc0](https://github.com/leomoon-studios/wiki-go/commit/158cfc0), [4c28162](https://github.com/leomoon-studios/wiki-go/commit/4c28162), [7b274e7](https://github.com/leomoon-studios/wiki-go/commit/7b274e7))
+- feat: add OpenSearch discovery and automatically derive public origins ([21128e7](https://github.com/leomoon-studios/wiki-go/commit/21128e7))
+- test: strengthen search authorization coverage ([0be482c](https://github.com/leomoon-studios/wiki-go/commit/0be482c))
+
 ## [v1.9.5](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.5) (2026-11-13)
 
 - docs: update changelog for v1.9.4 ([f6a82ae](https://github.com/leomoon-studios/wiki-go/commit/f6a82ae2d2ac85af8b6b6198e5b1ae51a4c64a57))
