@@ -265,12 +265,12 @@ function initializeEditControls() {
     if (saveButton) {
         saveButton.addEventListener('click', async function() {
             try {
-                const isHomepage = window.location.pathname === '/';
-                const apiPath = isHomepage ? '/api/save/' : `/api/save${window.location.pathname}`;
+                const isHomepage = wikiPathname() === '/';
+                const apiPath = isHomepage ? '/api/save/' : `/api/save${wikiPathname()}`;
 
                 const content = getEditorContent();
 
-                const response = await fetch(apiPath, {
+                const response = await fetch(wikiURL(apiPath), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain',
@@ -348,7 +348,7 @@ function initializeEditControls() {
     if (editPageButton) {
         editPageButton.addEventListener('click', async function() {
             // Check authentication first
-            const authResponse = await fetch('/api/check-auth');
+            const authResponse = await fetch(wikiURL('/api/check-auth'));
             if (authResponse.status === 401) {
                 // Show login dialog
                 window.Auth.showLoginDialog(() => {

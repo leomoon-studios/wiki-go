@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/frontmatter"
 	"wiki-go/internal/goldext"
 	"wiki-go/internal/safehtml"
@@ -80,7 +81,14 @@ func RenderMarkdownWithPathResult(md string, docPath string) MarkdownRenderResul
 }
 
 // RenderMarkdownWithAccess renders with request-specific document access.
+// Wiki-relative URLs in the output include the configured base path.
 func RenderMarkdownWithAccess(md string, docPath string, canAccess goldext.DocumentAccessPredicate) MarkdownRenderResult {
+	result := renderMarkdownWithAccess(md, docPath, canAccess)
+	result.HTML = basepath.RewriteHTML(result.HTML)
+	return result
+}
+
+func renderMarkdownWithAccess(md string, docPath string, canAccess goldext.DocumentAccessPredicate) MarkdownRenderResult {
 	// Check for frontmatter
 	metadata, contentWithoutFrontmatter, hasFrontmatter := frontmatter.Parse(md)
 

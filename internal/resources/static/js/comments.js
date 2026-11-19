@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.disabled = true;
 
                 // Send the comment to the server
-                const response = await fetch(`/api/comments/add/${docPath}`, {
+                const response = await fetch(wikiURL(`/api/comments/add/${docPath}`), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         try {
                             console.log('Sending delete request to:', `/api/comments/delete/${docPath}/${commentId}`);
                             // Send delete request to the server
-                            const response = await fetch(`/api/comments/delete/${docPath}/${commentId}`, {
+                            const response = await fetch(wikiURL(`/api/comments/delete/${docPath}/${commentId}`), {
                                 method: 'DELETE'
                             });
 
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('showConfirmDialog function not found, using alert instead');
                 if (confirm(window.i18n ? window.i18n.t('comments.delete_confirm') : 'Are you sure you want to delete this comment? This action cannot be undone.')) {
                     // Similar delete logic as above
-                    fetch(`/api/comments/delete/${docPath}/${commentId}`, {
+                    fetch(wikiURL(`/api/comments/delete/${docPath}/${commentId}`), {
                         method: 'DELETE'
                     })
                     .then(response => {

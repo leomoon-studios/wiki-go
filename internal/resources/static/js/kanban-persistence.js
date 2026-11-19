@@ -32,7 +32,7 @@ class KanbanPersistenceManager {
    */
   async preloadOriginalMarkdown() {
     try {
-      const response = await fetch(`/api/source/${this.docPath}`);
+      const response = await fetch(wikiURL(`/api/source/${this.docPath}`));
       if (response.ok) {
         const markdown = await response.text();
         this.cacheOriginalFormatting(markdown);
@@ -77,7 +77,7 @@ class KanbanPersistenceManager {
       console.log('Starting kanban save operation');
 
       // 1. Fetch current markdown
-      const srcResp = await fetch(`/api/source/${this.docPath}`);
+      const srcResp = await fetch(wikiURL(`/api/source/${this.docPath}`));
       if (!srcResp.ok) throw new Error('source fetch failed');
       const markdown = await srcResp.text();
 
@@ -85,7 +85,7 @@ class KanbanPersistenceManager {
       const updatedMarkdown = this.buildUpdatedMarkdown(markdown);
 
       // 3. Save updated markdown
-      const saveResp = await fetch(`/api/save/${this.docPath}`, {
+      const saveResp = await fetch(wikiURL(`/api/save/${this.docPath}`), {
         method: 'POST',
         headers: { 'Content-Type': 'text/markdown' },
         body: updatedMarkdown,

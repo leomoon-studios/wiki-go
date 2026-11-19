@@ -4,17 +4,17 @@
 </button>
 <div class="sidebar">
     <div class="sidebar-header">
-        <a href="/" class="sidebar-title">
+        <a href="{{basePath}}/" class="sidebar-title">
             {{$logoPath := hasLogo .Config.Wiki.RootDir}}
             {{if $logoPath}}
             <div class="logo-container">
-                <img src="{{$logoPath}}" alt="" class="sidebar-logo">
+                <img src="{{url $logoPath}}" alt="" class="sidebar-logo">
             </div>
             {{end}}
             <div class="title-text">{{.Config.Wiki.Title}}</div>
         </a>
         <div class="search-container">
-            <form class="search-form" method="get" action="/" role="search">
+            <form class="search-form" method="get" action="{{basePath}}/" role="search">
                 <input type="search" class="search-box" name="search" value="{{if .IsSearchPage}}{{.SearchQuery}}{{end}}" placeholder='{{t "common.search"}}...' aria-label="{{t "common.search"}}" {{if .IsSearchPage}}autofocus{{end}}>
             </form>
         </div>
@@ -22,12 +22,12 @@
     <div class="nav-items" data-always-open="{{.Navigation.AlwaysOpen}}">
         {{template "nav-items" .Navigation}}
     </div>
-    <script src="/static/js/sidebar-navigation.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/sidebar-navigation.js?={{getVersion}}"></script>
     <div class="sidebar-footer">
         <div class="owner">{{.Config.Wiki.Owner}}</div>
         <div class="notice">{{processShortcodes .Config.Wiki.Notice}}</div>
         <div class="sidebar-footer-buttons">
-            <button class="sidebar-footer-btn open-sitemap" aria-label="Sitemap" title="{{t "sitemap.title"}}" data-sitemap-url="/sitemap/">
+            <button class="sidebar-footer-btn open-sitemap" aria-label="Sitemap" title="{{t "sitemap.title"}}" data-sitemap-url="{{basePath}}/sitemap/">
                 <i class="fa fa-sitemap"></i>
             </button>
             <button class="sidebar-footer-btn" aria-label="Toggle theme">

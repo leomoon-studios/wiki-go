@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
         WikiDOM.message(backupList, 'empty-message', window.i18n ? window.i18n.t('backup.loading') : 'Loading backups...');
 
         try {
-            const response = await fetch('/api/backup/list');
+            const response = await fetch(wikiURL('/api/backup/list'));
             if (response.ok) {
                 const data = await response.json();
                 renderBackups(data.backups || []);
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showProgress();
 
         try {
-            const response = await fetch('/api/backup/start', { method: 'POST' });
+            const response = await fetch(wikiURL('/api/backup/start'), { method: 'POST' });
             
             if (!response.ok) {
                 throw new Error('Failed to start backup');
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function pollStatus(url) {
         try {
-            const response = await fetch(url);
+            const response = await fetch(wikiURL(url));
             if (response.ok) {
                 const status = await response.json();
                 
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!confirmed) return;
 
             try {
-                const response = await fetch(`/api/backup/delete/${filename}`, { method: 'DELETE' });
+                const response = await fetch(wikiURL(`/api/backup/delete/${filename}`), { method: 'DELETE' });
                 if (response.ok) {
                     loadBackups();
                 } else {

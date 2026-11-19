@@ -43,7 +43,7 @@ class KanbanUIManager {
       if (!safeURL) return alt;
       if (!/^([/]|https?:)/i.test(safeURL)) {
         const docPath = (typeof getCurrentDocPath === 'function') ? getCurrentDocPath() : '';
-        safeURL = '/api/files/' + docPath + '/' + safeURL;
+        safeURL = wikiURL('/api/files/' + docPath + '/' + safeURL);
       }
       return '<img src="' + safeURL + '" alt="' + alt + '">';
     });

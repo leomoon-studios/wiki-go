@@ -211,7 +211,7 @@ async function handleImagePaste(event) {
         editor.replaceRange(loadingPlaceholder, cursor);
 
         // Upload the image
-        const response = await fetch('/api/files/upload', {
+        const response = await fetch(wikiURL('/api/files/upload'), {
             method: 'POST',
             body: formData
         });

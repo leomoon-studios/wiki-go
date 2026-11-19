@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Functions
     async function loadAccessRules() {
         try {
-            const response = await fetch('/api/access-rules');
+            const response = await fetch(wikiURL('/api/access-rules'));
             if (response.ok) {
                 const data = await response.json();
                 currentRules = data.rules || [];
@@ -372,14 +372,14 @@ document.addEventListener('DOMContentLoaded', function() {
             let response;
             if (index >= 0) {
                 // Update
-                response = await fetch(`/api/access-rules/${index}`, {
+                response = await fetch(wikiURL(`/api/access-rules/${index}`), {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(rule)
                 });
             } else {
                 // Create
-                response = await fetch('/api/access-rules', {
+                response = await fetch(wikiURL('/api/access-rules'), {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(rule)
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!confirmed) return;
             
             try {
-                const response = await fetch(`/api/access-rules/${index}`, {
+                const response = await fetch(wikiURL(`/api/access-rules/${index}`), {
                     method: 'DELETE'
                 });
                 
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
         indices[newIndex] = temp;
 
         try {
-            const response = await fetch('/api/access-rules/reorder', {
+            const response = await fetch(wikiURL('/api/access-rules/reorder'), {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ indices: indices })
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
         WikiDOM.message(folderTree, 'loading', window.i18n ? window.i18n.t('access.loading_folders') : 'Loading folders...');
         
         try {
-            const response = await fetch('/api/folders');
+            const response = await fetch(wikiURL('/api/folders'));
             if (response.ok) {
                 const data = await response.json();
                 WikiDOM.clear(folderTree);

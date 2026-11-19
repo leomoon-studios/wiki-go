@@ -8,16 +8,16 @@
  */
 function getCurrentDocPath() {
     // Log the raw path for debugging
-    console.log("Raw pathname for path processing:", window.location.pathname);
+    console.log("Raw pathname for path processing:", wikiPathname());
 
-    const isHomepage = window.location.pathname === '/';
+    const isHomepage = wikiPathname() === '/';
     if (isHomepage) {
         console.log("Using homepage path");
         return 'pages/home';
     }
 
     // For versions, we need to keep the full path structure
-    let path = window.location.pathname;
+    let path = wikiPathname();
 
     // Remove leading slash
     if (path.startsWith('/')) {
@@ -70,12 +70,14 @@ window.WikiDOM = {
         return icon;
     },
 
+    // Convert a wiki-relative path from the server (e.g. a search result or
+    // attachment URL) into a same-origin link that includes the base path.
     localURL(value, fallback = '#') {
         if (typeof value !== 'string') return fallback;
         try {
             const parsed = new URL(value, window.location.origin);
             if (parsed.origin !== window.location.origin || !parsed.pathname.startsWith('/')) return fallback;
-            return parsed.pathname + parsed.search + parsed.hash;
+            return wikiURL(parsed.pathname + parsed.search + parsed.hash);
         } catch (_) {
             return fallback;
         }
@@ -85,7 +87,7 @@ window.WikiDOM = {
         const url = String(value ?? '').trim();
         if (!url || /[\u0000-\u001f\u007f]/.test(url) || url.startsWith('//')) return null;
         const scheme = url.match(/^([a-z][a-z0-9+.-]*):/i);
-        if (!scheme) return url;
+        if (!scheme) return wikiURL(url);
         const allowed = image ? ['http', 'https'] : ['http', 'https', 'mailto'];
         return allowed.includes(scheme[1].toLowerCase()) ? url : null;
     },

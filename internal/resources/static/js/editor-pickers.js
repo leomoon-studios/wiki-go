@@ -50,7 +50,7 @@ const EmojiCache = {
     fetchEmojiData: async function() {
         try {
             console.log('Fetching emoji data from server');
-            const response = await fetch('/api/data/emojis');
+            const response = await fetch(wikiURL('/api/data/emojis'));
             if (!response.ok) {
                 throw new Error('Failed to fetch emoji data');
             }
@@ -163,7 +163,7 @@ function hideEmojiPicker() {
 // Function to fetch documents
 async function fetchDocuments() {
     try {
-        const response = await fetch('/api/documents/list');
+        const response = await fetch(wikiURL('/api/documents/list'));
         if (!response.ok) {
             if (response.status === 401) {
                 throw new Error('Authentication required');
@@ -490,7 +490,7 @@ function insertAnchorLink(anchor) {
 // Helper: fetch raw markdown for a document path
 async function fetchDocumentSource(docPath) {
     try {
-        const response = await fetch(`/api/source${docPath}`);
+        const response = await fetch(wikiURL(`/api/source${docPath}`));
         if (!response.ok) throw new Error('Failed to fetch document');
         return await response.text();
     } catch (err) {

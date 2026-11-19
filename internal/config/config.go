@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/crypto"
 	"wiki-go/internal/roles"
 
@@ -47,6 +48,9 @@ type Config struct {
 		Host      string `yaml:"host"`
 		Port      int    `yaml:"port"`
 		PublicURL string `yaml:"public_url"`
+		// BasePath serves the wiki from a URL subdirectory such as "/wiki".
+		// Empty serves the wiki from the root of the host.
+		BasePath string `yaml:"base_path"`
 		// When set to true, allows cookies to be sent over non-HTTPS connections.
 		// WARNING: Only enable this in trusted environments like a homelab
 		// where HTTPS is not available. This reduces security by allowing
@@ -179,6 +183,7 @@ func LoadConfig(path string) (*Config, error) {
 				config.Server.Host,
 				config.Server.Port,
 				config.Server.PublicURL,
+				config.Server.BasePath,
 				config.Server.AllowInsecureCookies,
 				formatYAMLStringList(config.Server.TrustedProxies),
 				config.Server.SSL,
@@ -227,6 +232,12 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	basePath, err := basepath.Normalize(config.Server.BasePath)
+	if err != nil {
+		return nil, fmt.Errorf("invalid server.base_path %q: %w", config.Server.BasePath, err)
+	}
+	config.Server.BasePath = basePath
+
 	// Ensure the on-disk configuration includes every setting present in the current template.
 	// This will rewrite the file ONLY when new settings have been introduced that are not
 	// present in the user's existing config.yaml. The user's current values will be
@@ -248,6 +259,10 @@ func GetConfigTemplate() string {
     port: %d
     # Public origin used for sitemap links and the browser search provider, for example https://wiki.example.com.
     public_url: %q
+    # Serve the wiki from a URL subdirectory, for example "/wiki" for https://example.com/wiki/.
+    # Leave empty to serve from the root of the host. A reverse proxy must forward the
+    # subdirectory unchanged (do not strip it). Changing this requires a restart.
+    base_path: %q
     # When set to true, allows cookies to be sent over non-HTTPS connections.
     # WARNING: Only enable this in trusted environments like a homelab
     # where HTTPS is not available. This reduces security by allowing
@@ -368,6 +383,7 @@ func SaveConfig(cfg *Config, w io.Writer) error {
 		cfg.Server.Host,
 		cfg.Server.Port,
 		cfg.Server.PublicURL,
+		cfg.Server.BasePath,
 		cfg.Server.AllowInsecureCookies,
 		formatYAMLStringList(cfg.Server.TrustedProxies),
 		cfg.Server.SSL,

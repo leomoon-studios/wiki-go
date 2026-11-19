@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/handlers"
 	"wiki-go/internal/logger"
@@ -88,7 +89,7 @@ func CSPMiddleware(next http.Handler) http.Handler {
 		// Add preload header for emojis.json to avoid AJAX loading
 		// This works by telling the browser to preload this resource before it's needed
 		if strings.HasSuffix(r.URL.Path, ".html") || r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, "/") {
-			w.Header().Add("Link", "</api/data/emojis>; rel=preload; as=fetch; crossorigin=anonymous")
+			w.Header().Add("Link", "<"+basepath.URL("/api/data/emojis")+">; rel=preload; as=fetch; crossorigin=anonymous")
 		}
 
 		// Call the next handler
@@ -317,6 +318,7 @@ func SetupRoutes(cfg *config.Config) {
 		// Update name and short_name from config
 		manifest["name"] = cfg.Wiki.Title
 		manifest["short_name"] = cfg.Wiki.Title
+		applyManifestBasePath(manifest)
 
 		// Encode back to JSON
 		if err := json.NewEncoder(w).Encode(manifest); err != nil {
@@ -485,7 +487,7 @@ func SetupRoutes(cfg *config.Config) {
 				logger.Warn("Access denied for user %s on path %s", session.Username, r.URL.Path)
 			}
 			q := url.QueryEscape(target)
-			http.Redirect(w, r, "/login?redirect="+q, http.StatusSeeOther)
+			http.Redirect(w, r, basepath.URL("/login?redirect="+q), http.StatusSeeOther)
 			return
 		}
 
@@ -502,6 +504,25 @@ func SetupRoutes(cfg *config.Config) {
 	// Apply middleware to all routes
 	handler := CSPMiddleware(mux)
 
-	// Set the handler for the default ServeMux
-	http.Handle("/", handler)
+	// Set the handler for the default ServeMux. Requests are routed without the
+	// configured base path so every handler sees wiki-relative paths.
+	http.Handle("/", basepath.Middleware(handler))
+}
+
+// applyManifestBasePath points the web app manifest's start URL, scope, and
+// icons at the configured base path.
+func applyManifestBasePath(manifest map[string]interface{}) {
+	for _, key := range []string{"start_url", "scope"} {
+		if value, ok := manifest[key].(string); ok {
+			manifest[key] = basepath.URL(value)
+		}
+	}
+	icons, _ := manifest["icons"].([]interface{})
+	for _, icon := range icons {
+		if entry, ok := icon.(map[string]interface{}); ok {
+			if src, ok := entry["src"].(string); ok {
+				entry["src"] = basepath.URL(src)
+			}
+		}
+	}
 }

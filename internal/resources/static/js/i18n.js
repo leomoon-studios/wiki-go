@@ -74,7 +74,7 @@ function setupMutationObserver() {
 // Load translations for the specified language
 async function loadLanguageData(lang) {
     try {
-        const response = await fetch(`/static/langs/${lang}.json`);
+        const response = await fetch(wikiURL(`/static/langs/${lang}.json`));
         if (!response.ok) {
             throw new Error(`Failed to load translations for ${lang}: ${response.status}`);
         }

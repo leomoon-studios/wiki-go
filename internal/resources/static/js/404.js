@@ -6,7 +6,7 @@
         const btn = document.getElementById('create-missing-page');
         if (!btn) return;
 
-        const fullPath = btn.dataset.currentPath || window.location.pathname;
+        const fullPath = btn.dataset.currentPath || wikiPathname();
 
         btn.addEventListener('click', () => {
             const cleaned = fullPath.replace(/^\/+|\/+$/g, '');
@@ -15,7 +15,7 @@
             const dirParts = parts; // may be empty array
 
             const slugify = async (text) => {
-                const res = await fetch('/api/utils/slugify', {
+                const res = await fetch(wikiURL('/api/utils/slugify'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
@@ -36,7 +36,7 @@
                 const prettyTitle = docName.replace(/[-_]+/g, ' ')
                     .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-                return fetch('/api/document/create', {
+                return fetch(wikiURL('/api/document/create'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -47,7 +47,7 @@
                 }).then(r => r.json())
                   .then(res => {
                       if (res.success) {
-                          window.location.href = '/' + docPath;
+                          window.location.href = wikiURL('/' + docPath);
                       } else {
                           alert('Error creating document: ' + res.message);
                       }

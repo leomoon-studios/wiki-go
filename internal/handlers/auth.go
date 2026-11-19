@@ -10,6 +10,7 @@ import (
 	"strings"
 	"wiki-go/internal/auth"
 	"wiki-go/internal/ban"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/crypto"
 	"wiki-go/internal/i18n"
@@ -218,7 +219,7 @@ func LoginPageHandler(w http.ResponseWriter, r *http.Request) {
 	// If user is already logged in, redirect to home page
 	session := auth.GetSession(r)
 	if session != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, basepath.URL("/"), http.StatusSeeOther)
 		return
 	}
 
@@ -247,7 +248,7 @@ func LoginPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get and execute login template with translation function
-	tmpl, err := template.New("login.html").Funcs(funcMap).ParseFS(resources.GetTemplatesFS(), "templates/login.html")
+	tmpl, err := template.New("login.html").Funcs(withURLFuncs(funcMap)).ParseFS(resources.GetTemplatesFS(), "templates/login.html")
 	if err != nil {
 		http.Error(w, "Error loading login template: "+err.Error(), http.StatusInternalServerError)
 		return

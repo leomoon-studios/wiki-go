@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 	"wiki-go/internal/types"
@@ -29,7 +30,7 @@ func SearchPageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		if r.URL.RawQuery != "" {
 			target += "?" + r.URL.RawQuery
 		}
-		http.Redirect(w, r, "/login?redirect="+url.QueryEscape(target), http.StatusSeeOther)
+		http.Redirect(w, r, basepath.URL("/login?redirect="+url.QueryEscape(target)), http.StatusSeeOther)
 		return
 	}
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 	"wiki-go/internal/resources"
@@ -167,7 +168,7 @@ func renderHTMLSitemap(w http.ResponseWriter, r *http.Request, pages []SitemapPa
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	// Parse and execute the template using the embedded filesystem
-	tmpl, err := template.ParseFS(resources.GetTemplatesFS(), "templates/sitemap.html")
+	tmpl, err := template.New("sitemap.html").Funcs(urlTemplateFuncs).ParseFS(resources.GetTemplatesFS(), "templates/sitemap.html")
 	if err != nil {
 		http.Error(w, "Error parsing sitemap template: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -185,8 +186,12 @@ func gatherPages(baseURL string, cfg *config.Config, session *auth.Session) ([]S
 
 	// Add homepage only if user has access
 	if auth.CanAccessDocument("/", session, cfg) {
+		homeLocation := baseURL
+		if basepath.Get() != "" {
+			homeLocation += "/"
+		}
 		homeURL := SitemapURL{
-			Location:   baseURL,
+			Location:   homeLocation,
 			ChangeFreq: "weekly",
 			Priority:   "1.0",
 		}
@@ -302,7 +307,12 @@ func getDocumentTitle(filePath string) string {
 	return ""
 }
 
-// getBaseURL constructs the base URL from request and config
+// getBaseURL constructs the wiki's public URL (origin plus base path) from
+// request and config.
 func getBaseURL(r *http.Request, cfg *config.Config) (string, error) {
-	return requestPublicOrigin(r, cfg)
+	origin, err := requestPublicOrigin(r, cfg)
+	if err != nil {
+		return "", err
+	}
+	return origin + basepath.Get(), nil
 }

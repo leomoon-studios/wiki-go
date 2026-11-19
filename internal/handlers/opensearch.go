@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 )
@@ -52,7 +53,7 @@ func OpenSearchHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		ShortName:     string(shortName),
 		Description:   "Search " + name,
 		InputEncoding: "UTF-8",
-		URL:           openSearchURL{Type: "text/html", Template: base + "/?search={searchTerms}"},
+		URL:           openSearchURL{Type: "text/html", Template: base + basepath.URL("/?search={searchTerms}")},
 	}
 	w.Header().Set("Content-Type", "application/opensearchdescription+xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "private, no-store")

@@ -50,7 +50,7 @@
         {{if .CurrentDir.Children}}
             {{range .CurrentDir.Children}}
                 <div class="directory-item {{if .IsDir}}is-dir{{else}}is-file{{end}}">
-                    <a href="{{.Path}}">{{.Title}}</a>
+                    <a href="{{url .Path}}">{{.Title}}</a>
                 </div>
             {{end}}
         {{else}}

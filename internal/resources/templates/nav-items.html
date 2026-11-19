@@ -9,7 +9,7 @@
         {{$serverOpen := or $open $hasActiveChild}}
         <div class="nav-item {{if .IsDir}}directory{{end}} {{if .IsActive}}active{{end}} {{if $serverOpen}}open{{end}}">
             <div class="nav-item-header">
-                <a href="{{.Path}}"{{if and $open $hasChildren}} class="with-nav-arrow"{{end}}>
+                <a href="{{url .Path}}"{{if and $open $hasChildren}} class="with-nav-arrow"{{end}}>
                     {{.Title}}
                     {{if and $open $hasChildren}}<span class="nav-arrow" aria-hidden="true"></span>{{end}}
                 </a>

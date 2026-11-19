@@ -322,10 +322,10 @@ function wrapText(cm, prefix = '', suffix = '', placeholder = '') {
 // Main editor loading function
 async function loadEditor(mainContent, editorContainer, viewToolbar, editToolbar) {
     try {
-        const isHomepage = window.location.pathname === '/';
-        const apiPath = isHomepage ? '/api/source/' : `/api/source${window.location.pathname}`;
+        const isHomepage = wikiPathname() === '/';
+        const apiPath = isHomepage ? '/api/source/' : `/api/source${wikiPathname()}`;
 
-        const response = await fetch(apiPath);
+        const response = await fetch(wikiURL(apiPath));
         if (!response.ok) throw new Error('Failed to fetch content');
 
         const markdown = await response.text();

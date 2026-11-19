@@ -375,7 +375,7 @@ function initBulkActions(filesList) {
                         const path = `${docPath}/${filename}`;
                         const deleteUrl = `/api/files/delete/${path}`;
                         
-                        const response = await fetch(deleteUrl, {
+                        const response = await fetch(wikiURL(deleteUrl), {
                             method: 'DELETE'
                         });
                         if (response.ok) {
@@ -415,7 +415,7 @@ async function loadDocumentFiles() {
     try {
         const docPath = getCurrentDocPath();
         console.log("Loading files for document path:", docPath);
-        const response = await fetch(`/api/files/list/${docPath}`);
+        const response = await fetch(wikiURL(`/api/files/list/${docPath}`));
 
         if (!response.ok) {
             throw new Error('Failed to fetch files');
@@ -517,7 +517,7 @@ async function deleteFile(path) {
                 const deleteUrl = `/api/files/delete/${path}`;
                 console.log("DELETE request to:", deleteUrl);
 
-                const response = await fetch(deleteUrl, {
+                const response = await fetch(wikiURL(deleteUrl), {
                     method: 'DELETE'
                 });
 
@@ -590,7 +590,7 @@ async function renameFile(path, newName) {
     console.log("Attempting to rename file at path:", path, "to", newName);
 
     try {
-        const response = await fetch('/api/files/rename', {
+        const response = await fetch(wikiURL('/api/files/rename'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

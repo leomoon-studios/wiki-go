@@ -1,7 +1,7 @@
 {{define "search-page"}}
 <section class="search-page" data-search-page="true" dir="auto">
     <h1>{{t "common.search"}}</h1>
-    <form class="search-page-form" method="get" action="/" role="search">
+    <form class="search-page-form" method="get" action="{{basePath}}/" role="search">
         <label for="search-page-query">{{t "common.search"}}</label>
         <div class="search-page-form-row">
             <input id="search-page-query" type="search" name="search" value="{{.SearchQuery}}" autocomplete="off">
@@ -15,7 +15,7 @@
             {{if .SearchResults}}
                 {{range .SearchResults}}
                 <article class="search-result-item">
-                    <a class="search-result-title" href="{{.Path}}">{{.Title}}</a>
+                    <a class="search-result-title" href="{{url .Path}}">{{.Title}}</a>
                     <div class="search-result-path">{{.Path}}</div>
                     <p class="search-result-excerpt">{{.Excerpt}}</p>
                 </article>

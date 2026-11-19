@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/i18n"
 	"wiki-go/internal/logger"
@@ -497,7 +498,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	if !auth.CanAccessDocument("/", session, cfg) {
 		if session == nil {
 			// Redirect to login if not authenticated
-			http.Redirect(w, r, "/login?redirect="+url.QueryEscape("/"), http.StatusFound)
+			http.Redirect(w, r, basepath.URL("/login?redirect="+url.QueryEscape("/")), http.StatusFound)
 			return
 		}
 		// Show 403 Forbidden if authenticated but unauthorized
@@ -514,13 +515,13 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		session := auth.GetSession(r)
 		if session == nil {
 			// User not authenticated - redirect to view mode
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, basepath.URL("/"), http.StatusSeeOther)
 			return
 		}
 		// Check if user has editor or admin role
 		if !auth.RequireRole(r, "editor") {
 			// User lacks required role - redirect to view mode
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, basepath.URL("/"), http.StatusSeeOther)
 			return
 		}
 	}

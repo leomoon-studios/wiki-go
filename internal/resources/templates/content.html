@@ -2,7 +2,7 @@
     {{$bannerPath := hasBanner .Config.Wiki.RootDir}}
     {{if $bannerPath}}
     <div class="global-banner">
-        <img src="{{$bannerPath}}" alt="Banner" class="responsive-banner">
+        <img src="{{url $bannerPath}}" alt="Banner" class="responsive-banner">
     </div>
     {{end}}
     {{if or (eq (len (printf "%s" .Content)) 0) (eq (printf "%s" .Content) " ")}}

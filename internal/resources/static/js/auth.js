@@ -106,7 +106,7 @@
         submitBtn.textContent = window.i18n ? window.i18n.t('login.logging_in') : 'Logging in...';
 
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(wikiURL('/api/login'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -164,7 +164,7 @@
     // Function to handle logout
     async function handleLogout() {
         try {
-            const response = await fetch('/api/logout', {
+            const response = await fetch(wikiURL('/api/logout'), {
                 method: 'POST'
             });
 
@@ -186,7 +186,7 @@
     // Function to check if current user is an admin
     async function checkIfUserIsAdmin() {
         try {
-            const response = await fetch('/api/check-auth');
+            const response = await fetch(wikiURL('/api/check-auth'));
             if (!response.ok) {
                 return false;
             }
@@ -202,7 +202,7 @@
     // Function to check if current user has a specific role
     async function checkUserRole(requiredRole) {
         try {
-            const response = await fetch('/api/check-auth');
+            const response = await fetch(wikiURL('/api/check-auth'));
             if (!response.ok) {
                 return false;
             }
@@ -243,7 +243,7 @@
     async function updateToolbarButtons() {
         try {
             // Check authentication status
-            const authResponse = await fetch('/api/check-auth');
+            const authResponse = await fetch(wikiURL('/api/check-auth'));
 
             if (authResponse.status === 401) {
                 // User is not authenticated
@@ -277,7 +277,7 @@
 
                 // Special case for move/rename button (only show if not on homepage)
                 const renameBtn = document.querySelector('.move-document');
-                if (renameBtn && (window.location.pathname === '/' || window.location.pathname === '/homepage')) {
+                if (renameBtn && (wikiPathname() === '/' || wikiPathname() === '/homepage')) {
                     renameBtn.style.cssText = 'display: none !important';
                 }
             } else if (isEditor) {
@@ -292,7 +292,7 @@
 
                 // Special case for move/rename button (only show if not on homepage)
                 const renameBtn = document.querySelector('.move-document');
-                if (renameBtn && (window.location.pathname === '/' || window.location.pathname === '/homepage')) {
+                if (renameBtn && (wikiPathname() === '/' || wikiPathname() === '/homepage')) {
                     renameBtn.style.cssText = 'display: none !important';
                 }
             } else {
@@ -318,7 +318,7 @@
     // Function to check if the default password is in use
     async function checkDefaultPassword() {
         try {
-            const response = await fetch('/api/check-default-password');
+            const response = await fetch(wikiURL('/api/check-default-password'));
             const data = await response.json();
 
             const banner = document.getElementById('password-warning-banner');

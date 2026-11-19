@@ -167,11 +167,11 @@ document.addEventListener('DOMContentLoaded', function() {
         settingsButton.addEventListener('click', async function() {
             try {
                 // Check if user is authenticated
-                const authResponse = await fetch('/api/check-auth');
+                const authResponse = await fetch(wikiURL('/api/check-auth'));
                 if (authResponse.status === 401) {
                     // Show login dialog
                     window.Auth.showLoginDialog(() => {
-                        fetch('/api/check-auth').then(resp => {
+                        fetch(wikiURL('/api/check-auth')).then(resp => {
                             if (!resp.ok) return;
                             resp.json().then(data => {
                                 const isAdmin = data.role === 'admin';
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const languageChanged = currentLanguage !== newLanguage;
 
         try {
-            const response = await fetch('/api/settings/wiki', {
+            const response = await fetch(wikiURL('/api/settings/wiki'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to load settings from the server
     async function loadSettings() {
         try {
-            const response = await fetch('/api/settings/wiki');
+            const response = await fetch(wikiURL('/api/settings/wiki'));
             if (!response.ok) {
                 throw new Error('Failed to fetch settings');
             }
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Another request for security
             try {
-                const secResp = await fetch('/api/settings/security');
+                const secResp = await fetch(wikiURL('/api/settings/security'));
                 if (secResp.ok) {
                     const sec = await secResp.json();
                     document.getElementById('loginBanEnabled').checked = sec.login_ban.enabled;
@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to load users list
     async function loadUsers() {
         try {
-            const response = await fetch('/api/users');
+            const response = await fetch(wikiURL('/api/users'));
             if (!response.ok) {
                 throw new Error('Failed to load users');
             }
@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (mode === 'create') {
                 // Create new user
-                response = await fetch('/api/users', {
+                response = await fetch(wikiURL('/api/users'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -820,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 // Update existing user
-                response = await fetch('/api/users', {
+                response = await fetch(wikiURL('/api/users'), {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 try {
-                    const response = await fetch(`/api/users?username=${encodeURIComponent(username)}`, {
+                    const response = await fetch(wikiURL(`/api/users?username=${encodeURIComponent(username)}`), {
                         method: 'DELETE'
                     });
 
@@ -896,7 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to fetch max upload size from server
     async function fetchMaxUploadSize() {
         try {
-            const response = await fetch('/api/settings/wiki');
+            const response = await fetch(wikiURL('/api/settings/wiki'));
             if (response.ok) {
                 const settings = await response.json();
                 if (settings && settings.max_upload_size) {
@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const resp = await fetch('/api/settings/security', {
+            const resp = await fetch(wikiURL('/api/settings/security'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -968,7 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const response = await fetch('/api/password', {
+            const response = await fetch(wikiURL('/api/password'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -994,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmationTitle,
                     confirmationMessage,
                     function() {
-                        window.location.href = result.redirect || '/login';
+                        window.location.href = wikiURL(result.redirect || '/login');
                     }
                 );
 

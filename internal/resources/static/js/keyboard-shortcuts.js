@@ -527,7 +527,7 @@ function handleKeyDown(e) {
                 e.preventDefault();
                 if (editPageButton && !mainContent.classList.contains('editing')) {
                     // Check auth before navigating
-                    fetch('/api/check-auth').then(authResponse => {
+                    fetch(wikiURL('/api/check-auth')).then(authResponse => {
                         if (authResponse.status === 401) {
                             // Show login dialog
                             window.Auth.showLoginDialog(() => {

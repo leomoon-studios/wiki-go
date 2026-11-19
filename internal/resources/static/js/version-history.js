@@ -76,7 +76,7 @@
             const apiUrl = `/api/versions/${path}`;
             console.log("Requesting versions from:", apiUrl);
 
-            const response = await fetch(apiUrl);
+            const response = await fetch(wikiURL(apiUrl));
             console.log("API response status:", response.status);
 
             if (!response.ok) {
@@ -186,7 +186,7 @@
 
         try {
             // First, fetch the raw content of the version
-            const response = await fetch(`/api/versions/${path}/${version}`);
+            const response = await fetch(wikiURL(`/api/versions/${path}/${version}`));
             console.log("Preview response status:", response.status);
 
             if (!response.ok) {
@@ -203,7 +203,7 @@
             // Now fetch the rendered HTML by requesting the content to be rendered by the server
             // This ensures we use the same rendering engine as the main content
             // Pass the document path as a query parameter so file attachments can be properly transformed
-            const renderResponse = await fetch(`/api/render-markdown?path=${encodeURIComponent(path)}`, {
+            const renderResponse = await fetch(wikiURL(`/api/render-markdown?path=${encodeURIComponent(path)}`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'text/plain',
@@ -314,7 +314,7 @@
                     console.log(`Sending POST request to: ${restoreUrl}`);
 
                     // No processing message - just send the request
-                    const response = await fetch(restoreUrl, {
+                    const response = await fetch(wikiURL(restoreUrl), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

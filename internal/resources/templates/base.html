@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="{{.Config.Wiki.Language}}" data-allow-insecure="{{.Config.Server.AllowInsecureCookies}}">
 <head>
-    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="{{.Config.Wiki.Title}}">
+    <link rel="search" type="application/opensearchdescription+xml" href="{{basePath}}/opensearch.xml" title="{{.Config.Wiki.Title}}">
     <title>{{if .CurrentDir.Title}}{{if ne .CurrentDir.Path "/"}}{{.CurrentDir.Title}} - {{end}}{{.Config.Wiki.Title}}{{else}}{{.Config.Wiki.Title}}{{end}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="wiki-base-path" content="{{basePath}}">
+    <script src="{{basePath}}/static/js/base-path.js?={{getVersion}}"></script>
     <meta name="user-role" content="{{.UserRole}}">
     <meta name="doc-path" content="{{.CurrentDir.Path}}">
     <meta name="enable-link-embedding" content="{{.Config.Wiki.EnableLinkEmbedding}}">
@@ -12,10 +14,10 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
     <!-- Favicons -->
-    {{if hasFavicon .Config.Wiki.RootDir "ico"}}<link rel="icon" href="/static/favicon.ico" type="image/x-icon">{{end}}
-    {{if hasFavicon .Config.Wiki.RootDir "svg"}}<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">{{end}}
-    {{if hasFavicon .Config.Wiki.RootDir "png"}}<link rel="icon" href="/static/favicon.png" type="image/png">{{end}}
-    <link rel="manifest" href="/manifest.json">
+    {{if hasFavicon .Config.Wiki.RootDir "ico"}}<link rel="icon" href="{{basePath}}/static/favicon.ico" type="image/x-icon">{{end}}
+    {{if hasFavicon .Config.Wiki.RootDir "svg"}}<link rel="icon" href="{{basePath}}/static/favicon.svg" type="image/svg+xml">{{end}}
+    {{if hasFavicon .Config.Wiki.RootDir "png"}}<link rel="icon" href="{{basePath}}/static/favicon.png" type="image/png">{{end}}
+    <link rel="manifest" href="{{basePath}}/manifest.json">
     <!-- Open Graph properties -->
     <meta property="og:title" content="{{.Config.Wiki.Title}}" />
     {{if eq .CurrentDir.Path "/"}}
@@ -28,68 +30,68 @@
     {{end}}
     {{$logoPath := hasLogo .Config.Wiki.RootDir}}
     {{if $logoPath}}
-        <meta property="og:image" content="{{$logoPath}}" />
+        <meta property="og:image" content="{{url $logoPath}}" />
     {{end}}
     <!-- Resource Hints - Preload critical resources for faster page load -->
-    <link rel="preload" href="/static/css/theme.css?={{getVersion}}" as="style">
-    <link rel="preload" href="/static/css/layout.css?={{getVersion}}" as="style">
-    <link rel="preload" href="/static/css/navigation.css?={{getVersion}}" as="style">
-    <link rel="preload" href="/static/js/theme-manager.js?={{getVersion}}" as="script">
-    <link rel="preload" href="/static/js/chapter-links-state.js?={{getVersion}}" as="script">
-    <link rel="preload" href="/static/js/utilities.js?={{getVersion}}" as="script">
-    <link rel="preload" href="/static/js/debug-toggle.js?={{getVersion}}" as="script">
-    <link rel="preload" href="/static/libs/fontawesome-4.7.0/css/fontawesome.min.css" as="style">
+    <link rel="preload" href="{{basePath}}/static/css/theme.css?={{getVersion}}" as="style">
+    <link rel="preload" href="{{basePath}}/static/css/layout.css?={{getVersion}}" as="style">
+    <link rel="preload" href="{{basePath}}/static/css/navigation.css?={{getVersion}}" as="style">
+    <link rel="preload" href="{{basePath}}/static/js/theme-manager.js?={{getVersion}}" as="script">
+    <link rel="preload" href="{{basePath}}/static/js/chapter-links-state.js?={{getVersion}}" as="script">
+    <link rel="preload" href="{{basePath}}/static/js/utilities.js?={{getVersion}}" as="script">
+    <link rel="preload" href="{{basePath}}/static/js/debug-toggle.js?={{getVersion}}" as="script">
+    <link rel="preload" href="{{basePath}}/static/libs/fontawesome-4.7.0/css/fontawesome.min.css" as="style">
     <!-- Prevent theme and chapter-panel flash - load these scripts first -->
-    <script src="/static/js/debug-toggle.js?={{getVersion}}"></script>
-    <script src="/static/js/utilities.js?={{getVersion}}"></script>
-    <script src="/static/js/theme-manager.js?={{getVersion}}"></script>
-    <script src="/static/js/chapter-links-state.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/debug-toggle.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/utilities.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/theme-manager.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/chapter-links-state.js?={{getVersion}}"></script>
     <!-- File extensions configuration -->
-    <script src="/static/js/file-extensions.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/file-extensions.js?={{getVersion}}"></script>
     <!-- Base styles -->
-    <link rel="stylesheet" href="/static/css/theme.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/layout.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/navigation.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/search.css?v={{getVersion}}-2">
-    <link rel="stylesheet" href="/static/css/buttons.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/dialog.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/access-rules.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/forms.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/typography.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/users.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/files.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/versions.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/taskList.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/theme.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/layout.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/navigation.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/search.css?v={{getVersion}}-2">
+    <link rel="stylesheet" href="{{basePath}}/static/css/buttons.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/dialog.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/access-rules.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/forms.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/typography.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/users.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/files.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/versions.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/taskList.css?={{getVersion}}">
     <!-- Feature-specific styles -->
-    <link rel="stylesheet" href="/static/css/markdown-extensions.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/stats.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/comments.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/markdown-extensions.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/stats.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/comments.css?={{getVersion}}">
     {{if eq .DocumentLayout "kanban"}}
-    <link rel="stylesheet" href="/static/css/kanban.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/kanban.css?={{getVersion}}">
     {{end}}
     {{if eq .DocumentLayout "links"}}
-    <link rel="stylesheet" href="/static/css/links.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/links.css?={{getVersion}}">
     {{end}}
     <!-- External libraries -->
-    <link id="prism-theme" rel="stylesheet" href="/static/libs/prism-1.30.0/prism-tomorrow.min.css">
+    <link id="prism-theme" rel="stylesheet" href="{{basePath}}/static/libs/prism-1.30.0/prism-tomorrow.min.css">
     {{if .IsEditMode}}
     <!-- CodeMirror CSS - Only loaded in edit mode for performance (~50KB) -->
-    <link rel="stylesheet" href="/static/libs/codemirror-5.65.18/codemirror.min.css">
-    <link rel="stylesheet" href="/static/libs/codemirror-5.65.18/theme/darcula.min.css">
-    <link rel="stylesheet" href="/static/css/editor.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/libs/codemirror-5.65.18/codemirror.min.css">
+    <link rel="stylesheet" href="{{basePath}}/static/libs/codemirror-5.65.18/theme/darcula.min.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/editor.css?={{getVersion}}">
     {{end}}
-    <link rel="stylesheet" href="/static/libs/fontawesome-4.7.0/css/fontawesome.min.css">
-    <link rel="stylesheet" href="/static/css/print.css?={{getVersion}}" media="print">
+    <link rel="stylesheet" href="{{basePath}}/static/libs/fontawesome-4.7.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/print.css?={{getVersion}}" media="print">
     <!-- Custom overrides -->
-    <link rel="stylesheet" href="/static/custom.css?={{getVersion}}">
-    <script src="/static/js/markdown-extensions.js?={{getVersion}}"></script>
+    <link rel="stylesheet" href="{{basePath}}/static/custom.css?={{getVersion}}">
+    <script src="{{basePath}}/static/js/markdown-extensions.js?={{getVersion}}"></script>
     {{if .IsEditMode}}
     <!-- CodeMirror Scripts - Only loaded in edit mode for performance (~400KB) -->
-    <script src="/static/libs/codemirror-5.65.18/codemirror.min.js"></script>
-    <script src="/static/libs/codemirror-5.65.18/mode/markdown.min.js"></script>
-    <script src="/static/libs/codemirror-5.65.18/addon/edit/continuelist.min.js"></script>
-    <script src="/static/libs/codemirror-5.65.18/addon/display/placeholder.min.js"></script>
-    <script src="/static/libs/codemirror-5.65.18/addon/selection/active-line.min.js"></script>
+    <script src="{{basePath}}/static/libs/codemirror-5.65.18/codemirror.min.js"></script>
+    <script src="{{basePath}}/static/libs/codemirror-5.65.18/mode/markdown.min.js"></script>
+    <script src="{{basePath}}/static/libs/codemirror-5.65.18/addon/edit/continuelist.min.js"></script>
+    <script src="{{basePath}}/static/libs/codemirror-5.65.18/addon/display/placeholder.min.js"></script>
+    <script src="{{basePath}}/static/libs/codemirror-5.65.18/addon/selection/active-line.min.js"></script>
     {{end}}
 </head>
 <body>
@@ -268,18 +270,18 @@
 
     {{template "chapter-links" .}}
 
-    <script src="/static/js/dialog-system.js?={{getVersion}}"></script>
-    <script src="/static/js/file-utilities.js?={{getVersion}}"></script>
-    <script src="/static/js/file-upload.js?={{getVersion}}"></script>
-    <script src="/static/js/version-history.js?={{getVersion}}"></script>
-    <script src="/static/js/auth.js?={{getVersion}}"></script>
-    <script src="/static/js/slugify.js?={{getVersion}}"></script>
-    <script src="/static/js/document-management.js?={{getVersion}}"></script>
-    <script src="/static/js/copy-button.js?={{getVersion}}"></script>
-    <script src="/static/js/settings-manager.js?={{getVersion}}"></script>
-    <script src="/static/js/keyboard-shortcuts.js?={{getVersion}}"></script>
-    <script src="/static/js/edit-button.js?={{getVersion}}"></script>
-    <script src="/static/js/app-init.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/dialog-system.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/file-utilities.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/file-upload.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/version-history.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/auth.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/slugify.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/document-management.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/copy-button.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/settings-manager.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/keyboard-shortcuts.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/edit-button.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/app-init.js?={{getVersion}}"></script>
     {{if .IsEditMode}}
     <!-- ============================================ -->
     <!-- EDIT MODE ONLY - Performance Optimization    -->
@@ -289,53 +291,53 @@
     <!-- ============================================ -->
     
     <!-- Markdown table editor dependencies (~600KB) -->
-    <script src="/static/js/mte-meaw.js?={{getVersion}}"></script>
-    <script src="/static/js/mte-kernel-2.1.1.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/mte-meaw.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/mte-kernel-2.1.1.js?={{getVersion}}"></script>
 
     <!-- Editor modules - loaded in dependency order (~1MB) -->
-    <script src="/static/js/editor-themes.js?={{getVersion}}"></script>
-    <script src="/static/js/editor-core.js?={{getVersion}}"></script>
-    <script src="/static/js/morphdom.min.js?={{getVersion}}"></script>
-    <script src="/static/js/editor-preview.js?={{getVersion}}"></script>
-    <script src="/static/js/editor-scroll-sync.js?={{getVersion}}"></script>
-    <script src="/static/js/editor-pickers.js?={{getVersion}}"></script>
-    <script src="/static/js/editor-toolbar.js?={{getVersion}}"></script>
-    <script src="/static/js/editor.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-themes.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-core.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/morphdom.min.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-preview.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-scroll-sync.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-pickers.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor-toolbar.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/editor.js?={{getVersion}}"></script>
 
-    <script src="/static/js/markdown-table-editor.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/markdown-table-editor.js?={{getVersion}}"></script>
     {{end}}
-    <script src="/static/js/search.js?v={{getVersion}}-5" defer></script>
-    <script src="/static/js/move-document.js?={{getVersion}}" defer></script>
-    <script src="/static/js/import-manager.js?={{getVersion}}" defer></script>
-    <script src="/static/js/i18n.js?={{getVersion}}"></script>
-    <script src="/static/js/access-rules-manager.js?={{getVersion}}" defer></script>
-    <script src="/static/js/backup-manager.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/search.js?v={{getVersion}}-5" defer></script>
+    <script src="{{basePath}}/static/js/move-document.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/import-manager.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/i18n.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/access-rules-manager.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/backup-manager.js?={{getVersion}}" defer></script>
     {{if not .Config.Wiki.DisableComments}}
-    <script src="/static/js/comments.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/comments.js?={{getVersion}}" defer></script>
     {{end}}
 
     <!-- Lazy loader - conditionally loads heavy libraries only when needed -->
-    <script src="/static/js/lazy-loader.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/lazy-loader.js?={{getVersion}}"></script>
 
     <!-- Clipboard paste handling -->
-    <script src="/static/js/clipboard.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/clipboard.js?={{getVersion}}" defer></script>
     <!-- Task list permissions (shared by tasklist-live.js and kanban-tasks.js) -->
-    <script src="/static/js/tasklist-permissions.js?={{getVersion}}"></script>
-    <script src="/static/js/tasklist-live.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/tasklist-permissions.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/js/tasklist-live.js?={{getVersion}}" defer></script>
     {{if eq .DocumentLayout "kanban"}}
     <!-- Kanban system - modular architecture -->
-    <script src="/static/js/kanban-ui.js?={{getVersion}}" defer></script>
-    <script src="/static/js/kanban-drag.js?={{getVersion}}" defer></script>
-    <script src="/static/js/kanban-tasks.js?={{getVersion}}" defer></script>
-    <script src="/static/js/kanban-columns.js?={{getVersion}}" defer></script>
-    <script src="/static/js/kanban-persistence.js?={{getVersion}}" defer></script>
-    <script src="/static/js/kanban-core.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-ui.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-drag.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-tasks.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-columns.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-persistence.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/kanban-core.js?={{getVersion}}" defer></script>
     {{end}}
     {{if eq .DocumentLayout "links"}}
     <!-- Links document interactivity -->
-    <script src="/static/js/links.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/links.js?={{getVersion}}" defer></script>
     {{end}}
     <!-- Custom user scripts -->
-    <script src="/static/custom.js?={{getVersion}}"></script>
+    <script src="{{basePath}}/static/custom.js?={{getVersion}}"></script>
 </body>
 </html>

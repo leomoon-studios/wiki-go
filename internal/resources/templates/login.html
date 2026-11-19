@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html data-theme="{{ .Theme }}">
 <head>
-    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="{{.Config.Wiki.Title}}">
+    <link rel="search" type="application/opensearchdescription+xml" href="{{basePath}}/opensearch.xml" title="{{.Config.Wiki.Title}}">
     <title>{{t "login.title"}} - {{ .Config.Wiki.Title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="wiki-base-path" content="{{basePath}}">
+    <script src="{{basePath}}/static/js/base-path.js?={{getVersion}}"></script>
     <!-- Load before styles to preserve the no-flash theme initialization. -->
-    <script src="/static/js/theme-manager.js?={{getVersion}}"></script>
-    <link rel="stylesheet" href="/static/css/theme.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/buttons.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/dialog.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/css/forms.css?={{getVersion}}">
-    <link rel="stylesheet" href="/static/custom.css?={{getVersion}}">
+    <script src="{{basePath}}/static/js/theme-manager.js?={{getVersion}}"></script>
+    <link rel="stylesheet" href="{{basePath}}/static/css/theme.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/buttons.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/dialog.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/css/forms.css?={{getVersion}}">
+    <link rel="stylesheet" href="{{basePath}}/static/custom.css?={{getVersion}}">
     <style>
         /* Adapt login dialog to full page context */
         body {
@@ -82,6 +84,6 @@
         </div>
     </div>
 
-    <script src="/static/js/login.js?={{getVersion}}" defer></script>
+    <script src="{{basePath}}/static/js/login.js?={{getVersion}}" defer></script>
 </body>
 </html>

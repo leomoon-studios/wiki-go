@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showImportProgress();
 
             // Start the import process
-            const response = await fetch('/api/import', {
+            const response = await fetch(wikiURL('/api/import'), {
                 method: 'POST',
                 body: formData
             });
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     async function pollImportStatus(statusUrl) {
         try {
-            const response = await fetch(statusUrl);
+            const response = await fetch(wikiURL(statusUrl));
 
             if (!response.ok) {
                 throw new Error('Failed to get import status');

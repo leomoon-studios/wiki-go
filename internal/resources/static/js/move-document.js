@@ -94,7 +94,7 @@ async function handleMoveDocumentSubmit(e) {
     }
 
     try {
-        const response = await fetch('/api/document/move', {
+        const response = await fetch(wikiURL('/api/document/move'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ async function handleMoveDocumentSubmit(e) {
             const result = await response.json();
             if (result.success) {
                 // Redirect to the new document location
-                window.location.href = '/' + result.newPath;
+                window.location.href = wikiURL('/' + result.newPath);
             } else {
                 moveDocErrorMessage.textContent = result.message || (window.i18n ? window.i18n.t('move.failed') : 'Failed to move document');
                 moveDocErrorMessage.style.display = 'block';

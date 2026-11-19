@@ -4,12 +4,12 @@
             {{if $index}}<span class="separator">›</span>{{end}}
             {{if eq $index 0}}
                 {{if not $part.IsLast}}
-                    <a href="{{$part.Path}}"><i class="fa fa-home"></i></a>
+                    <a href="{{url $part.Path}}"><i class="fa fa-home"></i></a>
                 {{else}}
                     <span><i class="fa fa-home"></i></span>
                 {{end}}
             {{else if not $part.IsLast}}
-                <a href="{{$part.Path}}">{{$part.Title}}</a>
+                <a href="{{url $part.Path}}">{{$part.Title}}</a>
             {{else}}
                 <span>{{$part.Title}}</span>
             {{end}}

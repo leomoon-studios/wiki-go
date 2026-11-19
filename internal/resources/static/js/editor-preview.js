@@ -151,14 +151,14 @@ async function updatePreview(content) {
 
     try {
         // Get current path for handling relative links correctly
-        const isHomepage = window.location.pathname === '/';
-        const path = isHomepage ? '/' : window.location.pathname;
+        const isHomepage = wikiPathname() === '/';
+        const path = isHomepage ? '/' : wikiPathname();
 
         // Check for frontmatter to add special styling if needed
         const hasFrontmatter = content.startsWith('---\n');
 
         // Call the server-side renderer (request source-line annotations for scroll sync)
-        const response = await fetch(`/api/render-markdown?path=${encodeURIComponent(path)}&source_lines=1`, {
+        const response = await fetch(wikiURL(`/api/render-markdown?path=${encodeURIComponent(path)}&source_lines=1`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'text/plain',

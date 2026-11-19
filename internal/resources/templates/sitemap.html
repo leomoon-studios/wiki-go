@@ -1,28 +1,30 @@
 <!DOCTYPE html>
 <html lang="{{.Config.Wiki.Language}}" data-theme="light">
 <head>
-    <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="{{.Config.Wiki.Title}}">
+    <link rel="search" type="application/opensearchdescription+xml" href="{{basePath}}/opensearch.xml" title="{{.Config.Wiki.Title}}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="wiki-base-path" content="{{basePath}}">
+    <script src="{{basePath}}/static/js/base-path.js"></script>
     <title>{{.Title}}</title>
     <meta name="user-role" content="{{.UserRole}}">
     <!-- Link to stylesheets -->
-    <link rel="stylesheet" href="/static/css/theme.css">
-    <link rel="stylesheet" href="/static/css/layout.css">
-    <link rel="stylesheet" href="/static/css/typography.css">
-    <link rel="stylesheet" href="/static/css/navigation.css">
-    <link rel="stylesheet" href="/static/css/buttons.css">
-    <link rel="stylesheet" href="/static/css/sitemap.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/theme.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/layout.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/typography.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/navigation.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/buttons.css">
+    <link rel="stylesheet" href="{{basePath}}/static/css/sitemap.css">
     <!-- Theme manager script -->
-    <script src="/static/js/theme-manager.js"></script>
+    <script src="{{basePath}}/static/js/theme-manager.js"></script>
 </head>
 <body>
     <div class="sitemap-container">
         <div class="sitemap-header" dir="auto">
             <h1>{{.SitemapTitle}}</h1>
             <div class="sitemap-format-links">
-                <a href="/sitemap.xml" title="{{.XMLDescription}}">{{.XMLSitemap}}</a>
-                <a href="/" title="{{.BackToHome}}">{{.BackToHome}}</a>
+                <a href="{{basePath}}/sitemap.xml" title="{{.XMLDescription}}">{{.XMLSitemap}}</a>
+                <a href="{{basePath}}/" title="{{.BackToHome}}">{{.BackToHome}}</a>
             </div>
         </div>
 
@@ -33,7 +35,7 @@
                 <ul class="page-list">
                     {{range $page := index .Categories .HomeCategory}}
                         <li>
-                            <a href="{{$page.URL}}">{{$page.Title}}</a>
+                            <a href="{{url $page.URL}}">{{$page.Title}}</a>
                             <span class="last-modified">{{$.LastModified}}: {{$page.LastMod.Format "2006-01-02"}}</span>
                         </li>
                     {{end}}
@@ -50,7 +52,7 @@
                         <ul class="page-list">
                             {{range $page := $pages}}
                                 <li>
-                                    <a href="{{$page.URL}}">{{$page.Title}}</a>
+                                    <a href="{{url $page.URL}}">{{$page.Title}}</a>
                                     <span class="last-modified">{{$.LastModified}}: {{$page.LastMod.Format "2006-01-02"}}</span>
                                 </li>
                             {{end}}

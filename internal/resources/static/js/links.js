@@ -664,7 +664,7 @@
         try {
             console.log('Fetching metadata from server for:', url);
             
-            const response = await fetch('/api/links/fetch-metadata', {
+            const response = await fetch(wikiURL('/api/links/fetch-metadata'), {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -742,7 +742,7 @@
             submitButton.disabled = true;
 
             // 1. Fetch current document
-            const srcResp = await fetch(`/api/source/${getCurrentDocumentPath()}`);
+            const srcResp = await fetch(wikiURL(`/api/source/${getCurrentDocumentPath()}`));
             if (!srcResp.ok) throw new Error('Failed to fetch current document');
             const currentMarkdown = await srcResp.text();
 
@@ -752,7 +752,7 @@
                 addLinkToMarkdown(currentMarkdown, finalTitle, url, description, category);
 
             // 3. Save the updated markdown
-            const saveResp = await fetch(`/api/save/${getCurrentDocumentPath()}`, {
+            const saveResp = await fetch(wikiURL(`/api/save/${getCurrentDocumentPath()}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/markdown' },
                 body: updatedMarkdown
@@ -784,7 +784,7 @@
      * Get the current document path for API calls
      */
     function getCurrentDocumentPath() {
-        const currentPath = window.location.pathname;
+        const currentPath = wikiPathname();
         // Remove leading slash and return empty string for root
         return currentPath === '/' ? '' : currentPath.replace(/^\//, '');
     }
@@ -975,7 +975,7 @@
     async function deleteLinkFromDocument(linkData) {
         try {
             // 1. Fetch current document
-            const srcResp = await fetch(`/api/source/${getCurrentDocumentPath()}`);
+            const srcResp = await fetch(wikiURL(`/api/source/${getCurrentDocumentPath()}`));
             if (!srcResp.ok) throw new Error('Failed to fetch current document');
             const currentMarkdown = await srcResp.text();
 
@@ -983,7 +983,7 @@
             const updatedMarkdown = deleteLinkFromMarkdown(currentMarkdown, linkData);
 
             // 3. Save the updated markdown
-            const saveResp = await fetch(`/api/save/${getCurrentDocumentPath()}`, {
+            const saveResp = await fetch(wikiURL(`/api/save/${getCurrentDocumentPath()}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/markdown' },
                 body: updatedMarkdown

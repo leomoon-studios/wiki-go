@@ -28,7 +28,7 @@
                 slugInput.value = 'Generating...';
 
                 // Call server API to generate slug with proper transliteration
-                fetch('/api/utils/slugify', {
+                fetch(wikiURL('/api/utils/slugify'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

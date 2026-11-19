@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/comments"
 	"wiki-go/internal/config"
 	"wiki-go/internal/frontmatter"
@@ -19,8 +20,8 @@ import (
 	"wiki-go/internal/utils"
 )
 
-var directoryListingTemplate = template.Must(template.New("directory-listing").Parse(
-	`{{range .}}<div class="directory-item is-dir"><a href="{{.Path}}">{{.Title}}</a></div>{{end}}`,
+var directoryListingTemplate = template.Must(template.New("directory-listing").Funcs(urlTemplateFuncs).Parse(
+	`{{range .}}<div class="directory-item is-dir"><a href="{{url .Path}}">{{.Title}}</a></div>{{end}}`,
 ))
 
 var directoryTitleTemplate = template.Must(template.New("directory-title").Parse(`<h1>{{.}}</h1>`))
@@ -46,13 +47,13 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 		session := auth.GetSession(r)
 		if session == nil {
 			// User not authenticated - redirect to view mode
-			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+			http.Redirect(w, r, basepath.URL(r.URL.Path), http.StatusSeeOther)
 			return
 		}
 		// Check if user has editor or admin role
 		if !auth.RequireRole(r, "editor") {
 			// User lacks required role - redirect to view mode
-			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+			http.Redirect(w, r, basepath.URL(r.URL.Path), http.StatusSeeOther)
 			return
 		}
 	}
@@ -72,7 +73,7 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	session := auth.GetSession(r)
 	if !auth.CanAccessDocument(path, session, cfg) {
 		if session == nil {
-			http.Redirect(w, r, "/login?redirect="+url.QueryEscape(path), http.StatusFound)
+			http.Redirect(w, r, basepath.URL("/login?redirect="+url.QueryEscape(path)), http.StatusFound)
 			return
 		}
 		http.Error(w, "Forbidden", http.StatusForbidden)

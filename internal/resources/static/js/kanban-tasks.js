@@ -48,7 +48,7 @@ class KanbanTaskManager {
     const assignedTaskIds = new Set();
 
     // Fetch the original markdown to preserve formatting
-    fetch(`/api/source/${this.core.getDocPath()}`)
+    fetch(wikiURL(`/api/source/${this.core.getDocPath()}`))
       .then(response => response.text())
       .then(markdown => {
         // Extract task content and IDs from the markdown
@@ -203,7 +203,7 @@ class KanbanTaskManager {
 
       try {
         // 1. Fetch current markdown
-        const srcResp = await fetch(`/api/source/${this.core.getDocPath()}`);
+        const srcResp = await fetch(wikiURL(`/api/source/${this.core.getDocPath()}`));
         if (!srcResp.ok) throw new Error('source fetch failed');
         const markdown = await srcResp.text();
 
@@ -211,7 +211,7 @@ class KanbanTaskManager {
         const updatedMarkdown = this.toggleTaskInMarkdown(markdown, li, taskId);
 
         // 3. Save updated markdown
-        const saveResp = await fetch(`/api/save/${this.core.getDocPath()}`, {
+        const saveResp = await fetch(wikiURL(`/api/save/${this.core.getDocPath()}`), {
           method: 'POST',
           headers: { 'Content-Type': 'text/markdown' },
           body: updatedMarkdown,
@@ -1027,7 +1027,7 @@ class KanbanTaskManager {
       if (!safeURL) return alt;
       if (!/^([/]|https?:)/i.test(safeURL)) {
         const docPath = (typeof getCurrentDocPath === 'function') ? getCurrentDocPath() : '';
-        safeURL = '/api/files/' + docPath + '/' + safeURL;
+        safeURL = wikiURL('/api/files/' + docPath + '/' + safeURL);
       }
       return '<img src="' + safeURL + '" alt="' + alt + '">';
     });

@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use dark theme for syntax highlighting
             const prismTheme = document.getElementById('prism-theme');
             if (prismTheme) {
-                prismTheme.href = '/static/libs/prism-1.30.0/prism-tomorrow.min.css';
+                prismTheme.href = wikiURL('/static/libs/prism-1.30.0/prism-tomorrow.min.css');
             }
         } else {
             if (lightIcon) lightIcon.style.display = 'block';
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use light theme for syntax highlighting
             const prismTheme = document.getElementById('prism-theme');
             if (prismTheme) {
-                prismTheme.href = '/static/libs/prism-1.30.0/prism.min.css';
+                prismTheme.href = wikiURL('/static/libs/prism-1.30.0/prism.min.css');
             }
         }
 

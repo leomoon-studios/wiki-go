@@ -157,7 +157,7 @@ async function handleFileUpload(e) {
         uploadBtn.textContent = 'Uploading...';
         uploadBtn.disabled = true;
 
-        const response = await fetch('/api/files/upload', {
+        const response = await fetch(wikiURL('/api/files/upload'), {
             method: 'POST',
             body: formData
         });
@@ -194,7 +194,7 @@ async function handleFileUpload(e) {
 async function loadAndHighlightFilesTab() {
     // Load files from API
     const docPath = getCurrentDocPath();
-    const response = await fetch(`/api/files/list/${docPath}`);
+    const response = await fetch(wikiURL(`/api/files/list/${docPath}`));
     const data = await response.json();
     const files = data.files || [];
 

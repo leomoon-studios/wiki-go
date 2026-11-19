@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const staticDir = path.join(__dirname, '../internal/resources/static/js');
 const utilitiesSource = fs.readFileSync(path.join(staticDir, 'utilities.js'), 'utf8');
 const searchSource = fs.readFileSync(path.join(staticDir, 'search.js'), 'utf8');
+const basePathSource = fs.readFileSync(path.join(staticDir, 'base-path.js'), 'utf8');
 
 class Element {
     constructor(tagName = 'div') {
@@ -36,7 +37,7 @@ class TextNode {
     constructor(text) { this.textContent = String(text); }
 }
 
-function setup(pageMode, fetch) {
+function setup(pageMode, fetch, basePath = '') {
     const selectors = new Map();
     for (const selector of ['.search-box', '.search-form']) {
         selectors.set(selector, new Element());
@@ -48,6 +49,7 @@ function setup(pageMode, fetch) {
     }
     const documentHandlers = {};
     const windowHandlers = {};
+    selectors.set('meta[name="wiki-base-path"]', {content: basePath});
     const document = {
         querySelector: selector => selectors.get(selector) || null,
         createElement: tag => new Element(tag),
@@ -55,7 +57,7 @@ function setup(pageMode, fetch) {
         createDocumentFragment: () => new Element('fragment'),
         addEventListener: (name, handler) => { documentHandlers[name] = handler; },
     };
-    const initial = pageMode ? 'https://wiki.example/?search=old' : 'https://wiki.example/docs/start';
+    const initial = 'https://wiki.example' + basePath + (pageMode ? '/?search=old' : '/docs/start');
     const location = {origin: 'https://wiki.example'};
     const setLocation = target => {
         const url = new URL(target, location.origin);
@@ -76,6 +78,9 @@ function setup(pageMode, fetch) {
     const context = {window, document, fetch, URL, URLSearchParams, AbortController, console,
         setTimeout: callback => { timers.push(callback); return timers.length - 1; },
         clearTimeout: id => { timers[id] = null; }};
+    vm.runInNewContext(basePathSource, context, {filename: 'base-path.js'});
+    context.wikiURL = window.wikiURL;
+    context.wikiPathname = window.wikiPathname;
     vm.runInNewContext(utilitiesSource, context, {filename: 'utilities.js'});
     context.WikiDOM = window.WikiDOM;
     vm.runInNewContext(searchSource, context, {filename: 'search.js'});
@@ -192,4 +197,31 @@ test('typing on the results page updates URL and ignores older responses', async
     assert.equal(new URL(app.location.href).searchParams.get('search'), 'second');
     assert.equal(app.historyCalls.length, 2);
     assert.equal(new URL(pending[2].target, app.location.origin).searchParams.get('q'), 'second');
+});
+
+test('search under a base path keeps navigation, requests, and result links inside it', async () => {
+    const requests = [];
+    const app = setup(false, async target => {
+        requests.push(target);
+        return {ok: true, json: async () => []};
+    }, '/wiki');
+    const box = app.get('.search-box');
+    box.value = 'notes';
+    box.dispatch('input', {target: box});
+    app.runTimers();
+    assert.equal(app.location.pathname, '/wiki/');
+    assert.equal(new URL(app.location.href).searchParams.get('search'), 'notes');
+
+    const page = setup(true, async target => {
+        requests.push(target);
+        return {ok: true, json: async () => [{title: 'Guide', path: '/docs/guide', excerpt: 'safe'}]};
+    }, '/wiki');
+    const input = page.get('#search-page-query');
+    input.value = 'guide';
+    page.get('.search-page-form').dispatch('submit', {preventDefault() {}});
+    await flush();
+    assert.equal(page.location.pathname, '/wiki/');
+    assert.equal(new URL(requests.at(-1), page.location.origin).pathname, '/wiki/api/search');
+    const result = page.get('.search-page-results').childNodes[0].childNodes[0].childNodes[0];
+    assert.equal(result.href, '/wiki/docs/guide');
 });

@@ -86,8 +86,8 @@
         const version = getVersion();
         
         try {
-            await loadScript('/static/libs/prism-1.30.0/prism.min.js');
-            await loadScript(`/static/js/prism-init.js?=${version}`);
+            await loadScript(wikiURL('/static/libs/prism-1.30.0/prism.min.js'));
+            await loadScript(wikiURL(`/static/js/prism-init.js?=${version}`));
             loadedLibraries.prism = true;
             console.log('Prism loaded successfully');
             
@@ -110,8 +110,8 @@
         const version = getVersion();
         
         try {
-            await loadScript(`/static/js/mathjax-init.js?=${version}`);
-            await loadScript('/static/libs/mathjax-3.2.2/tex-mml-chtml.js');
+            await loadScript(wikiURL(`/static/js/mathjax-init.js?=${version}`));
+            await loadScript(wikiURL('/static/libs/mathjax-3.2.2/tex-mml-chtml.js'));
             loadedLibraries.mathjax = true;
             console.log('MathJax loaded successfully');
             
@@ -131,8 +131,8 @@
         const version = getVersion();
         
         try {
-            await loadScript('/static/libs/mermaid-11.12.1/mermaid.min.js');
-            await loadScript(`/static/js/mermaid-init.js?=${version}`);
+            await loadScript(wikiURL('/static/libs/mermaid-11.12.1/mermaid.min.js'));
+            await loadScript(wikiURL(`/static/js/mermaid-init.js?=${version}`));
             loadedLibraries.mermaid = true;
             console.log('Mermaid loaded successfully');
             

@@ -132,7 +132,7 @@ func getTemplate() (*template.Template, error) {
 		}
 
 		// Load template from embedded resources with our function map
-		templateCache, templateErr = resources.LoadTemplates(funcMap)
+		templateCache, templateErr = resources.LoadTemplates(withURLFuncs(funcMap))
 	})
 
 	return templateCache, templateErr

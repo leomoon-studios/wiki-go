@@ -12,7 +12,7 @@ function ensureCMThemeLink() {
 
 function updateCodeMirrorTheme(theme) {
     ensureCMThemeLink().href =
-        (theme === 'dark' ? '/static/css/cm-dark.css' : '/static/css/cm-light.css');
+        wikiURL(theme === 'dark' ? '/static/css/cm-dark.css' : '/static/css/cm-light.css');
 }
 
 // Initialize theme on load

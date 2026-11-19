@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"strings"
 
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 )
 
 // publicOrigin validates the configured external origin without consulting request headers.
 func publicOrigin(raw string) (string, error) {
 	base, err := url.Parse(raw)
-	if err != nil || base == nil || (base.Scheme != "http" && base.Scheme != "https") || base.Hostname() == "" || base.User != nil || (base.Path != "" && base.Path != "/") || base.RawQuery != "" || base.ForceQuery || base.Fragment != "" || strings.ContainsAny(base.Host, "\\ \t\r\n") {
+	if err != nil || base == nil || (base.Scheme != "http" && base.Scheme != "https") || base.Hostname() == "" || base.User != nil || !isBasePathURLPath(base.Path) || base.RawQuery != "" || base.ForceQuery || base.Fragment != "" || strings.ContainsAny(base.Host, "\\ \t\r\n") {
 		return "", errors.New("invalid public URL")
 	}
 	if port := base.Port(); port != "" {
@@ -23,6 +24,13 @@ func publicOrigin(raw string) (string, error) {
 		}
 	}
 	return base.Scheme + "://" + base.Host, nil
+}
+
+// isBasePathURLPath reports whether a public URL path names the wiki root:
+// empty, "/", or the configured base path with or without a trailing slash.
+func isBasePathURLPath(path string) bool {
+	path = strings.TrimSuffix(path, "/")
+	return path == "" || path == basepath.Get()
 }
 
 // requestPublicOrigin uses the configured origin, or derives it from this request.

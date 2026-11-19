@@ -56,7 +56,7 @@
             newDocButton.addEventListener('click', async function() {
                 try {
                     // Check if user is authenticated
-                    const authResponse = await fetch('/api/check-auth');
+                    const authResponse = await fetch(wikiURL('/api/check-auth'));
                     if (authResponse.status === 401) {
                         // Show login dialog
                         window.Auth.showLoginDialog(() => {
@@ -132,7 +132,7 @@
                 const fullPath = path ? `${path}/${slug}` : slug;
 
                 try {
-                    const response = await fetch('/api/document/create', {
+                    const response = await fetch(wikiURL('/api/document/create'), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -147,7 +147,7 @@
                     if (response.ok) {
                         const result = await response.json();
                         // Redirect to the new document
-                        window.location.href = result.url;
+                        window.location.href = wikiURL(result.url);
                     } else {
                         const errorData = await response.json().catch(() => null);
                         if (errorData && errorData.message) {
@@ -202,7 +202,7 @@
         newDocForm.reset();
 
         // Pre-populate path with current path - make new doc a child of current doc
-        const currentPath = window.location.pathname;
+        const currentPath = wikiPathname();
         if (currentPath && currentPath !== '/') {
             // Remove leading and trailing slashes
             let path = currentPath.replace(/^\/|\/$/g, '');
@@ -241,7 +241,7 @@
     // Handle document deletion
     async function handleDocumentDeletion() {
         try {
-            const isHomepage = window.location.pathname === '/';
+            const isHomepage = wikiPathname() === '/';
 
             // Don't allow deleting the homepage
             if (isHomepage) {
@@ -250,9 +250,9 @@
                 return;
             }
 
-            const apiPath = `/api/document${window.location.pathname}`;
+            const apiPath = `/api/document${wikiPathname()}`;
 
-            const response = await fetch(apiPath, {
+            const response = await fetch(wikiURL(apiPath), {
                 method: 'DELETE',
             });
 
@@ -263,11 +263,11 @@
 
             // Handle successful deletion
             // Redirect to parent directory
-            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const pathParts = wikiPathname().split('/').filter(Boolean);
             pathParts.pop(); // Remove the last part (document name)
             const parentPath = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
 
-            window.location.href = parentPath;
+            window.location.href = wikiURL(parentPath);
         } catch (error) {
             console.error('Error deleting document:', error);
             alert(error.message || 'Failed to delete document');
@@ -280,7 +280,7 @@
     // Fetch folders at a specific level
     async function fetchFoldersAtLevel(basePath = '') {
         try {
-            const response = await fetch('/api/documents/list');
+            const response = await fetch(wikiURL('/api/documents/list'));
             if (!response.ok) throw new Error('Failed to fetch documents');
             
             const data = await response.json();

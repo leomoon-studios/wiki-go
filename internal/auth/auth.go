@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/crypto"
 	"wiki-go/internal/logger"
@@ -139,7 +140,7 @@ func CreateSession(w http.ResponseWriter, username string, role string, groups [
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    token,
-		Path:     "/",
+		Path:     basepath.CookiePath(),
 		HttpOnly: true,
 		Secure:   !cfg.Server.AllowInsecureCookies,
 		SameSite: http.SameSiteLaxMode,
@@ -150,7 +151,7 @@ func CreateSession(w http.ResponseWriter, username string, role string, groups [
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_user",
 		Value:    username,
-		Path:     "/",
+		Path:     basepath.CookiePath(),
 		HttpOnly: false,
 		Secure:   !cfg.Server.AllowInsecureCookies,
 		SameSite: http.SameSiteLaxMode,
@@ -227,7 +228,7 @@ func ClearSessionCookies(w http.ResponseWriter, cfg *config.Config) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
-		Path:     "/",
+		Path:     basepath.CookiePath(),
 		HttpOnly: true,
 		Secure:   !cfg.Server.AllowInsecureCookies,
 		SameSite: http.SameSiteLaxMode,
@@ -237,7 +238,7 @@ func ClearSessionCookies(w http.ResponseWriter, cfg *config.Config) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_user",
 		Value:    "",
-		Path:     "/",
+		Path:     basepath.CookiePath(),
 		HttpOnly: false,
 		Secure:   !cfg.Server.AllowInsecureCookies,
 		SameSite: http.SameSiteLaxMode,

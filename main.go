@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"wiki-go/internal/auth"
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/config"
 	"wiki-go/internal/goldext"
 	"wiki-go/internal/handlers"
@@ -40,6 +41,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("Error loading config: %v", err)
 	}
+
+	// Serve the wiki from server.base_path (for example /wiki) when configured.
+	basepath.Set(cfg.Server.BasePath)
 
 	// Propagate wiki timezone to the goldext shortcode renderer so that
 	// :::stats recent=N::: formats edit times in the configured zone
@@ -74,6 +78,9 @@ func main() {
 
 	// Start the server
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	if cfg.Server.BasePath != "" {
+		logger.Info("Serving wiki under base path %s/", cfg.Server.BasePath)
+	}
 	if cfg.Server.SSL && cfg.Server.SSLCert != "" && cfg.Server.SSLKey != "" {
 		logger.Info("HTTPS server starting on %s...", addr)
 		if err := http.ListenAndServeTLS(addr, cfg.Server.SSLCert, cfg.Server.SSLKey, nil); err != nil {

@@ -51,7 +51,7 @@
         async function updatePage(query, historyMode) {
             cancelPending();
             const current = sequence;
-            const destination = urlFor('/', query, 'search');
+            const destination = wikiURL(urlFor('/', query, 'search'));
             if (historyMode && destination !== window.location.pathname + window.location.search) {
                 window.history[historyMode](null, '', destination);
             }
@@ -65,7 +65,7 @@
             }
             request = new AbortController();
             try {
-                const response = await fetch(urlFor('/api/search', query), {signal: request.signal});
+                const response = await fetch(wikiURL(urlFor('/api/search', query)), {signal: request.signal});
                 if (!response.ok) throw new Error('Search failed');
                 const matches = await response.json();
                 if (current === sequence) renderResults(results, matches, query);
@@ -85,7 +85,7 @@
             }
             timer = setTimeout(function() {
                 if (page) updatePage(query, 'replaceState');
-                else if (query.trim()) window.location.assign(urlFor('/', query, 'search'));
+                else if (query.trim()) window.location.assign(wikiURL(urlFor('/', query, 'search')));
             }, 300);
         }
 

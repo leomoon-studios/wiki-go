@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"wiki-go/internal/basepath"
 	"wiki-go/internal/types"
 )
 
@@ -68,6 +69,7 @@ func TestNavItemsArrowMarkup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpl, err := template.New("nav-items.html").Funcs(template.FuncMap{
 				"dict": templateDict,
+				"url":  basepath.URL,
 			}).ParseFS(templateFiles, "templates/nav-items.html")
 			if err != nil {
 				t.Fatalf("parse nav-items template: %v", err)

@@ -6,8 +6,10 @@ const vm = require('node:vm');
 
 const scriptPath = path.join(__dirname, '../internal/resources/static/js/login.js');
 const loginScript = fs.readFileSync(scriptPath, 'utf8');
+const basePathPath = path.join(__dirname, '../internal/resources/static/js/base-path.js');
+const basePathScript = fs.readFileSync(basePathPath, 'utf8');
 
-async function submitLogin(search) {
+async function submitLogin(search, basePath = '') {
     let submit;
     const button = {textContent: 'Login', disabled: false};
     const form = {
@@ -22,6 +24,7 @@ async function submitLogin(search) {
         keepLoggedIn: {checked: false},
     };
     const document = {
+        querySelector: selector => selector === 'meta[name="wiki-base-path"]' ? {content: basePath} : null,
         getElementById: id => elements[id],
         addEventListener: (event, handler) => { if (event === 'DOMContentLoaded') handler(); },
     };
@@ -29,11 +32,14 @@ async function submitLogin(search) {
     let fetchCalls = 0;
     const fetch = async (url, options) => {
         fetchCalls++;
-        assert.equal(url, '/api/login');
+        assert.equal(url, basePath + '/api/login');
         assert.equal(options.method, 'POST');
         return {ok: true};
     };
-    vm.runInNewContext(loginScript, {document, window, fetch, URL, URLSearchParams, console}, {filename: scriptPath});
+    const context = {document, window, fetch, URL, URLSearchParams, console};
+    vm.runInNewContext(basePathScript, context, {filename: basePathPath});
+    context.wikiURL = window.wikiURL;
+    vm.runInNewContext(loginScript, context, {filename: scriptPath});
     assert.equal(typeof submit, 'function');
     let prevented = false;
     await submit({preventDefault() { prevented = true; }});
@@ -64,4 +70,9 @@ test('successful login stays on the wiki origin', async t => {
             assert.equal(new URL(destination, 'https://wiki.example').origin, 'https://wiki.example');
         });
     }
+});
+
+test('successful login under a base path returns inside the wiki', async () => {
+    assert.equal(await submitLogin('?redirect=%2Ffinance%2Freport', '/wiki'), '/wiki/finance/report');
+    assert.equal(await submitLogin('?redirect=%2F%2Fevil.example', '/wiki'), '/wiki/');
 });

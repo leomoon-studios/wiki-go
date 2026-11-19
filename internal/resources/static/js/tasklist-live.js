@@ -84,7 +84,7 @@
 
       try {
         // 1. Fetch current markdown
-        const srcResp = await fetch(`/api/source/${docPath}`);
+        const srcResp = await fetch(wikiURL(`/api/source/${docPath}`));
         if (!srcResp.ok) throw new Error('source fetch failed');
         const markdown = await srcResp.text();
 
@@ -109,7 +109,7 @@
         if (cbIndex > currentIdx) throw new Error('checkbox index exceeds markdown task list count');
 
         // 3. Save updated markdown
-        const saveResp = await fetch(`/api/save/${docPath}`, {
+        const saveResp = await fetch(wikiURL(`/api/save/${docPath}`), {
           method: 'POST',
           headers: { 'Content-Type': 'text/markdown' },
           body: updatedLines.join('\n'),

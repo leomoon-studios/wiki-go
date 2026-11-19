@@ -59,7 +59,13 @@ global.window = {
 global.document = {
     createElement: tagName => new FakeElement(tagName),
     createTextNode: value => new FakeTextNode(value),
+    querySelector: () => null,
 };
+
+const basePathScript = path.join(__dirname, '..', 'internal', 'resources', 'static', 'js', 'base-path.js');
+vm.runInThisContext(fs.readFileSync(basePathScript, 'utf8'), {filename: basePathScript});
+global.wikiURL = window.wikiURL;
+global.wikiPathname = window.wikiPathname;
 
 const utilitiesPath = path.join(__dirname, '..', 'internal', 'resources', 'static', 'js', 'utilities.js');
 vm.runInThisContext(fs.readFileSync(utilitiesPath, 'utf8'), {filename: utilitiesPath});

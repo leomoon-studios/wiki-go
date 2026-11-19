@@ -72,7 +72,7 @@ func TestChapterLinksStateLoadsBeforeStylesheets(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := string(baseTemplate)
-	stateScript := `<script src="/static/js/chapter-links-state.js?={{getVersion}}"></script>`
+	stateScript := `<script src="{{basePath}}/static/js/chapter-links-state.js?={{getVersion}}"></script>`
 	scriptIndex := strings.Index(base, stateScript)
 	stylesheetIndex := strings.Index(base, `<link rel="stylesheet"`)
 	if scriptIndex < 0 {

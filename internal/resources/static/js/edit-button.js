@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         editPageButton.addEventListener('click', async function() {
             // Check authentication first
             try {
-                const authResponse = await fetch('/api/check-auth');
+                const authResponse = await fetch(wikiURL('/api/check-auth'));
                 if (authResponse.status === 401) {
                     // Show login dialog
                     if (window.Auth && window.Auth.showLoginDialog) {

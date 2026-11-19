@@ -40,7 +40,7 @@
             submitButton.textContent = 'Logging in...';
 
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch(wikiURL('/api/login'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -55,7 +55,7 @@
                 if (response.ok) {
                     const params = new URLSearchParams(window.location.search);
                     const destination = params.get('redirect');
-                    window.location.href = safeLoginDestination(destination);
+                    window.location.href = wikiURL(safeLoginDestination(destination));
                     return;
                 }
 
