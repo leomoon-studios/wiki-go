@@ -183,8 +183,8 @@ func handleFaviconRequest(w http.ResponseWriter, r *http.Request, cfg *config.Co
 
 // SetupRoutes configures all routes for the application
 func SetupRoutes(cfg *config.Config) {
-	// Create a new ServeMux to apply middleware to all routes
-	mux := http.NewServeMux()
+	// Route public URLs before removing the base path for application handlers.
+	mux := newWikiMux()
 
 	// Role-based middleware
 	adminMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
@@ -504,9 +504,9 @@ func SetupRoutes(cfg *config.Config) {
 	// Apply middleware to all routes
 	handler := CSPMiddleware(mux)
 
-	// Set the handler for the default ServeMux. Requests are routed without the
-	// configured base path so every handler sees wiki-relative paths.
-	http.Handle("/", basepath.Middleware(handler))
+	// wikiMux removes the base path only after routing, so automatic redirects
+	// include the base path while application handlers see wiki-relative paths.
+	http.Handle("/", handler)
 }
 
 // applyManifestBasePath points the web app manifest's start URL, scope, and

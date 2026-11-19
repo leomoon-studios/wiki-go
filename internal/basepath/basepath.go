@@ -1,7 +1,7 @@
 // Package basepath lets the wiki be served from a URL subdirectory such as
 // https://example.com/wiki/ instead of the root of a host.
 //
-// Requests arrive with the base path and have it removed before routing, so
+// Requests arrive with the base path and have it removed after routing, so
 // handlers, access rules, document paths, and API payloads keep using
 // wiki-relative paths like /docs/page. Every URL sent to the browser (pages,
 // rendered Markdown, redirects, cookies, sitemaps) has the base path added.
@@ -78,7 +78,9 @@ func CookiePath() string {
 	return "/"
 }
 
-// Middleware removes the base path from incoming requests before routing.
+// Middleware removes the base path from incoming requests before application
+// handlers run. Routes must be registered with the base path so the router's
+// automatic redirects retain it.
 // Requests outside the base path receive 404, except "/" which redirects to the
 // wiki so the server remains reachable when accessed directly.
 func Middleware(next http.Handler) http.Handler {

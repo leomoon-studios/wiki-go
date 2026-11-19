@@ -34,6 +34,41 @@ func serveBasePath(target string, cookies ...*http.Cookie) *httptest.ResponseRec
 	return recorder
 }
 
+func TestBasePathAutomaticRedirects(t *testing.T) {
+	for _, base := range []string{"", "/wiki", "/docs/wiki-go", "/sitemap"} {
+		t.Run("base="+base, func(t *testing.T) {
+			previous := basepath.Get()
+			basepath.Set(base)
+			t.Cleanup(func() { basepath.Set(previous) })
+			newRouteSecurityTestConfig(t)
+
+			for _, path := range []string{"/sitemap", "/static", "/api/versions", "/%73itemap"} {
+				for _, method := range []string{http.MethodGet, http.MethodHead, http.MethodPost} {
+					t.Run(method+path, func(t *testing.T) {
+						const query = "?q=one%20two&next=%2Fguide"
+						target := base + path + query
+						request := httptest.NewRequest(method, target, nil)
+						response := httptest.NewRecorder()
+						http.DefaultServeMux.ServeHTTP(response, request)
+						if response.Code != http.StatusTemporaryRedirect {
+							t.Fatalf("%s: status = %d, want %d", target, response.Code, http.StatusTemporaryRedirect)
+						}
+						want := base + path + "/" + query
+						if got := response.Header().Get("Location"); got != want {
+							t.Fatalf("%s: Location = %q, want %q", target, got, want)
+						}
+					})
+				}
+			}
+
+			response := serveBasePath(base + "/sitemap/")
+			if response.Code != http.StatusOK {
+				t.Fatalf("sitemap after redirect: status = %d; body: %s", response.Code, response.Body.String())
+			}
+		})
+	}
+}
+
 func TestBasePathServesPagesAssetsAndLinks(t *testing.T) {
 	cfg := newBasePathTestConfig(t)
 	doc := filepath.Join(cfg.Wiki.RootDir, "documents", "guide", "document.md")
