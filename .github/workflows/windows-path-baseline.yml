@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - codex/windows-path-step1-*
+      - codex/windows-path-step2-*
 
 permissions:
   contents: read
 
 jobs:
   baseline:
+    if: startsWith(github.ref, 'refs/heads/codex/windows-path-step1-')
     name: Baseline (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -47,3 +49,35 @@ jobs:
           path: |
             controls.log
             regressions.log
+
+  resolver:
+    if: startsWith(github.ref, 'refs/heads/codex/windows-path-step2-')
+    name: Path identity (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GOFLAGS: -mod=vendor
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Capture platform context
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+      - name: Validate path identities and existing path controls
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./internal/utils -count=1 -v -run '^(TestWindowsDocumentIdentity.*|TestDocumentIdentity.*|TestCanonicalRequestPath|TestResolve.*DocumentPath.*)$' 2>&1 | tee resolver.log
+      - name: Preserve path identity validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-path-step2-${{ matrix.os }}
+          path: resolver.log
