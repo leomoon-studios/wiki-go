@@ -1,0 +1,49 @@
+name: Windows path authorization baseline
+
+on:
+  push:
+    branches:
+      - codex/windows-path-step1-*
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Baseline (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GOFLAGS: -mod=vendor
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Capture platform and filesystem context
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+      - name: Run passing controls
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./internal/auth ./internal/handlers -count=1 -v -run '^(TestFinanceAccessControls|TestFinanceDisclosureControls|TestFinanceDistinctCaseSensitivePaths)$' 2>&1 | tee controls.log
+      - name: Capture unfixed authorization regressions
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./internal/auth ./internal/handlers -count=1 -v -run '^(TestWindowsFinance.*|TestFinanceNestedAttachmentDenied)$' 2>&1 | tee regressions.log
+      - name: Preserve baseline evidence, including expected Windows failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-path-baseline-${{ matrix.os }}
+          path: |
+            controls.log
+            regressions.log
