@@ -966,24 +966,23 @@ func ListDocumentsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Co
 			// Format the path for use in URLs
 			relPath = strings.ReplaceAll(relPath, "\\", "/")
 
-			// Get the document title from the markdown file
-			title := extractTitleFromMarkdown(path)
-			if title == "" {
-				// If no title found, use the parent directory name
-				title = filepath.Base(docDir)
-			}
-
-			// For regular documents, we want to remove the documents/ prefix
-			// since it's not part of the visible URL
-			if strings.HasPrefix(relPath, cfg.Wiki.DocumentsDir) {
-				relPath = strings.TrimPrefix(relPath, cfg.Wiki.DocumentsDir)
-				// Remove any leading slash that might remain
-				relPath = strings.TrimPrefix(relPath, "/")
-			}
-			logicalPath, pathErr := logicalDocumentPath(relPath)
-			if pathErr != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+			relative, err := filepath.Rel(documentsPath, docDir)
+			if err != nil {
 				return nil
 			}
+			document, allowed, err := auth.ResolveDocumentAccess("/"+filepath.ToSlash(relative), session, cfg)
+			if err != nil || !allowed {
+				return nil
+			}
+			filename, err := documentContentPath(document)
+			if err != nil {
+				return nil
+			}
+			title := extractTitleFromMarkdown(filename)
+			if title == "" {
+				title = filepath.Base(document.FilesystemPath)
+			}
+			relPath = strings.TrimPrefix(document.LogicalPath, "/")
 
 			// Add to documents list
 			documents = append(documents, Document{

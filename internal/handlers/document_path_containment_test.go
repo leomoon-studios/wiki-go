@@ -124,6 +124,16 @@ func TestResolveVersionDocumentPathsPreservesDocumentsAndHomepageRoots(t *testin
 	testConfig := &config.Config{}
 	testConfig.Wiki.RootDir = t.TempDir()
 	testConfig.Wiki.DocumentsDir = "documents"
+	for _, relative := range []string{"documents/finance/reports", "pages/home"} {
+		if err := os.MkdirAll(filepath.Join(testConfig.Wiki.RootDir, filepath.FromSlash(relative)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root, err := filepath.EvalSymlinks(testConfig.Wiki.RootDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testConfig.Wiki.RootDir = root
 
 	document, err := resolveVersionDocumentPaths(testConfig, "documents/finance/reports")
 	if err != nil {

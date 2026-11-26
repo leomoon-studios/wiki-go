@@ -7,6 +7,7 @@ on:
       - codex/windows-path-step2-*
       - codex/windows-path-step3-*
       - codex/windows-path-step4-*
+      - codex/windows-path-step5-*
 
 permissions:
   contents: read
@@ -147,3 +148,35 @@ jobs:
         with:
           name: windows-path-step4-${{ matrix.os }}
           path: attachments.log
+
+  document-apis:
+    if: startsWith(github.ref, 'refs/heads/codex/windows-path-step5-')
+    name: Document APIs (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GOFLAGS: -mod=vendor
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Capture platform context
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+      - name: Validate document APIs and prior security controls
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./internal/auth ./internal/comments ./internal/utils ./internal/handlers ./internal/routes -count=1 -v 2>&1 | tee document-apis.log
+      - name: Preserve document API validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-path-step5-${{ matrix.os }}
+          path: document-apis.log

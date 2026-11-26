@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	urlpath "path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -63,6 +65,10 @@ func VersionsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
 
 	// Get the document path (everything after "/api/versions/")
 	docPath := pathParts[1]
+	if _, err := utils.CanonicalDocumentRequestPath(docPath); err != nil {
+		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
+		return
+	}
 
 	// If docPath is empty, return an error
 	if docPath == "" {
@@ -112,11 +118,22 @@ func VersionsHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
 		// Remove timestamp from the docPath to get the document path
 		docPath = strings.TrimSuffix(docPath, "/"+timestamp)
 
-		// Fetch the version content
+		if r.Method == http.MethodDelete {
+			handleDeleteVersion(w, r, cfg, docPath, timestamp)
+			return
+		}
+		if r.Method != http.MethodGet {
+			sendJSONErrorVersion(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		handleGetVersion(w, r, cfg, docPath, timestamp)
 		return
 	}
 
+	if r.Method != http.MethodGet {
+		sendJSONErrorVersion(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	// If we're here, it's a request to list versions
 	handleListVersions(w, r, cfg, docPath)
 }
@@ -168,9 +185,12 @@ func handleListVersions(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 
 		// Only add valid timestamp files (14 digits: yyyymmddhhmmss)
 		if len(timestamp) == 14 && utils.IsNumeric(timestamp) {
+			if _, err := versionFilePath(cfg, resolved.logicalPath, timestamp); err != nil {
+				continue
+			}
 			versions = append(versions, VersionInfo{
 				Timestamp: timestamp,
-				Path:      filepath.Join(docPath, timestamp),
+				Path:      urlpath.Join(docPath, timestamp),
 			})
 		}
 	}
@@ -200,7 +220,11 @@ func handleGetVersion(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		sendJSONErrorVersion(w, "Document access denied", http.StatusForbidden)
 		return
 	}
-	versionPath := filepath.Join(resolved.versionsDir, timestamp+".md")
+	versionPath, err := versionFilePath(cfg, resolved.logicalPath, timestamp)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid version file", http.StatusBadRequest)
+		return
+	}
 
 	// Check if version file exists
 	if _, err := os.Stat(versionPath); os.IsNotExist(err) {
@@ -231,6 +255,11 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 		sendJSONErrorVersion(w, "Method not allowed. Use POST to restore a version.", http.StatusMethodNotAllowed)
 		return
 	}
+	session := auth.GetSession(r)
+	if session == nil || (session.Role != config.RoleAdmin && session.Role != config.RoleEditor) {
+		sendJSONErrorVersion(w, "Editor access required", http.StatusUnauthorized)
+		return
+	}
 	resolved, err := resolveVersionDocumentPaths(cfg, docPath)
 	if err != nil {
 		sendJSONErrorVersion(w, "Invalid document path", http.StatusBadRequest)
@@ -252,14 +281,22 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 
 	logger.Debug("Restore request: docPath=%s, timestamp=%s", docPath, timestamp)
 
-	versionFilePath := filepath.Join(resolved.versionsDir, timestamp+".md")
-	documentPath := filepath.Join(resolved.documentDir, "document.md")
+	versionFilename, err := versionFilePath(cfg, resolved.logicalPath, timestamp)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid version file", http.StatusBadRequest)
+		return
+	}
+	documentPath, err := documentContentPath(utils.ResolvedDocumentPath{LogicalPath: resolved.logicalPath, FilesystemPath: resolved.documentDir})
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid document file", http.StatusBadRequest)
+		return
+	}
 
-	logger.Debug("Version file path: %s", versionFilePath)
+	logger.Debug("Version file path: %s", versionFilename)
 	logger.Debug("Document path for restore: %s", documentPath)
 
 	// Check if version file exists
-	if _, err := os.Stat(versionFilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(versionFilename); os.IsNotExist(err) {
 		sendJSONErrorVersion(w, "Version not found", http.StatusNotFound)
 		return
 	}
@@ -273,7 +310,7 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 	}
 
 	// Read the version file content
-	versionContent, err := os.ReadFile(versionFilePath)
+	versionContent, err := os.ReadFile(versionFilename)
 	if err != nil {
 		logger.Error("Error reading version file: %v", err)
 		sendJSONErrorVersion(w, "Failed to read version file", http.StatusInternalServerError)
@@ -291,7 +328,11 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 			// Ensure versions directory exists
 			if err := os.MkdirAll(resolved.versionsDir, 0755); err == nil {
 				// Create version file path with timestamp
-				newVersionPath := filepath.Join(resolved.versionsDir, newTimestamp+".md")
+				newVersionPath, pathErr := versionFilePath(cfg, resolved.logicalPath, newTimestamp)
+				if pathErr != nil {
+					sendJSONErrorVersion(w, "Invalid version backup", http.StatusBadRequest)
+					return
+				}
 
 				// Save the current content as a version
 				_ = os.WriteFile(newVersionPath, currentContent, 0644) // Ignore error for now
@@ -316,7 +357,6 @@ func handleVersionRestore(w http.ResponseWriter, r *http.Request, cfg *config.Co
 		// Continue anyway, not critical
 	}
 
-	session := auth.GetSession(r)
 	user := "unknown"
 	if session != nil {
 		user = session.Username
@@ -340,41 +380,50 @@ type resolvedVersionPaths struct {
 }
 
 func resolveVersionDocumentPaths(cfg *config.Config, documentPath string) (resolvedVersionPaths, error) {
-	initial, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, documentPath)
+	document, err := resolveAPIDocument(cfg, documentPath, nil, false, true)
 	if err != nil {
 		return resolvedVersionPaths{}, err
 	}
-	storagePath := strings.TrimPrefix(initial.LogicalPath, "/")
-	if storagePath == "pages/home" {
-		documentDir, err := filepath.Abs(filepath.Join(cfg.Wiki.RootDir, "pages", "home"))
-		if err != nil {
-			return resolvedVersionPaths{}, err
-		}
-		versionsDir, err := filepath.Abs(filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home"))
-		if err != nil {
-			return resolvedVersionPaths{}, err
-		}
-		return resolvedVersionPaths{
-			logicalPath: "/",
-			apiPath:     "pages/home",
-			documentDir: documentDir,
-			versionsDir: versionsDir,
-		}, nil
+	versions, err := metadataPath(cfg, "versions", document.LogicalPath)
+	if err != nil {
+		return resolvedVersionPaths{}, err
 	}
+	apiPath := strings.TrimPrefix(document.LogicalPath, "/")
+	if document.LogicalPath == "/" {
+		apiPath = "pages/home"
+	}
+	return resolvedVersionPaths{document.LogicalPath, apiPath, document.FilesystemPath, versions}, nil
+}
 
-	storagePath = strings.TrimPrefix(storagePath, "documents/")
-	document, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, storagePath)
-	if err != nil {
-		return resolvedVersionPaths{}, err
+func versionFilePath(cfg *config.Config, logical, timestamp string) (string, error) {
+	if len(timestamp) != 14 || !utils.IsNumeric(timestamp) {
+		return "", fmt.Errorf("invalid timestamp")
 	}
-	versions, err := utils.ResolveRelativeDocumentPath(filepath.Join(cfg.Wiki.RootDir, "versions"), "documents", storagePath)
-	if err != nil {
-		return resolvedVersionPaths{}, err
+	return utils.ResolveStoragePath(cfg.Wiki.RootDir, "versions/"+versionStorageName(logical)+"/"+timestamp+".md")
+}
+
+func handleDeleteVersion(w http.ResponseWriter, r *http.Request, cfg *config.Config, docPath, timestamp string) {
+	session := auth.GetSession(r)
+	if session == nil || (session.Role != config.RoleAdmin && session.Role != config.RoleEditor) {
+		sendJSONErrorVersion(w, "Editor access required", http.StatusUnauthorized)
+		return
 	}
-	return resolvedVersionPaths{
-		logicalPath: document.LogicalPath,
-		apiPath:     strings.TrimPrefix(document.LogicalPath, "/"),
-		documentDir: document.FilesystemPath,
-		versionsDir: versions.FilesystemPath,
-	}, nil
+	document, ok := requireAPIDocument(w, cfg, docPath, session, false, true)
+	if !ok {
+		return
+	}
+	filename, err := versionFilePath(cfg, document.LogicalPath, timestamp)
+	if err != nil {
+		sendJSONErrorVersion(w, "Invalid version file", http.StatusBadRequest)
+		return
+	}
+	if err := os.Remove(filename); err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, os.ErrNotExist) {
+			status = http.StatusNotFound
+		}
+		sendJSONErrorVersion(w, "Failed to delete version", status)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }

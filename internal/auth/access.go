@@ -27,6 +27,9 @@ func ResolveDocumentAccess(path string, session *Session, cfg *config.Config) (u
 	if err != nil {
 		return utils.ResolvedDocumentPath{}, false, err
 	}
+	if err := validateDocumentContentIdentity(resolved); err != nil {
+		return utils.ResolvedDocumentPath{}, false, err
+	}
 	return resolved, canAccessIdentity(resolved.LogicalPath, session, cfg), nil
 }
 
@@ -34,8 +37,42 @@ func ResolveDocumentAccess(path string, session *Session, cfg *config.Config) (u
 // existing parent without treating failed lookups as unrestricted documents.
 // Mutation handlers must additionally enforce their role and parent policies.
 func CanCreateDocument(path string, session *Session, cfg *config.Config) bool {
+	_, allowed, err := ResolveDocumentCreationAccess(path, session, cfg)
+	return err == nil && allowed
+}
+
+// ResolveDocumentCreationAccess returns the identity of a creation destination
+// alongside its access decision, so writers do not reconstruct the input path.
+func ResolveDocumentCreationAccess(path string, session *Session, cfg *config.Config) (utils.ResolvedDocumentPath, bool, error) {
 	resolved, err := resolveAccessIdentity(path, cfg, true)
-	return err == nil && canAccessIdentity(resolved.LogicalPath, session, cfg)
+	if err != nil {
+		return utils.ResolvedDocumentPath{}, false, err
+	}
+	if err := validateDocumentContentIdentity(resolved); err != nil {
+		return utils.ResolvedDocumentPath{}, false, err
+	}
+	return resolved, canAccessIdentity(resolved.LogicalPath, session, cfg), nil
+}
+
+func validateDocumentContentIdentity(document utils.ResolvedDocumentPath) error {
+	filename := filepath.Join(document.FilesystemPath, "document.md")
+	if _, err := os.Lstat(filename); errors.Is(err, os.ErrNotExist) {
+		return nil // A category or a new destination need not have document.md.
+	} else if err != nil {
+		return err
+	}
+	file, err := utils.ResolveExistingDocumentPath(document.FilesystemPath, ".", "document.md")
+	if err != nil {
+		return err
+	}
+	same := file.FilesystemPath == filename
+	if runtime.GOOS == "windows" {
+		same = strings.EqualFold(file.FilesystemPath, filename)
+	}
+	if !same {
+		return fmt.Errorf("document file changes its owning identity")
+	}
+	return nil
 }
 
 func resolveAccessIdentity(path string, cfg *config.Config, destination bool) (utils.ResolvedDocumentPath, error) {
