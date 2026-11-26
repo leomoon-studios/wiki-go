@@ -183,7 +183,7 @@ func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		return
 	}
 	targetParentPath := path.Dir(target.LogicalPath)
-	if !canAccessLogicalDocument(session, cfg, targetParentPath) || !canAccessLogicalDocument(session, cfg, target.LogicalPath) {
+	if !auth.CanCreateDocument(targetParentPath, session, cfg) || !auth.CanCreateDocument(target.LogicalPath, session, cfg) {
 		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
 		return
 	}

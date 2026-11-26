@@ -5,6 +5,7 @@ on:
     branches:
       - codex/windows-path-step1-*
       - codex/windows-path-step2-*
+      - codex/windows-path-step3-*
 
 permissions:
   contents: read
@@ -81,3 +82,35 @@ jobs:
         with:
           name: windows-path-step2-${{ matrix.os }}
           path: resolver.log
+
+  pages:
+    if: startsWith(github.ref, 'refs/heads/codex/windows-path-step3-')
+    name: Page authorization (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GOFLAGS: -mod=vendor
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Capture platform context
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+      - name: Validate page authorization and route controls
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./internal/auth ./internal/handlers ./internal/routes -count=1 -v -run '^(TestDocumentAccess.*|TestFinance.*|TestWindowsFinance.*|TestPageIdentity.*|TestWindowsPageIdentity.*|TestCheckAccess.*|TestPageRoute.*|TestBasePath.*|TestRootSearchRoute|TestRestrictedDocumentAccess.*|TestPageHandlerDoesNotDisclose.*|TestStatsRespectDocumentAccessAcrossRenderPaths)$' 2>&1 | tee pages.log
+      - name: Preserve page authorization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-path-step3-${{ matrix.os }}
+          path: pages.log

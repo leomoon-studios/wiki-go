@@ -494,8 +494,12 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Check access
-	session := auth.GetSession(r)
-	if !auth.CanAccessDocument("/", session, cfg) {
+	resolved, session, allowed, resolveErr := auth.RequestDocumentAccess(r, cfg)
+	if resolveErr != nil {
+		http.Error(w, "Invalid homepage path", http.StatusBadRequest)
+		return
+	}
+	if !allowed {
 		if session == nil {
 			// Redirect to login if not authenticated
 			http.Redirect(w, r, basepath.URL("/login?redirect="+url.QueryEscape("/")), http.StatusFound)
@@ -543,7 +547,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	utils.MarkActiveNavItem(nav, "/")
 
 	// Get the homepage path from the pages directory
-	homepagePath := filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md")
+	homepagePath := filepath.Join(resolved.FilesystemPath, "document.md")
 
 	// Always read the content from disk on each request to ensure
 	// we display the most up-to-date version

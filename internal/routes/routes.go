@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -473,8 +474,13 @@ func SetupRoutes(cfg *config.Config) {
 			}
 		}
 		// Check if authentication is required
-		session, allowed := auth.CheckAccess(r, cfg)
+		r, session, allowed := auth.PrepareDocumentRequest(r, cfg)
 		if !allowed {
+			_, _, _, resolveErr := auth.RequestDocumentAccess(r, cfg)
+			if errors.Is(resolveErr, os.ErrNotExist) && (!cfg.Wiki.Private || session != nil) {
+				handlers.NotFoundHandler(w, r, cfg)
+				return
+			}
 			// If private and not authenticated, redirect to login page
 			// Preserve original requested path so that we can jump back after login.
 			target := r.URL.RequestURI()

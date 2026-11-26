@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -59,19 +60,23 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	}
 
 	// Get the requested path
-	path, err := utils.CanonicalRequestPath(r.URL.Path)
+	resolved, session, allowed, err := auth.RequestDocumentAccess(r, cfg)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			NotFoundHandler(w, r, cfg)
+			return
+		}
 		http.Error(w, "Invalid path", http.StatusBadRequest)
 		return
 	}
+	path := resolved.LogicalPath
 	if path == "/" {
 		HomeHandler(w, r, cfg)
 		return
 	}
 
 	// Check access
-	session := auth.GetSession(r)
-	if !auth.CanAccessDocument(path, session, cfg) {
+	if !allowed {
 		if session == nil {
 			http.Redirect(w, r, basepath.URL("/login?redirect="+url.QueryEscape(path)), http.StatusFound)
 			return
@@ -95,12 +100,8 @@ func PageHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	// Mark active navigation item
 	utils.MarkActiveNavItem(nav, path)
 
-	// Resolve the same canonical path used for access control below the documents root.
-	fsPath, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
-	if err != nil {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
-		return
-	}
+	// Read the exact filesystem identity used for the access decision.
+	fsPath := resolved.FilesystemPath
 
 	// Check if path exists
 	info, err := os.Stat(fsPath)

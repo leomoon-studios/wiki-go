@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -294,12 +295,38 @@ func RequireAuth(r *http.Request, cfg *config.Config) bool {
 // CheckAccess checks if the user is allowed to access the requested path and
 // returns both the result and the session so callers don't need a second lookup.
 func CheckAccess(r *http.Request, cfg *config.Config) (*Session, bool) {
-	session := GetSession(r)
-	path, err := utils.CanonicalRequestPath(r.URL.Path)
-	if err != nil {
-		return session, false
+	_, session, allowed, _ := RequestDocumentAccess(r, cfg)
+	return session, allowed
+}
+
+type documentRequestKey struct{}
+
+type documentRequestAccess struct {
+	path     string
+	config   *config.Config
+	document utils.ResolvedDocumentPath
+	session  *Session
+	allowed  bool
+	err      error
+}
+
+// PrepareDocumentRequest resolves and authorizes a page once, carrying that
+// identity to the handler so its subsequent reads use the same filesystem path.
+func PrepareDocumentRequest(r *http.Request, cfg *config.Config) (*http.Request, *Session, bool) {
+	document, session, allowed, err := RequestDocumentAccess(r, cfg)
+	state := documentRequestAccess{r.URL.Path, cfg, document, session, allowed, err}
+	return r.WithContext(context.WithValue(r.Context(), documentRequestKey{}, state)), session, allowed
+}
+
+// RequestDocumentAccess uses the route's resolved identity, or resolves and
+// authorizes it directly when a handler is invoked without the route wrapper.
+func RequestDocumentAccess(r *http.Request, cfg *config.Config) (utils.ResolvedDocumentPath, *Session, bool, error) {
+	if state, ok := r.Context().Value(documentRequestKey{}).(documentRequestAccess); ok && state.path == r.URL.Path && state.config == cfg {
+		return state.document, state.session, state.allowed, state.err
 	}
-	return session, CanAccessDocument(path, session, cfg)
+	session := GetSession(r)
+	document, allowed, err := ResolveDocumentAccess(r.URL.Path, session, cfg)
+	return document, session, allowed, err
 }
 
 // RequireRole checks if user has required role or higher
