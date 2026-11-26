@@ -18,6 +18,15 @@ func TestResolveAttachmentPath(t *testing.T) {
 	testConfig := &config.Config{}
 	testConfig.Wiki.RootDir = root
 	testConfig.Wiki.DocumentsDir = "documents"
+	for _, directory := range []string{"documents/finance/reports", "pages/home"} {
+		if err := os.MkdirAll(filepath.Join(root, filepath.FromSlash(directory)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		name        string
@@ -72,6 +81,11 @@ func TestResolveAttachmentPathRejectsEscapingPaths(t *testing.T) {
 	testConfig := &config.Config{}
 	testConfig.Wiki.RootDir = t.TempDir()
 	testConfig.Wiki.DocumentsDir = "documents"
+	for _, directory := range []string{"documents/finance", "pages/home", "pages/other"} {
+		if err := os.MkdirAll(filepath.Join(testConfig.Wiki.RootDir, filepath.FromSlash(directory)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	unsafePaths := []string{
 		"",
@@ -98,6 +112,9 @@ func TestResolveAttachmentRenameDestinationStaysInSourceDirectory(t *testing.T) 
 	testConfig := &config.Config{}
 	testConfig.Wiki.RootDir = t.TempDir()
 	testConfig.Wiki.DocumentsDir = "documents"
+	if err := os.MkdirAll(filepath.Join(testConfig.Wiki.RootDir, "documents", "finance", "reports"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	source, err := resolveAttachmentPath(testConfig, "finance/reports/original.pdf")
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +124,11 @@ func TestResolveAttachmentRenameDestinationStaysInSourceDirectory(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantPath := filepath.Join(testConfig.Wiki.RootDir, "documents", "finance", "reports", "quarterly_report-final.pdf")
+	root, err := filepath.EvalSymlinks(testConfig.Wiki.RootDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPath := filepath.Join(root, "documents", "finance", "reports", "quarterly_report-final.pdf")
 	if destination.filesystemPath != wantPath {
 		t.Fatalf("filesystemPath = %q, want %q", destination.filesystemPath, wantPath)
 	}

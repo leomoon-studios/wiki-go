@@ -4,12 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"mime"
 	"net/http"
 	"os"
+	urlpath "path"
 	"path/filepath"
 	"strings"
 	"wiki-go/internal/auth"
@@ -117,9 +119,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid document path."})
 		return
 	}
-	docPath = destination.storagePath
-	logicalPath, err := logicalDocumentPath(docPath)
-	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+	if !canAccessAttachment(session, cfg, destination) {
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
@@ -128,7 +128,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	uploadDir := destination.filesystemPath
 
 	// Check if directory exists
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+	if info, err := os.Stat(uploadDir); err != nil || !info.IsDir() {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
@@ -216,6 +216,13 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 
 	// Create safe filename - remove any potentially unsafe characters
 	filename := sanitizeFilename(fileHeader.Filename)
+	upload, err := resolveAttachmentFileDestination(destination, filename)
+	if err != nil || !canAccessAttachment(session, cfg, upload) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid attachment destination."})
+		return
+	}
+	filename = filepath.Base(upload.filesystemPath)
 
 	// SVG safety is mandatory even when general upload MIME checking is disabled.
 	if strings.ToLower(filepath.Ext(filename)) == ".svg" {
@@ -242,7 +249,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		}
 
 		// Full path where the file will be saved
-		savePath := filepath.Join(uploadDir, filename)
+		savePath := upload.filesystemPath
 
 		// Write the sanitized SVG directly to the file
 		if err := os.WriteFile(savePath, sanitizedSVG, 0644); err != nil {
@@ -255,7 +262,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		}
 
 		// Create URL path for the file
-		urlPath := filepath.Join("/api/files", docPath, filename)
+		urlPath := urlpath.Join("/api/files", upload.storagePath)
 		// Replace backslashes with forward slashes for URLs
 		urlPath = strings.ReplaceAll(urlPath, "\\", "/")
 
@@ -270,7 +277,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Full path where the file will be saved
-	savePath := filepath.Join(uploadDir, filename)
+	savePath := upload.filesystemPath
 
 	// Create destination file
 	dst, err := os.Create(savePath)
@@ -296,7 +303,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Create URL path for the file
-	urlPath := filepath.Join("/api/files", docPath, filename)
+	urlPath := urlpath.Join("/api/files", upload.storagePath)
 	// Replace backslashes with forward slashes for URLs
 	urlPath = strings.ReplaceAll(urlPath, "\\", "/")
 
@@ -324,65 +331,23 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		return
 	}
 
-	// Get the document path from the URL
-	path := strings.TrimPrefix(r.URL.Path, "/api/files/list")
-
-	// Remove leading slash if present
-	path = strings.TrimPrefix(path, "/")
-
-	// Special case for homepage
-	if path == "" || path == "/" {
-		path = "pages/home"
+	storagePath := strings.TrimPrefix(r.URL.Path, "/api/files/list/")
+	if storagePath == "" || storagePath == "/" {
+		storagePath = "pages/home"
 	}
-
-	// Clean and normalize the path
-	canonicalPath, err := utils.CanonicalRequestPath(path)
+	directory, err := resolveAttachmentDirectory(cfg, storagePath)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid document path."})
 		return
 	}
-	path = strings.TrimPrefix(canonicalPath, "/")
-
-	// Determine logical path for access check
-	logicalPath := "/" + path
-	if path == "pages/home" {
-		logicalPath = "/"
-	} else if strings.HasPrefix(path, "pages/home/") {
-		// Handle potential sub-resources of homepage if any
-		logicalPath = "/" + strings.TrimPrefix(path, "pages/home/")
-	}
-
-	// Check access permissions
 	session := auth.GetSession(r)
-	if !auth.CanAccessDocument(logicalPath, session, cfg) {
+	if !canAccessAttachment(session, cfg, directory) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(FileResponse{
-			Success: false,
-			Message: "Unauthorized. You do not have permission to access files for this document.",
-		})
+		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
 	}
-
-	// Determine the full filesystem path to the document's directory
-	var dirPath string
-	if strings.HasPrefix(path, "pages/") {
-		// For pages directory (like homepage), don't add the documents directory
-		dirPath = filepath.Join(cfg.Wiki.RootDir, path)
-	} else {
-		// For regular documents
-		dirPath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
-	}
-
-	// Check if directory exists
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(FileResponse{
-			Success: false,
-			Message: "Document directory does not exist.",
-		})
-		return
-	}
+	dirPath := directory.filesystemPath
 
 	// Read the directory contents
 	files, err := os.ReadDir(dirPath)
@@ -402,35 +367,26 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 			continue
 		}
 
-		// Skip the document.md file
-		if file.Name() == "document.md" {
+		resolved, err := resolveAttachmentPath(cfg, urlpath.Join(directory.storagePath, file.Name()))
+		if err != nil || !canAccessAttachment(session, cfg, resolved) {
 			continue
 		}
-
-		// Get file extension
-		ext := strings.ToLower(filepath.Ext(file.Name()))
-
-		// Check if it's a valid file type we want to show
-		if !cfg.Wiki.DisableFileUploadChecking && !config.IsAllowedExtension(ext) {
+		filename := filepath.Base(resolved.filesystemPath)
+		ext := strings.ToLower(filepath.Ext(filename))
+		if ext == ".md" || !cfg.Wiki.DisableFileUploadChecking && !config.IsAllowedExtension(ext) {
 			continue
 		}
-
-		// Get file info for size
-		fileInfo, err := file.Info()
-		if err != nil {
-			continue // Skip files with errors
+		fileInfo, err := os.Stat(resolved.filesystemPath)
+		if err != nil || !fileInfo.Mode().IsRegular() {
+			continue
 		}
-
-		// Create URL path for the file
-		urlPath := filepath.Join("/api/files", path, file.Name())
-		// Replace backslashes with forward slashes for URLs
-		urlPath = strings.ReplaceAll(urlPath, "\\", "/")
+		urlPath := urlpath.Join("/api/files", resolved.storagePath)
 
 		// Get the MIME type based on extension
 		fileType := config.GetMimeTypeForExtension(ext)
 
 		filesList = append(filesList, FileInfo{
-			Name: file.Name(),
+			Name: filename,
 			URL:  urlPath,
 			Size: fileInfo.Size(),
 			Type: fileType,
@@ -484,8 +440,7 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
 		return
 	}
-	logicalPath, err := attachmentDocumentPath(resolved.storagePath)
-	if err != nil || !canAccessLogicalDocument(session, cfg, logicalPath) {
+	if !canAccessAttachment(session, cfg, resolved) {
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
 		return
@@ -504,8 +459,13 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		return
 	}
 
+	if err != nil {
+		http.Error(w, "Failed to access attachment", http.StatusInternalServerError)
+		return
+	}
+
 	// Ensure it's not a directory
-	if fileInfo.IsDir() {
+	if !fileInfo.Mode().IsRegular() {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
@@ -515,7 +475,7 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	}
 
 	// Don't allow deleting document.md
-	if filepath.Base(filePath) == "document.md" {
+	if strings.EqualFold(filepath.Base(filePath), "document.md") {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
@@ -551,47 +511,22 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		return
 	}
 
-	// Get the file path from the URL
-	path := strings.TrimPrefix(r.URL.Path, "/api/files/")
-
-	// Remove leading slash if present
-	path = strings.TrimPrefix(path, "/")
-
-	// Clean and normalize the path
-	path = filepath.Clean(path)
-	path = strings.ReplaceAll(path, "\\", "/")
-
-	// Check access permissions
-	// We need to determine the document path from the file path
-	// The path is like "pages/home/image.png" or "finance/doc/image.png"
-	docPath := filepath.Dir(path)
-
-	// Determine logical path for access check
-	logicalPath := "/" + docPath
-	if docPath == "pages/home" {
-		logicalPath = "/"
-	} else if strings.HasPrefix(docPath, "pages/home/") {
-		logicalPath = "/" + strings.TrimPrefix(docPath, "pages/home/")
-	} else if docPath == "." {
-		// Should not happen for valid document attachments, but handle gracefully
-		logicalPath = "/"
+	storagePath := strings.TrimPrefix(r.URL.Path, "/api/files/")
+	resolved, err := resolveAttachmentPath(cfg, storagePath)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, os.ErrNotExist) {
+			status = http.StatusNotFound
+		}
+		http.Error(w, "Invalid attachment path", status)
+		return
 	}
-
 	session := auth.GetSession(r)
-	if !auth.CanAccessDocument(logicalPath, session, cfg) {
+	if !canAccessAttachment(session, cfg, resolved) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	// Determine the full filesystem path to the file
-	var filePath string
-	if strings.HasPrefix(path, "pages/") {
-		// For pages directory (like homepage), don't add the documents directory
-		filePath = filepath.Join(cfg.Wiki.RootDir, path)
-	} else {
-		// For regular documents
-		filePath = filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
-	}
+	filePath := resolved.filesystemPath
 
 	// Check if file exists
 	fileInfo, err := os.Stat(filePath)
@@ -600,8 +535,13 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		return
 	}
 
+	if err != nil {
+		http.Error(w, "Failed to access attachment", http.StatusInternalServerError)
+		return
+	}
+
 	// Ensure it's not a directory
-	if fileInfo.IsDir() {
+	if !fileInfo.Mode().IsRegular() {
 		http.Error(w, "Path is a directory, not a file", http.StatusBadRequest)
 		return
 	}
@@ -622,7 +562,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	}
 
 	// SECURITY CHECK: Block access if path contains ".." to prevent directory traversal
-	if strings.Contains(path, "..") {
+	if strings.Contains(storagePath, "..") {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
@@ -630,44 +570,40 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	// Determine content type based on file extension
 	contentType := config.GetMimeTypeForExtension(ext)
 
-	// Additional security check: Verify content type for certain file types
-	// This helps prevent serving files that have been tampered with after upload
-	if !cfg.Wiki.DisableFileUploadChecking && config.ShouldVerifyContentType(ext[1:]) { // Remove leading dot with ext[1:]
-		// Open the file to check its content
-		f, err := os.Open(filePath)
-		if err == nil {
-			defer f.Close()
-
-			// Read a larger buffer to detect content type
-			buffer := make([]byte, 8192) // Increased buffer size for better detection
-			n, err := f.Read(buffer)
-			if err == nil {
-				buffer = buffer[:n] // Resize to actual read bytes
-
-				// Use enhanced content type detection
-				detectedType, err := detectFileContentType(buffer, filePath)
-				if err == nil {
-					// Verify the content type matches what we expect
-					if !isContentTypeCompatible(detectedType, contentType, buffer, filePath) {
-						// If content doesn't match extension, block access
-						http.Error(w, "File not found", http.StatusNotFound)
-						return
-					}
-				}
-			}
-
-			// Reset file pointer for serving
-			_, err = f.Seek(0, io.SeekStart)
-			if err != nil {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
-				return
-			}
+	// Open the resolved resource once for verification and serving.
+	f, err := os.Open(filePath)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	defer f.Close()
+	fileInfo, err = f.Stat()
+	if err != nil || !fileInfo.Mode().IsRegular() {
+		http.Error(w, "Invalid attachment file", http.StatusBadRequest)
+		return
+	}
+	if !cfg.Wiki.DisableFileUploadChecking && config.ShouldVerifyContentType(ext) {
+		buffer := make([]byte, 8192)
+		n, readErr := f.Read(buffer)
+		if readErr != nil && readErr != io.EOF {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		buffer = buffer[:n]
+		detectedType, err := detectFileContentType(buffer, filePath)
+		if err != nil || !isContentTypeCompatible(detectedType, contentType, buffer, filePath) {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
 		}
 	}
 
 	// For SVG files, add security headers to prevent script execution
 	if ext == ".svg" {
-		svgContent, err := os.ReadFile(filePath)
+		svgContent, err := io.ReadAll(f)
 		if err != nil {
 			http.Error(w, "File not found", http.StatusNotFound)
 			return
@@ -693,7 +629,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	}
 
 	// Serve the file
-	http.ServeFile(w, r, filePath)
+	http.ServeContent(w, r, filepath.Base(filePath), fileInfo.ModTime(), f)
 }
 
 func setSVGResponseHeaders(w http.ResponseWriter, filename string) {
@@ -1163,10 +1099,13 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid file path."})
 		return
 	}
-	sourceLogicalPath, err := attachmentDocumentPath(source.storagePath)
-	if err != nil || !canAccessLogicalDocument(session, cfg, sourceLogicalPath) {
+	if !canAccessAttachment(session, cfg, source) {
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Document access denied."})
+		return
+	}
+	if strings.EqualFold(filepath.Base(source.filesystemPath), "document.md") {
+		http.Error(w, "Cannot rename the document file itself", http.StatusBadRequest)
 		return
 	}
 
@@ -1176,13 +1115,26 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 		json.NewEncoder(w).Encode(FileResponse{Success: false, Message: "Invalid destination filename."})
 		return
 	}
-
+	if !canAccessAttachment(session, cfg, destination) {
+		http.Error(w, "Document access denied", http.StatusForbidden)
+		return
+	}
 	logger.Debug("Resolved rename paths: source=%s, destination=%s", source.filesystemPath, destination.filesystemPath)
 
 	// If the source is missing but the contained destination exists, the same
 	// rename request was already completed.
-	if !fileExists(source.filesystemPath) {
-		if fileExists(destination.filesystemPath) {
+	sourceInfo, sourceErr := os.Stat(source.filesystemPath)
+	destinationInfo, destinationErr := os.Stat(destination.filesystemPath)
+	if sourceErr != nil && !errors.Is(sourceErr, os.ErrNotExist) || destinationErr != nil && !errors.Is(destinationErr, os.ErrNotExist) {
+		http.Error(w, "Failed to access attachment", http.StatusInternalServerError)
+		return
+	}
+	if sourceErr == nil && !sourceInfo.Mode().IsRegular() {
+		http.Error(w, "Attachment is not a regular file", http.StatusBadRequest)
+		return
+	}
+	if errors.Is(sourceErr, os.ErrNotExist) {
+		if destinationErr == nil && destinationInfo.Mode().IsRegular() {
 			// The file with the new name already exists, likely was already renamed
 			logger.Debug("File already appears to have been renamed to: %s", destination.storagePath)
 			w.WriteHeader(http.StatusOK)
@@ -1208,7 +1160,7 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 	logger.Debug("Renaming file: %s -> %s", source.filesystemPath, destination.filesystemPath)
 
 	// Check if target already exists
-	if _, err := os.Stat(destination.filesystemPath); err == nil {
+	if destinationErr == nil {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(FileResponse{
 			Success: false,
@@ -1247,7 +1199,7 @@ func RenameFileHandler(w http.ResponseWriter, r *http.Request, cfg *config.Confi
 // Helper function to check if a file exists
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
+	if err != nil {
 		return false
 	}
 	return !info.IsDir()
@@ -1256,7 +1208,7 @@ func fileExists(path string) bool {
 // Helper function to check if a directory exists
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
+	if err != nil {
 		return false
 	}
 	return info.IsDir()

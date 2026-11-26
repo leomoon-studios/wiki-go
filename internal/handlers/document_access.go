@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"path/filepath"
+	"path"
 	"strings"
 
 	"wiki-go/internal/auth"
@@ -25,11 +25,15 @@ func logicalDocumentPath(storedPath string) (string, error) {
 }
 
 func attachmentDocumentPath(attachmentPath string) (string, error) {
-	canonical, err := utils.CanonicalRequestPath(attachmentPath)
+	canonical, err := utils.CanonicalDocumentRequestPath(attachmentPath)
 	if err != nil {
 		return "", err
 	}
-	return logicalDocumentPath(filepath.ToSlash(filepath.Dir(canonical)))
+	components := strings.Split(strings.TrimPrefix(canonical, "/"), "/")
+	if len(components) >= 3 && equalAttachmentComponent(components[0], "pages") && equalAttachmentComponent(components[1], "home") {
+		return "/", nil
+	}
+	return logicalDocumentPath(path.Dir(canonical))
 }
 
 func canAccessLogicalDocument(rSession *auth.Session, cfg *config.Config, logicalPath string) bool {
