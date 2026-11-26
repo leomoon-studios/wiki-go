@@ -94,8 +94,12 @@ func TestDocumentAccessRuleSemantics(t *testing.T) {
 func TestDocumentAccessHomepageIdentity(t *testing.T) {
 	cfg := financeAccessConfig(t)
 	// The built-in homepage is valid even before its default file is created.
+	rootIdentity, err := filepath.EvalSymlinks(cfg.Wiki.RootDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	resolved, allowed, err := ResolveDocumentAccess("/", nil, cfg)
-	if err != nil || !allowed || resolved.LogicalPath != "/" || resolved.FilesystemPath != filepath.Join(cfg.Wiki.RootDir, "pages", "home") {
+	if err != nil || !allowed || resolved.LogicalPath != "/" || resolved.FilesystemPath != filepath.Join(rootIdentity, "pages", "home") {
 		t.Fatalf("default homepage = %+v, %v, %v", resolved, allowed, err)
 	}
 	for _, dir := range []string{filepath.Join("pages", "home"), filepath.Join(cfg.Wiki.DocumentsDir, "pages", "home")} {
