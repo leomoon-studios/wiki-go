@@ -97,6 +97,9 @@ func TestCommentHandlersSupportDocumentsAndHomepage(t *testing.T) {
 func TestCommentHandlersDenyRestrictedDocumentsBeforeFilesystemAccess(t *testing.T) {
 	testConfig := installUserSessionTestConfig(t, nil)
 	testConfig.Wiki.DocumentsDir = "documents"
+	if err := os.MkdirAll(filepath.Join(testConfig.Wiki.RootDir, "documents", "finance", "budget"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	testConfig.AccessRules = []config.AccessRule{{
 		Pattern: "/finance/**",
 		Access:  "restricted",
@@ -234,6 +237,7 @@ func TestDeleteCommentHandlerRejectsReportedTraversalPayloads(t *testing.T) {
 func TestDeleteCommentRouteRequiresAdministrator(t *testing.T) {
 	testConfig := installUserSessionTestConfig(t, nil)
 	testConfig.Wiki.DocumentsDir = "documents"
+	writeCommentTestDocument(t, filepath.Join(testConfig.Wiki.RootDir, "documents", "guides", "start", "document.md"))
 	viewerCookie := sessionCookieForUser(t, testConfig, "viewer", config.RoleViewer)
 	editorCookie := sessionCookieForUser(t, testConfig, "editor", config.RoleEditor)
 	adminCookie := sessionCookieForUser(t, testConfig, "admin", config.RoleAdmin)

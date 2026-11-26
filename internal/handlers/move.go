@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"wiki-go/internal/auth"
 	"wiki-go/internal/config"
@@ -30,281 +32,143 @@ type MoveResponse struct {
 
 // MoveDocumentHandler handles requests to move or rename a document or category
 func MoveDocumentHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
-	// Set JSON content type header
 	w.Header().Set("Content-Type", "application/json")
-
-	// Only process POST requests
 	if r.Method != http.MethodPost {
 		sendJSONResponse(w, false, "Method not allowed", http.StatusMethodNotAllowed, "", "")
 		return
 	}
-
-	// Check authentication
 	session := auth.GetSession(r)
-	if session == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Unauthorized. Admin or editor access required.",
-		})
+	if session == nil || (session.Role != config.RoleAdmin && session.Role != config.RoleEditor) {
+		sendJSONResponse(w, false, "Editor access required", http.StatusUnauthorized, "", "")
 		return
 	}
-
-	// Parse the request body
-	var moveReq MoveRequest
-	err := json.NewDecoder(r.Body).Decode(&moveReq)
-	if err != nil {
-		sendJSONResponse(w, false, "Invalid request format", http.StatusBadRequest, "", "")
+	var request MoveRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil || request.SourcePath == "" || request.TargetPath == "" && request.NewSlug == "" {
+		sendJSONResponse(w, false, "Invalid move request", http.StatusBadRequest, "", "")
 		return
 	}
-
-	// Validate request
-	if moveReq.SourcePath == "" {
-		sendJSONResponse(w, false, "Source path is required", http.StatusBadRequest, "", "")
+	source, ok := requireAPIDocument(w, cfg, request.SourcePath, session, false, true)
+	if !ok {
 		return
 	}
-
-	// Resolve paths before authorization or filesystem access.
-	source, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, moveReq.SourcePath)
-	if err != nil {
-		sendJSONResponse(w, false, "Invalid source path", http.StatusBadRequest, "", "")
+	if source.LogicalPath == "/" {
+		sendJSONResponse(w, false, "Cannot move homepage", http.StatusBadRequest, "", "")
 		return
 	}
-	if !canAccessLogicalDocument(session, cfg, source.LogicalPath) {
-		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
-		return
+	if request.NewSlug != "" {
+		canonical, err := utils.CanonicalDocumentRequestPath(request.NewSlug)
+		if err != nil || canonical != "/"+request.NewSlug || strings.ContainsAny(request.NewSlug, "/\\") || request.NewSlug == "." || request.NewSlug == ".." {
+			sendJSONResponse(w, false, "Invalid new slug", http.StatusBadRequest, "", "")
+			return
+		}
 	}
-	moveReq.SourcePath = strings.TrimPrefix(source.LogicalPath, "/")
-	if moveReq.TargetPath != "" {
-		target, targetErr := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, moveReq.TargetPath)
-		if targetErr != nil {
+	parent := path.Dir(source.LogicalPath)
+	if request.TargetPath != "" {
+		// A move targets the documents storage root, not the logical homepage.
+		canonical, err := utils.CanonicalDocumentRequestPath(request.TargetPath)
+		if err != nil {
 			sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
 			return
 		}
-		moveReq.TargetPath = strings.TrimPrefix(target.LogicalPath, "/")
+		if canonical == "/" {
+			parent = "/"
+		} else {
+			targetParent, ok := requireAPIDocument(w, cfg, request.TargetPath, session, true, true)
+			if !ok {
+				return
+			}
+			if targetParent.LogicalPath == "/" {
+				sendJSONResponse(w, false, "Cannot move into homepage", http.StatusBadRequest, "", "")
+				return
+			}
+			parent = targetParent.LogicalPath
+		}
 	}
-
-	// If target path is empty, set it to root
-	if moveReq.TargetPath == "" && moveReq.NewSlug == "" {
-		sendJSONResponse(w, false, "Either target path or new slug must be provided", http.StatusBadRequest, "", "")
+	name := path.Base(source.LogicalPath)
+	if request.NewSlug != "" {
+		name = request.NewSlug
+	}
+	newLogical := path.Join(parent, name)
+	target, ok := requireAPIDocument(w, cfg, newLogical, session, true, false)
+	if !ok {
 		return
 	}
-
-	// Prevent moving the homepage
-	if moveReq.SourcePath == "" || moveReq.SourcePath == "/" ||
-		moveReq.SourcePath == "pages/home" || strings.EqualFold(moveReq.SourcePath, "pages/home") ||
-		strings.HasSuffix(moveReq.SourcePath, "/homepage") {
-		sendJSONResponse(w, false, "Cannot move or rename the home page", http.StatusBadRequest, "", "")
+	fullTarget := target.FilesystemPath
+	// Windows resolves an existing case-only destination to the source spelling.
+	// Use the validated new component when renaming case in the same directory.
+	if runtime.GOOS == "windows" && fullTarget == source.FilesystemPath && request.NewSlug != "" && name != filepath.Base(source.FilesystemPath) && strings.EqualFold(name, filepath.Base(source.FilesystemPath)) {
+		fullTarget = filepath.Join(filepath.Dir(source.FilesystemPath), name)
+		newLogical = path.Join(path.Dir(source.LogicalPath), name)
+	} else {
+		newLogical = target.LogicalPath
+	}
+	if fullTarget == source.FilesystemPath {
+		sendJSONResponse(w, false, "Source and target are the same", http.StatusBadRequest, "", "")
 		return
 	}
-
-	// Also prevent setting the target path to the homepage
-	if moveReq.TargetPath == "pages/home" || strings.EqualFold(moveReq.TargetPath, "pages/home") {
-		sendJSONResponse(w, false, "Cannot move or rename to the home page location", http.StatusBadRequest, "", "")
+	caseRename := runtime.GOOS == "windows" && strings.EqualFold(source.FilesystemPath, fullTarget)
+	relative, err := filepath.Rel(source.FilesystemPath, fullTarget)
+	if err != nil || !caseRename && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
+		sendJSONResponse(w, false, "Cannot move into a descendant", http.StatusBadRequest, "", "")
 		return
 	}
-
-	// Determine if this is a rename or move operation
-	isRename := moveReq.NewSlug != ""
-
-	// Check if this is a move to root operation
-	moveToRoot := false
-	sourceBase := path.Base(moveReq.SourcePath)
-	sourceDir := path.Dir(moveReq.SourcePath)
-
-	// If we're moving to the root (empty target path) and the source is not already at the root
-	if moveReq.TargetPath == "" && sourceDir != "." {
-		moveToRoot = true
-		logger.Debug("Detected move to root operation: %s -> %s", moveReq.SourcePath, moveReq.NewSlug)
+	if err := authorizeDocumentTree(cfg, session, source.ResolvedDocumentPath, newLogical); err != nil {
+		sendJSONResponse(w, false, "Document subtree access denied", http.StatusForbidden, "", "")
+		return
 	}
-
-	// Determine if this is a move operation
-	isMove := moveReq.TargetPath != "" || moveToRoot
-
-	logger.Debug("Operation analysis: sourceBase=%s, sourceDir=%s, moveToRoot=%v",
-		sourceBase, sourceDir, moveToRoot)
-
-	fullSourcePath := source.FilesystemPath
-
-	// Check if source exists
-	_, err = os.Stat(fullSourcePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			sendJSONResponse(w, false, "Source document or category not found", http.StatusNotFound, "", "")
+	if !caseRename {
+		if entries, err := os.ReadDir(fullTarget); err == nil && len(entries) > 0 {
+			sendJSONResponse(w, false, "Target directory is not empty", http.StatusConflict, "", "")
+			return
+		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+			sendJSONResponse(w, false, "Invalid target directory", http.StatusBadRequest, "", "")
 			return
 		}
-		sendJSONResponse(w, false, "Error accessing source: "+err.Error(), http.StatusInternalServerError, "", "")
-		return
 	}
-
-	// Determine the target path based on operation type
-	var fullTargetPath string
-	var newPath string
-
-	// Log the request details for debugging
-	logger.Debug("Move request: SourcePath=%s, TargetPath=%s, NewSlug=%s", moveReq.SourcePath, moveReq.TargetPath, moveReq.NewSlug)
-	logger.Debug("Operation type: isRename=%v, isMove=%v", isRename, isMove)
-
-	if isRename && !isMove {
-		// Rename operation (change slug only)
-		parentDir := path.Dir(moveReq.SourcePath)
-		if parentDir == "." {
-			parentDir = "" // Root directory
+	type storageMove struct{ source, target string }
+	var metadata []storageMove
+	for _, namespace := range []string{"versions", "comments"} {
+		from, err := metadataPath(cfg, namespace, source.LogicalPath)
+		if err != nil {
+			sendJSONResponse(w, false, "Invalid metadata source", http.StatusBadRequest, "", "")
+			return
 		}
-		newPath = path.Join(parentDir, moveReq.NewSlug)
-	} else if isMove && !isRename {
-		// Move operation (change path only)
-		sourceName := path.Base(moveReq.SourcePath)
-
-		// Special case for moving to root
-		if moveReq.TargetPath == "" {
-			newPath = sourceName
-		} else {
-			newPath = path.Join(moveReq.TargetPath, sourceName)
+		to, err := metadataPath(cfg, namespace, newLogical)
+		if err != nil {
+			sendJSONResponse(w, false, "Invalid metadata destination", http.StatusBadRequest, "", "")
+			return
 		}
-	} else if isMove && isRename {
-		// Both move and rename
-
-		// Special case for moving to root
-		if moveReq.TargetPath == "" {
-			newPath = moveReq.NewSlug
-		} else {
-			newPath = path.Join(moveReq.TargetPath, moveReq.NewSlug)
-		}
-	} else {
-		// This case should not happen due to earlier validation
-		sendJSONResponse(w, false, "Either new slug or target path must be provided", http.StatusBadRequest, "", "")
-		return
-	}
-
-	target, err := utils.ResolveRelativeDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, newPath)
-	if err != nil {
-		sendJSONResponse(w, false, "Invalid target path", http.StatusBadRequest, "", "")
-		return
-	}
-	targetParentPath := path.Dir(target.LogicalPath)
-	if !auth.CanCreateDocument(targetParentPath, session, cfg) || !auth.CanCreateDocument(target.LogicalPath, session, cfg) {
-		sendJSONResponse(w, false, "Document access denied", http.StatusForbidden, "", "")
-		return
-	}
-	newPath = strings.TrimPrefix(target.LogicalPath, "/")
-	fullTargetPath = target.FilesystemPath
-
-	// Log the calculated paths
-	logger.Debug("Calculated paths: newPath=%s, fullTargetPath=%s", newPath, fullTargetPath)
-
-	// Check if target already exists, but only if it's not the same as the source
-	// We need to check if the document.md file exists at the target path
-	targetDocPath := filepath.Join(fullTargetPath, "document.md")
-
-	// Skip the check if the target is the same as the source (just in a different location)
-	// This allows moving a document to the root with the same name
-	if fullTargetPath != fullSourcePath {
-		if _, err := os.Stat(targetDocPath); err == nil {
-			// Check if this is a case-only rename (e.g., "test" to "Test")
-			sourceBaseLower := strings.ToLower(path.Base(moveReq.SourcePath))
-			targetBaseLower := strings.ToLower(moveReq.NewSlug)
-
-			// If it's not a case-only rename, then it's a conflict
-			if sourceBaseLower != targetBaseLower || filepath.Dir(fullSourcePath) == filepath.Dir(fullTargetPath) {
-				sendJSONResponse(w, false, "A document already exists at the target location", http.StatusConflict, "", "")
+		if from != to {
+			if _, err := os.Stat(to); err == nil {
+				sendJSONResponse(w, false, "Target metadata already exists", http.StatusConflict, "", "")
+				return
+			} else if !errors.Is(err, os.ErrNotExist) {
+				sendJSONResponse(w, false, "Invalid target metadata", http.StatusBadRequest, "", "")
 				return
 			}
+			metadata = append(metadata, storageMove{from, to})
 		}
-
-		// Also check if the directory itself exists and is not empty
-		if info, err := os.Stat(fullTargetPath); err == nil && info.IsDir() {
-			// Check if the directory is empty
-			entries, err := os.ReadDir(fullTargetPath)
-			if err == nil && len(entries) > 0 {
-				sendJSONResponse(w, false, "Target directory already exists and is not empty", http.StatusConflict, "", "")
-				return
+	}
+	if err := os.MkdirAll(filepath.Dir(fullTarget), 0755); err != nil {
+		sendJSONResponse(w, false, "Failed to create target parent", http.StatusInternalServerError, "", "")
+		return
+	}
+	if err := os.Rename(source.FilesystemPath, fullTarget); err != nil {
+		sendJSONResponse(w, false, "Failed to move document", http.StatusInternalServerError, "", "")
+		return
+	}
+	for _, move := range metadata {
+		if _, err := os.Stat(move.source); err == nil {
+			if err := os.MkdirAll(filepath.Dir(move.target), 0755); err != nil {
+				logger.Warn("Failed to create metadata parent: %v", err)
+				continue
+			}
+			if err := os.Rename(move.source, move.target); err != nil {
+				logger.Warn("Failed to move metadata: %v", err)
 			}
 		}
 	}
-
-	// Create target directory if it doesn't exist
-	targetDir := filepath.Dir(fullTargetPath)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		sendJSONResponse(w, false, "Failed to create target directory: "+err.Error(), http.StatusInternalServerError, "", "")
-		return
-	}
-
-	// Check if source and target are the same
-	if fullSourcePath == fullTargetPath {
-		logger.Warn("Source and target paths are the same, aborting move")
-		sendJSONResponse(w, false, "Source and target paths are the same", http.StatusBadRequest, "", "")
-		return
-	}
-
-	// Move the document or category
-	if err := os.Rename(fullSourcePath, fullTargetPath); err != nil {
-		logger.Error("Error moving document: %v", err)
-		sendJSONResponse(w, false, "Failed to move: "+err.Error(), http.StatusInternalServerError, "", "")
-		return
-	}
-
-	logger.Info("User %s moved %s -> %s", session.Username,
-		filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, moveReq.SourcePath),
-		filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, newPath))
-
-	// Handle versions directory
-	var versionsSourcePath, versionsTargetPath string
-
-	if moveReq.SourcePath == "pages/home" {
-		// For homepage, use the new paths
-		versionsSourcePath = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home")
-	} else if strings.HasPrefix(moveReq.SourcePath, "documents/") {
-		// Source path already includes "documents/" prefix
-		versionsSourcePath = filepath.Join(cfg.Wiki.RootDir, "versions", moveReq.SourcePath)
-	} else {
-		// Add "documents/" prefix for regular documents
-		versionsSourcePath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", moveReq.SourcePath)
-	}
-
-	if newPath == "pages/home" {
-		// For homepage, use the new paths
-		versionsTargetPath = filepath.Join(cfg.Wiki.RootDir, "versions", "pages", "home")
-	} else if strings.HasPrefix(newPath, "documents/") {
-		// Target path already includes "documents/" prefix
-		versionsTargetPath = filepath.Join(cfg.Wiki.RootDir, "versions", newPath)
-	} else {
-		// Add "documents/" prefix for regular documents
-		versionsTargetPath = filepath.Join(cfg.Wiki.RootDir, "versions", "documents", newPath)
-	}
-
-	// Check if versions directory exists
-	if _, err := os.Stat(versionsSourcePath); err == nil {
-		// Create parent directory for versions if needed
-		if err := os.MkdirAll(filepath.Dir(versionsTargetPath), 0755); err != nil {
-			logger.Warn("Failed to create versions target directory: %v", err)
-		} else {
-			// Move versions directory
-			if err := os.Rename(versionsSourcePath, versionsTargetPath); err != nil {
-				logger.Warn("Failed to move versions directory: %v", err)
-			}
-		}
-	}
-
-	// Handle comments directory
-	commentsSourcePath := filepath.Join(cfg.Wiki.RootDir, "comments", moveReq.SourcePath)
-	commentsTargetPath := filepath.Join(cfg.Wiki.RootDir, "comments", newPath)
-
-	// Check if comments directory exists
-	if _, err := os.Stat(commentsSourcePath); err == nil {
-		// Create parent directory for comments if needed
-		if err := os.MkdirAll(filepath.Dir(commentsTargetPath), 0755); err != nil {
-			logger.Warn("Failed to create comments target directory: %v", err)
-		} else {
-			// Move comments directory
-			if err := os.Rename(commentsSourcePath, commentsTargetPath); err != nil {
-				logger.Warn("Failed to move comments directory: %v", err)
-			}
-		}
-	}
-
-	// Return success response with both old and new paths
-	sendJSONResponse(w, true, "Document moved successfully", http.StatusOK, newPath, moveReq.SourcePath)
+	sendJSONResponse(w, true, "Document moved successfully", http.StatusOK, strings.TrimPrefix(newLogical, "/"), strings.TrimPrefix(source.LogicalPath, "/"))
 }
 
 // Helper function to send a JSON response

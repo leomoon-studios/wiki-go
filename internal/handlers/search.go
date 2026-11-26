@@ -104,11 +104,16 @@ func performSearch(query string, session *auth.Session, cfg *config.Config) []Se
 			}
 
 			// Skip documents the user cannot access
-			if !auth.CanAccessDocument(urlPath, session, cfg) {
+			document, allowed, err := auth.ResolveDocumentAccess(urlPath, session, cfg)
+			if err != nil || !allowed {
 				return nil
 			}
-
-			content, err := os.ReadFile(path)
+			filename, err := documentContentPath(document)
+			if err != nil {
+				return nil
+			}
+			urlPath = document.LogicalPath
+			content, err := os.ReadFile(filename)
 			if err != nil {
 				return nil
 			}

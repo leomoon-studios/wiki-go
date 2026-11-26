@@ -1,6 +1,6 @@
 //go:build !windows
 
-package utils
+package pathidentity
 
 import "path/filepath"
 

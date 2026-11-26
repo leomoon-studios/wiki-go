@@ -34,24 +34,18 @@ func resolveCommentDocument(rawPath string) (commentDocument, error) {
 	if rawPath == "" {
 		return commentDocument{}, fmt.Errorf("document path is empty")
 	}
-	logicalPath, err := logicalDocumentPath(rawPath)
+	document, err := resolveAPIDocument(cfg, rawPath, nil, false, true)
 	if err != nil {
 		return commentDocument{}, err
 	}
-	if logicalPath == "/" {
-		return commentDocument{
-			logicalPath: logicalPath,
-			filePath:    filepath.Join(cfg.Wiki.RootDir, "pages", "home", "document.md"),
-		}, nil
-	}
-	documentDir, err := utils.ResolveDocumentPath(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, logicalPath)
+	file, err := documentContentPath(document.ResolvedDocumentPath)
 	if err != nil {
 		return commentDocument{}, err
 	}
-	return commentDocument{
-		logicalPath: logicalPath,
-		filePath:    filepath.Join(documentDir, "document.md"),
-	}, nil
+	if _, err := metadataPath(cfg, "comments", document.LogicalPath); err != nil {
+		return commentDocument{}, err
+	}
+	return commentDocument{logicalPath: document.LogicalPath, filePath: file}, nil
 }
 
 func commentsRoot() string {

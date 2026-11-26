@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+	"wiki-go/internal/pathidentity"
 )
 
 type resolvedCommentPath struct {
@@ -46,6 +47,10 @@ func resolveCommentDirectory(commentsRoot, logicalDocumentPath string) (resolved
 		return resolvedCommentPath{}, fmt.Errorf("comment directory escapes comments root")
 	}
 
+	directoryPath, err = pathidentity.ResolveStoragePath(filepath.Dir(rootPath), path.Join(filepath.Base(rootPath), relativeDocumentPath))
+	if err != nil {
+		return resolvedCommentPath{}, err
+	}
 	return resolvedCommentPath{
 		directoryPath: directoryPath,
 		logicalPath:   canonical,
@@ -105,6 +110,14 @@ func resolveCommentFile(commentsRoot, logicalDocumentPath, commentID string) (re
 		return resolvedCommentPath{}, fmt.Errorf("comment file escapes document directory")
 	}
 
+	filePath, err = pathidentity.ResolveStoragePath(filepath.Dir(commentsRoot), path.Join(filepath.Base(commentsRoot), strings.TrimPrefix(resolved.logicalPath, "/"), commentID))
+	if err != nil {
+		return resolvedCommentPath{}, err
+	}
+	filePath, err = pathidentity.ResolveStoragePath(filepath.Dir(commentsRoot), path.Join(filepath.Base(commentsRoot), strings.TrimPrefix(resolved.logicalPath, "/"), commentID))
+	if err != nil {
+		return resolvedCommentPath{}, err
+	}
 	resolved.filePath = filePath
 	resolved.commentID = commentID
 	return resolved, nil

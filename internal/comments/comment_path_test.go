@@ -6,7 +6,7 @@ import (
 )
 
 func TestResolveCommentDirectoryStaysWithinCommentsRoot(t *testing.T) {
-	commentsRoot := filepath.Join(t.TempDir(), "comments")
+	commentsRoot := canonicalCommentTestRoot(t)
 	tests := []struct {
 		name        string
 		document    string
@@ -52,7 +52,7 @@ func TestResolveCommentDirectoryStaysWithinCommentsRoot(t *testing.T) {
 }
 
 func TestResolveCommentDirectoryRejectsUnsafePaths(t *testing.T) {
-	commentsRoot := filepath.Join(t.TempDir(), "comments")
+	commentsRoot := canonicalCommentTestRoot(t)
 	unsafePaths := []string{
 		"",
 		"../outside",
@@ -74,7 +74,7 @@ func TestResolveCommentDirectoryRejectsUnsafePaths(t *testing.T) {
 }
 
 func TestResolveCommentFileRequiresContainedPathAndValidID(t *testing.T) {
-	commentsRoot := filepath.Join(t.TempDir(), "comments")
+	commentsRoot := canonicalCommentTestRoot(t)
 	const validID = "20260921123456_editor-name.md"
 	resolved, err := resolveCommentFile(commentsRoot, "/guides/start", validID)
 	if err != nil {
@@ -139,4 +139,13 @@ func TestIsValidCommentIDMatchesGeneratedFilenameShape(t *testing.T) {
 			t.Errorf("isValidCommentID(%q) = true, want false", commentID)
 		}
 	}
+}
+
+func canonicalCommentTestRoot(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(root, "comments")
 }
