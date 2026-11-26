@@ -12,7 +12,9 @@ func TestChapterLinksPreserveInlineTOCStyles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	markdownCSS := string(markdownStyles)
+	// Windows checkouts can embed CRLF; keep the CSS assertions independent of
+	// checkout line endings without changing the rules being checked.
+	markdownCSS := strings.ReplaceAll(string(markdownStyles), "\r\n", "\n")
 	for _, expected := range []string{
 		"background-color: var(--hover-bg);",
 		`:root[data-theme="dark"] .wiki-toc {
@@ -30,7 +32,7 @@ func TestChapterLinksPreserveInlineTOCStyles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	layoutCSS := string(layoutStyles)
+	layoutCSS := strings.ReplaceAll(string(layoutStyles), "\r\n", "\n")
 	for _, expected := range []string{
 		`width: min(var(--chapter-links-width), 85vw);`,
 		`padding: 20px 0 24px;`,

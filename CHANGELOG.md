@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.9.7](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.7) (2026-11-26)
+
+- security: resolve Windows document and attachment identities before authorization and filesystem access, preventing mixed-case and 8.3 aliases from bypassing access rules and rejecting trailing-dot/space, ADS, and namespace forms. v1.9.6 is confirmed affected; no fixed release version is assigned here. The unreleased correction includes source through `97f522a`.
+- security: carry canonical identities through document, move, history, comment, and links APIs, check creation parents and destructive-operation descendants, and prevent attachment or metadata links from selecting another document's storage. Preserve Linux case-sensitive lookup and rule matching.
+- ci: run the complete Go suite and existing login-redirect, search-UI, and safe-DOM Node tests on Windows and Ubuntu, with live registered-router tests for restricted/public page and attachment requests, authorized mutations, and discovered Windows 8.3 aliases. See [Windows validation scope and release status](SECURITY.md#windows-path-identity-and-release-status).
+
 ## [v1.9.6](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.6) (2026-11-14)
 
 - feat: add secure bookmarkable search and title-prioritized results ([4ffc32a](https://github.com/leomoon-studios/wiki-go/commit/4ffc32a), [158cfc0](https://github.com/leomoon-studios/wiki-go/commit/158cfc0), [4c28162](https://github.com/leomoon-studios/wiki-go/commit/4c28162), [7b274e7](https://github.com/leomoon-studios/wiki-go/commit/7b274e7))

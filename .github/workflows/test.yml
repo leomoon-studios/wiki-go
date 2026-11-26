@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - codex/windows-path-step6-*
 
 permissions:
   contents: read
@@ -15,8 +16,12 @@ concurrency:
 
 jobs:
   test:
-    name: Go tests
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     env:
       GOFLAGS: -mod=vendor
 
@@ -34,14 +39,43 @@ jobs:
         with:
           node-version: 24
 
+      - name: Capture platform context
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+
       - name: Run Go tests
-        run: go test ./...
+        shell: bash
+        run: |
+          set -o pipefail
+          go test ./... -count=1 -v 2>&1 | tee go-tests.log
 
       - name: Test login redirects
-        run: node --test tests/login_redirect_test.js
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/login_redirect_test.js 2>&1 | tee login-redirects.log
 
       - name: Test search UI
-        run: node --test tests/search_ui_test.js
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/search_ui_test.js 2>&1 | tee search-ui.log
 
       - name: Test safe DOM rendering
-        run: node --test tests/xss_dom_test.js
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/xss_dom_test.js 2>&1 | tee safe-dom.log
+
+      - name: Preserve test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ matrix.os }}
+          path: |
+            go-tests.log
+            login-redirects.log
+            search-ui.log
+            safe-dom.log

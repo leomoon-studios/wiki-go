@@ -2,8 +2,10 @@ package goldext
 
 import (
 	"bytes"
+	"html"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -145,7 +147,13 @@ func TestStatsShortcodesEscapeFilesystemDataAndMalformedArguments(t *testing.T) 
 	ConfigureContentPaths(root, "documents")
 	t.Cleanup(func() { ConfigureContentPaths("data", "documents") })
 
-	documentDir := filepath.Join(root, "documents", `bad"><img src=x onerror=alert(1)>`)
+	directoryName := `bad"><img src=x onerror=alert(1)>`
+	if runtime.GOOS == "windows" {
+		// Windows forbids double quotes and angle brackets in filenames. Keep
+		// HTML-sensitive path characters and the malicious document title.
+		directoryName = `bad'&name`
+	}
+	documentDir := filepath.Join(root, "documents", directoryName)
 	if err := os.MkdirAll(documentDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -155,10 +163,13 @@ func TestStatsShortcodesEscapeFilesystemDataAndMalformedArguments(t *testing.T) 
 	}
 
 	input := ":::stats recent=5:::\n\n:::stats count=*:::\n\n:::stats recent=5::: :::stats count=*:::\n\n:::stats count=../private:::\n\n:::stats count=<img src=x onerror=alert(3)>:::\n\nYear :::year:::"
-	got := renderStep5Markdown(t, ShortcodesPreprocessor(input, ""))
+	got := renderStep5MarkdownWithAccess(t, ShortcodesPreprocessor(input, ""), func(string) bool { return true })
 
 	if strings.Count(got, `class="wiki-stats recent-edits"`) != 2 || strings.Count(got, `class="wiki-stats doc-count"`) != 2 {
 		t.Fatalf("valid stats shortcodes did not render: %s", got)
+	}
+	if !strings.Contains(got, html.EscapeString("/"+directoryName)) || !strings.Contains(got, "&lt;img src=x onerror=alert(2)&gt;") {
+		t.Errorf("stats omitted the escaped filesystem path or title: %s", got)
 	}
 	if !strings.Contains(got, strconv.Itoa(time.Now().Year())) {
 		t.Errorf("year shortcode was not replaced with text: %s", got)
@@ -233,13 +244,18 @@ func TestMalformedExtensionSyntaxRemainsInert(t *testing.T) {
 
 func renderStep5Markdown(t *testing.T, input string) string {
 	t.Helper()
+	return renderStep5MarkdownWithAccess(t, input, nil)
+}
+
+func renderStep5MarkdownWithAccess(t *testing.T, input string, canAccess DocumentAccessPredicate) string {
+	t.Helper()
 	markdown := goldmark.New(
 		goldmark.WithExtensions(
 			extension.Table,
 			extension.Strikethrough,
 			extension.Footnote,
 			extension.GFM,
-			TrustedNodes,
+			TrustedNodesForDocumentWithAccess("", canAccess),
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(goldhtml.WithHardWraps()),
