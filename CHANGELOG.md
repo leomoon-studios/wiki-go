@@ -2,9 +2,17 @@
 
 ## [v1.9.7](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.7) (2026-11-26)
 
-- security: resolve Windows document and attachment identities before authorization and filesystem access, preventing mixed-case and 8.3 aliases from bypassing access rules and rejecting trailing-dot/space, ADS, and namespace forms. v1.9.6 is confirmed affected; no fixed release version is assigned here. The unreleased correction includes source through `97f522a`.
-- security: carry canonical identities through document, move, history, comment, and links APIs, check creation parents and destructive-operation descendants, and prevent attachment or metadata links from selecting another document's storage. Preserve Linux case-sensitive lookup and rule matching.
-- ci: run the complete Go suite and existing login-redirect, search-UI, and safe-DOM Node tests on Windows and Ubuntu, with live registered-router tests for restricted/public page and attachment requests, authorized mutations, and discovered Windows 8.3 aliases. See [Windows validation scope and release status](SECURITY.md#windows-path-identity-and-release-status).
+- test: validate Windows path authorization across full suites ([6493579](https://github.com/leomoon-studios/wiki-go/commit/6493579182f923fb3fa06961818c2d0c974e2669))
+- fix: carry document identities through mutation and metadata APIs ([97f522a](https://github.com/leomoon-studios/wiki-go/commit/97f522a014eab9ee0fbc828764fc9f5b373c1827))
+- fix: authorize attachment operations using resolved identities ([52b1340](https://github.com/leomoon-studios/wiki-go/commit/52b1340b2e593e7d8a08311e7998f46de8a33031))
+- fix: authorize page reads using resolved document identities ([662ff2e](https://github.com/leomoon-studios/wiki-go/commit/662ff2e353ffe98022512d819e69688e68fb6992))
+- ci: validate document path identities on Windows and Linux ([b79d2dd](https://github.com/leomoon-studios/wiki-go/commit/b79d2dd314253287ac8e0e81e7118e13837ff7de))
+- fix: resolve Windows junctions through file handles ([0c6dde3](https://github.com/leomoon-studios/wiki-go/commit/0c6dde3e12bb2165c08b3808403f74414541dabb))
+- feat: add filesystem-aware document path resolution ([34696d7](https://github.com/leomoon-studios/wiki-go/commit/34696d7ed07969aa6b182ce6b83e8520e62a5a6b))
+- test: capture Windows path authorization baseline ([db0c9d2](https://github.com/leomoon-studios/wiki-go/commit/db0c9d2f280acb4a37808887bf1d6910f014ad65))
+- Fix base path preservation in automatic redirects ([c70e950](https://github.com/leomoon-studios/wiki-go/commit/c70e95027d94fa922700f86893d3ad09720020e6))
+- Add subdirectory support for hosting wiki-go #122 ([b28224c](https://github.com/leomoon-studios/wiki-go/commit/b28224cb65b628a0028dfcc32dc10831d5ad3b3d))
+- doc: update changelog ([f1f7b0e](https://github.com/leomoon-studios/wiki-go/commit/f1f7b0e60afb2060e7f659c0c66c5edb5cf6189f))
 
 ## [v1.9.6](https://github.com/leomoon-studios/wiki-go/releases/tag/v1.9.6) (2026-11-14)
 
