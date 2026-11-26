@@ -33,6 +33,9 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config)
 		http.Error(w, "Error building navigation: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	nav = utils.FilterNavigation(nav, func(path string) bool {
+		return auth.CanAccessDocument(path, session, cfg)
+	})
 
 	// Requested path and breadcrumbs
 	requestedPath := r.URL.Path

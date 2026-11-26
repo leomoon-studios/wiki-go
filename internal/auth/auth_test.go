@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"wiki-go/internal/config"
@@ -71,6 +72,13 @@ func sessionForCookie(cookie *http.Cookie) *Session {
 
 func TestCheckAccessCanonicalizesBeforeRuleMatching(t *testing.T) {
 	cfg := &config.Config{}
+	cfg.Wiki.RootDir = t.TempDir()
+	cfg.Wiki.DocumentsDir = "documents"
+	for _, directory := range []string{"public", "internal", "finance/report"} {
+		if err := os.MkdirAll(filepath.Join(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, filepath.FromSlash(directory)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	cfg.AccessRules = []config.AccessRule{{
 		Pattern: "/finance/**",
 		Access:  "restricted",

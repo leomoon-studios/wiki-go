@@ -159,7 +159,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		relativePath = "documents/" + strings.TrimPrefix(path, "/")
 		docPath = filepath.Join(resolved.FilesystemPath, "document.md")
 	}
-	if !canAccessLogicalDocument(session, cfg, path) {
+	if !auth.CanCreateDocument(path, session, cfg) {
 		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
 		return
 	}
@@ -303,7 +303,7 @@ func CreateDocumentHandler(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Invalid path after sanitization", http.StatusBadRequest, "")
 		return
 	}
-	if !canAccessLogicalDocument(session, cfg, logicalPath) {
+	if !auth.CanCreateDocument(logicalPath, session, cfg) {
 		sendJSONError(w, "Forbidden", http.StatusForbidden, "Document access denied")
 		return
 	}

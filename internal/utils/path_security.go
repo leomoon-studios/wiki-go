@@ -35,19 +35,26 @@ func ResolveDocumentDestination(rootDir, documentsDir, logicalPath string) (Reso
 	return resolveDocumentIdentity(rootDir, documentsDir, logicalPath, true)
 }
 
-func resolveDocumentIdentity(rootDir, documentsDir, logicalPath string, allowMissing bool) (ResolvedDocumentPath, error) {
+// CanonicalDocumentRequestPath validates URL input using the platform's path
+// rules before cleaning it. It performs no lookup and does not establish a
+// filesystem identity; use a resolver before authorization or file access.
+func CanonicalDocumentRequestPath(logicalPath string) (string, error) {
 	normalized := strings.ReplaceAll(logicalPath, "\\", "/")
 	// Logical paths may start with one URL slash, but never a UNC/device prefix
 	// or a drive-qualified path, including a drive-relative spelling such as C:x.
 	withoutSlash := strings.TrimPrefix(normalized, "/")
 	if strings.HasPrefix(normalized, "//") || len(withoutSlash) >= 2 &&
 		((withoutSlash[0] >= 'A' && withoutSlash[0] <= 'Z') || (withoutSlash[0] >= 'a' && withoutSlash[0] <= 'z')) && withoutSlash[1] == ':' {
-		return ResolvedDocumentPath{}, fmt.Errorf("document path contains a filesystem namespace")
+		return "", fmt.Errorf("document path contains a filesystem namespace")
 	}
 	if err := validateIdentityPath(normalized); err != nil {
-		return ResolvedDocumentPath{}, err
+		return "", err
 	}
-	canonical, err := CanonicalRequestPath(normalized)
+	return CanonicalRequestPath(normalized)
+}
+
+func resolveDocumentIdentity(rootDir, documentsDir, logicalPath string, allowMissing bool) (ResolvedDocumentPath, error) {
+	canonical, err := CanonicalDocumentRequestPath(logicalPath)
 	if err != nil {
 		return ResolvedDocumentPath{}, err
 	}

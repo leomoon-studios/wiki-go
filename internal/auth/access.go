@@ -1,13 +1,76 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
+
 	"wiki-go/internal/config"
+	"wiki-go/internal/utils"
 )
 
-// CanAccessDocument checks if the current session has access to the given document path
+// CanAccessDocument checks an existing document's resolved identity. Invalid or
+// missing paths are denied for every caller, including administrators.
 func CanAccessDocument(path string, session *Session, cfg *config.Config) bool {
+	_, allowed, err := ResolveDocumentAccess(path, session, cfg)
+	return err == nil && allowed
+}
+
+// ResolveDocumentAccess returns the identity used for both authorization and
+// subsequent page reads. Callers must read FilesystemPath, not the input spelling.
+func ResolveDocumentAccess(path string, session *Session, cfg *config.Config) (utils.ResolvedDocumentPath, bool, error) {
+	resolved, err := resolveAccessIdentity(path, cfg, false)
+	if err != nil {
+		return utils.ResolvedDocumentPath{}, false, err
+	}
+	return resolved, canAccessIdentity(resolved.LogicalPath, session, cfg), nil
+}
+
+// CanCreateDocument explicitly authorizes a creation destination, resolving its
+// existing parent without treating failed lookups as unrestricted documents.
+// Mutation handlers must additionally enforce their role and parent policies.
+func CanCreateDocument(path string, session *Session, cfg *config.Config) bool {
+	resolved, err := resolveAccessIdentity(path, cfg, true)
+	return err == nil && canAccessIdentity(resolved.LogicalPath, session, cfg)
+}
+
+func resolveAccessIdentity(path string, cfg *config.Config, destination bool) (utils.ResolvedDocumentPath, error) {
+	if cfg == nil {
+		return utils.ResolvedDocumentPath{}, fmt.Errorf("document configuration is unavailable")
+	}
+	resolver := utils.ResolveExistingDocumentPath
+	if destination {
+		resolver = utils.ResolveDocumentDestination
+	}
+	// Validate before selecting the homepage root, so cleaning cannot discard
+	// a Windows namespace prefix or an invalid component.
+	canonical, err := utils.CanonicalDocumentRequestPath(path)
+	if err != nil {
+		return utils.ResolvedDocumentPath{}, err
+	}
+	if canonical == "/" {
+		resolved, err := resolver(cfg.Wiki.RootDir, filepath.Join("pages", "home"), "/")
+		if errors.Is(err, os.ErrNotExist) {
+			// The homepage has built-in content before its storage directory
+			// exists. Resolve that one deliberate destination from the wiki root;
+			// dangling links and other failures still fail closed.
+			resolved, err = utils.ResolveDocumentDestination(cfg.Wiki.RootDir, ".", "/pages/home")
+			resolved.LogicalPath = "/"
+		}
+		return resolved, err
+	}
+	resolved, err := resolver(cfg.Wiki.RootDir, cfg.Wiki.DocumentsDir, path)
+	if err == nil && resolved.LogicalPath == "/" {
+		return utils.ResolvedDocumentPath{}, fmt.Errorf("document alias resolves to the homepage namespace")
+	}
+	return resolved, err
+}
+
+func canAccessIdentity(path string, session *Session, cfg *config.Config) bool {
 	// Admin always has access
 	if session != nil && session.Role == config.RoleAdmin {
 		return true
@@ -36,6 +99,8 @@ func findMatchingRule(path string, rules []config.AccessRule) *config.AccessRule
 }
 
 func matchPattern(pattern, path string) bool {
+	pattern = strings.ReplaceAll(pattern, "\\", "/")
+	path = strings.ReplaceAll(path, "\\", "/")
 	// Normalize path to ensure it starts with /
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -57,6 +122,9 @@ func matchPattern(pattern, path string) bool {
 
 	// Convert glob to regex
 	var regexBuilder strings.Builder
+	if runtime.GOOS == "windows" {
+		regexBuilder.WriteString("(?i)")
+	}
 	regexBuilder.WriteString("^")
 
 	// We iterate through the pattern
