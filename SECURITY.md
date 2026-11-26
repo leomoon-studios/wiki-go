@@ -176,26 +176,6 @@ Access rules are managed through the **Admin Interface** under **Settings → Ac
 
 Rules are automatically saved to `config.yaml`, manual editing of the config file is not required.
 
-## Windows Path Identity and Release Status
-
-Wiki-Go v1.9.6 is confirmed affected by a Windows path authorization bypass. On the tested Windows filesystem, mixed-case names, discovered 8.3 short names, and trailing-dot aliases could reach restricted content under a different request spelling. Nested attachments were also affected because filesystem separators could reach slash-based access-rule matching. The unfixed development baseline at `c70e950` used the same affected access matcher, attachment handler, and path helpers as v1.9.6. This validation does not establish the earliest affected release.
-
-The correction is in unreleased source through `97f522a`, followed by the full-suite CI and integration coverage in this change. No fixed release version is assigned here. A deployment must contain these fixes; a version label of v1.9.6 by itself does not include them.
-
-On Windows, existing resource names resolve through filesystem handles to their stored long names before authorization. Supported mixed-case and 8.3 aliases share the canonical document's rules, comments, and history. Logical separators normalize to `/`, and Windows access-rule pattern matching is case insensitive. Group membership and rule order retain their existing semantics. Document and attachment reads and mutations use the corresponding resolved filesystem paths. Attachment file aliases cannot change their owning directory, and internal comment/history storage cannot remap to another document's namespace. SVG sanitization, Markdown attachment blocking, MIME checks, and download headers remain enforced.
-
-Windows request validation rejects trailing-dot and trailing-space components, alternate data stream colons, device and UNC namespace forms, reserved device names, invalid filename characters, null bytes, traversal, and residual percent encoding. These checks also apply to administrators. Filesystem identity lookup failures are denied rather than falling back to the request spelling. A configured storage root may be resolved as a deployment path, but URL input cannot select an alternate filesystem namespace.
-
-Linux lookup and access-rule matching retain case-sensitive behavior. Tests create distinct `finance` and `Finance` directories and verify that authorization and mutations remain separate. Validation covers Windows Server 2025 with working 8.3 aliases and Ubuntu 26.04 with case-sensitive fixture directories. It does not establish equivalent protection for macOS or every Linux filesystem configuration, including case-insensitive mounts. Resolution also does not make later filesystem opens or mutations atomic against concurrent replacement by a local process; protect storage from untrusted local modification.
-
-### Native Windows Evidence
-
-The [unfixed baseline run](https://github.com/leomoon-studios/wiki-go/actions/runs/45884552315) recorded document and attachment marker disclosure. The [post-fix API run](https://github.com/leomoon-studios/wiki-go/actions/runs/45896789605) passed the complete auth, comments, utils, handlers, and routes test packages on native Windows and Ubuntu. Windows discovered actual aliases, including `finance-quarterly-2026 -> FINANC~1`, rather than assuming a short name. The tests checked denied requests for marker absence and verified authorized/public reads and mutation behavior.
-
-The [full-suite validation run](https://github.com/leomoon-studios/wiki-go/actions/runs/45898630279) passed `go test ./... -count=1 -v` and all 25 login-redirect, search-UI, and safe-DOM Node tests on Windows Server 2025 and Ubuntu 26.04, using Go 1.27.3 and Node 24.22.3. Windows passed 223 top-level Go tests and Ubuntu passed 212. The live HTTP integration exercised registered routes and real sessions in isolated public/private wikis: canonical and alias requests denied outsiders without marker disclosure, public and authorized reads succeeded, denied mutations preserved content, and member mutations succeeded. Both HTTP fixtures discovered and exercised `finance-quarterly-2026 -> FINANC~1`. No applicable Windows alias test was skipped; the only Windows skip was the Linux-only distinct-case control, which passed on Ubuntu.
-
-Short-name tests call `GetShortPathName` and confirm filesystem identity with `os.SameFile`. They explicitly skip when the fixture has no 8.3 alias, without changing volume settings. A successful cross-compilation or an 8.3 test skip is not runtime evidence of short-name protection. CI preserves verbose Go logs and Node test logs as per-platform artifacts so alias discovery and skips can be inspected.
-
 ## Login Rate Limiting
 
 Wiki-Go includes built-in protection against brute force attacks by temporarily banning IP addresses after multiple failed login attempts.
@@ -325,9 +305,9 @@ Our security practices include:
 7. Safe-by-default Markdown rendering with trusted extension components
 8. Defense-in-depth browser and attachment security policies
 
-## Known Issues
+## Security Advisories
 
-The Windows path authorization bypass confirmed in v1.9.6 is addressed in the unreleased source described above. A fixed release version has not been assigned by this change. Filesystem configurations outside the documented validation scope require separate verification.
+See the project's [GitHub Security Advisories](https://github.com/leomoon-studios/wiki-go/security/advisories) for vulnerability reports, affected versions, and fixes.
 
 ## Security Contact
 
