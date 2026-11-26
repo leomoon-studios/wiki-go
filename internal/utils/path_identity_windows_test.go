@@ -152,6 +152,14 @@ func TestWindowsDocumentIdentityJunctions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create junction: %v: %s", err, output)
 		}
+		junctionInfo, err := os.Stat(junction)
+		if err != nil {
+			t.Fatal(err)
+		}
+		targetInfo, err := os.Stat(link.target)
+		if err != nil || !os.SameFile(junctionInfo, targetInfo) {
+			t.Fatalf("junction does not identify its target: %v", err)
+		}
 		// Remove the junction itself before TempDir cleanup, never its target.
 		t.Cleanup(func() {
 			if err := os.Remove(junction); err != nil {
@@ -160,7 +168,12 @@ func TestWindowsDocumentIdentityJunctions(t *testing.T) {
 		})
 	}
 	for _, resolver := range []func(string, string, string) (ResolvedDocumentPath, error){ResolveExistingDocumentPath, ResolveDocumentDestination} {
-		got, err := resolver(root, documents, "/alias/q3/report.txt")
+		got, err := resolver(root, documents, "/alias")
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertDocumentIdentity(t, got, root, documents, "/finance")
+		got, err = resolver(root, documents, "/alias/q3/report.txt")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,4 +189,26 @@ func TestWindowsDocumentIdentityJunctions(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertDocumentIdentity(t, got, root, documents, "/finance/new/child")
+	got, err = ResolveExistingDocumentPath(root, filepath.Join(documents, "alias"), "/q3/report.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDocumentIdentity(t, got, root, filepath.Join(documents, "finance"), "/q3/report.txt")
+}
+
+func TestWindowsDocumentIdentityLongPath(t *testing.T) {
+	root, documents := documentIdentityRoot(t)
+	logical := "/finance/" + strings.Repeat("long-directory-name/", 16) + "report.txt"
+	filename := filepath.Join(root, documents, filepath.FromSlash(logical))
+	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filename, []byte("long path fixture"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ResolveExistingDocumentPath(root, documents, strings.ToUpper(logical))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertDocumentIdentity(t, got, root, documents, logical)
 }
